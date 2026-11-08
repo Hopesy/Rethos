@@ -1,6 +1,6 @@
 param(
-    [string]$VpsHost = '150.109.198.77',
-    [string]$VpsUser = 'zhouhl',
+    [Parameter(Mandatory = $true)][string]$VpsHost,
+    [Parameter(Mandatory = $true)][string]$VpsUser,
     [int]$VpsPort = 22,
     [int]$ReversePort = 22222,
     [string]$IdentityFile = "$env:USERPROFILE\.ssh\rethos_vps_tunnel"
