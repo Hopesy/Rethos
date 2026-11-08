@@ -976,7 +976,6 @@ describe("Chat MCP startup budgets", () => {
     try {
       const mounting = watch(mountChatTools({ custom: { whop: { type: "http", url: remote.url, headers: {} } } }, controller.signal));
       await untilReal(() => remote.delayedToolsLists === 1);
-      // well past the 8 seconds a command server gets
       await vi.advanceTimersByTimeAsync(20_000);
       await untilReal(() => mounting.done);
       expect(mounting.error).toBeUndefined();
@@ -988,7 +987,7 @@ describe("Chat MCP startup budgets", () => {
     }
   });
 
-  it("still gives a command server 8 seconds", async () => {
+  it("allows a configured command server 30 seconds for an SSH-backed startup", async () => {
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
     try {
       const f = fixture(`if (message.method === "tools/list") return;`);
@@ -997,11 +996,25 @@ describe("Chat MCP startup budgets", () => {
       await untilReal(listed);
       await vi.advanceTimersByTimeAsync(7_900);
       expect(mounting.done).toBe(false);
-      await vi.advanceTimersByTimeAsync(200);
-      // stopped at 8 seconds: well short of the 30 a URL server gets
+      await vi.advanceTimersByTimeAsync(21_900);
+      expect(mounting.done).toBe(false);
+      await vi.advanceTimersByTimeAsync(400);
       await settleWithin(1_000, () => mounting.done);
       expect(mounting.error).toBeUndefined();
       expect(mounting.value?.skipped).toEqual([{ server: "audit", reason: expect.stringMatching(/timed out/) }]);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it("keeps the built-in computer startup bounded to 8 seconds", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      const f = fixture(`if (message.method === "tools/list") return;`);
+      const mounting = watch(f.mount(true, true));
+      await untilReal(() => { try { return f.read().calls.some(call => call.method === "tools/list"); } catch { return false; } });
+      await vi.advanceTimersByTimeAsync(8_100);
+      await settleWithin(1_000, () => mounting.done);
+      expect(mounting.error).toBeInstanceOf(Error);
+      expect(String(mounting.error)).toContain("timed out");
     } finally { vi.useRealTimers(); }
   });
 });
