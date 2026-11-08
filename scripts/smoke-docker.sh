@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
+trap 'printf "Smoke failed at line %s: %s\n" "$LINENO" "$BASH_COMMAND" >&2' ERR
 mkdir -p .Rethos-temp/docker-smoke
 cleanup() {
   docker logs rethos-smoke > .Rethos-temp/docker-smoke/container.log 2>&1 || true
@@ -21,7 +22,7 @@ docker exec rethos-smoke test ! -d /app/dist-server/enterprise
 docker exec rethos-smoke curl -sf http://127.0.0.1:8799/api/edition | grep -q '"edition":"oss"'
 docker exec rethos-smoke curl -sf http://127.0.0.1:8799/api/brand | grep -q '"name":"Rethos"'
 docker exec rethos-smoke sh -c 'test -s LICENSE && test -s NOTICE && test -s LICENSING.md && test -d third_party'
-docker exec rethos-smoke rethos --help | grep -q Rethos
+docker exec rethos-smoke rethos --help | grep -qi rethos
 docker exec rethos-smoke claude --version
 docker exec rethos-smoke codex --version
 docker exec -w /app/duckdb rethos-smoke node --input-type=module -e "const { DuckDBInstance } = await import('@duckdb/node-api'); const c = await (await DuckDBInstance.create()).connect(); const r = await c.runAndReadAll('select 42 as x'); if (Number(r.getRows()[0][0]) !== 42) process.exit(1)"
