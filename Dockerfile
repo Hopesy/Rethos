@@ -43,6 +43,7 @@ RUN node /stage/prepare-cloudflared.mjs --current --root /stage \
 # host's own; only the Data engine's native tree below follows the image's CPU.
 FROM --platform=$BUILDPLATFORM node:24-bookworm-slim AS build
 WORKDIR /src
+ENV NODE_OPTIONS=--max-old-space-size=6144
 # pinned to package.json#packageManager; corepack is being removed from Node
 RUN npm install -g pnpm@10.33.0
 # The image never runs Electron, so skip its ~100MB postinstall download.
