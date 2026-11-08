@@ -47,7 +47,7 @@ describe("server update check", () => {
       latest: "0.1.93",
       available: true,
       releaseUrl: "https://github.com/Hopesy/ZelosBot/releases/tag/v0.1.93",
-      command: "docker compose pull omb && docker compose up -d",
+      command: "docker compose pull && docker compose up -d --no-build --force-recreate",
       restart: false,
     });
     expect(fetch).toHaveBeenCalledWith(LATEST_RELEASE_URL, expect.anything());

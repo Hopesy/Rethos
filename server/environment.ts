@@ -153,8 +153,8 @@ export type ServerInstall = "npx" | "global" | "docker" | "source";
 export function serverInstall(env: NodeJS.ProcessEnv = process.env, script = process.argv[1] ?? "", docker = () => existsSync("/.dockerenv")): ServerInstall {
   const prefix = cliPrefix(env, script);
   if (prefix.includes("docker") || docker()) return "docker";
-  if (prefix === "pnpm omb" || script.endsWith(".ts")) return "source";
-  return prefix === "npx openmausbot" ? "npx" : "global";
+  if (prefix === "pnpm omb" || prefix === "pnpm rethos" || script.endsWith(".ts")) return "source";
+  return prefix === "npx rethos" || prefix === "npx openmausbot" ? "npx" : "global";
 }
 
 /** What a server only its one owner signs in to takes from that owner's own desktop by default: told in the owner's own

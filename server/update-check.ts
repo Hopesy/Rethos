@@ -10,7 +10,7 @@ export type InstallKind = "desktop" | "managed" | "docker" | "podman" | "npm" | 
 
 /** As docs/self-hosting.md and deploy/podman/README.md give them. */
 export const UPDATE_COMMANDS: Partial<Record<InstallKind, { command: string; restart: boolean }>> = {
-  docker: { command: "docker compose pull omb && docker compose up -d", restart: false },
+  docker: { command: "docker compose pull && docker compose up -d --no-build --force-recreate", restart: false },
   podman: { command: "git pull && cd deploy/podman && PODMAN_COMPOSE_PROVIDER=podman-compose podman compose --env-file .env -f compose.yaml up -d --build", restart: false },
   npm: { command: "npm install -g openmausbot@latest", restart: true },
   git: { command: "git pull && pnpm install", restart: true },
