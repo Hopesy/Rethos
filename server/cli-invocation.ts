@@ -3,10 +3,11 @@
 export function cliPrefix(env: NodeJS.ProcessEnv = process.env, script = process.argv[1] ?? ""): string {
   const fixed = env.OMB_CLI_PREFIX?.trim();
   if (fixed) return fixed;
+  if (env.npm_lifecycle_event === "rethos") return "pnpm rethos";
   if (env.npm_lifecycle_event === "omb") return "pnpm omb";
   // npm 7+ runs an `npx` package from its cache's `_npx` folder (npm_command=exec alone also marks `npx vitest`).
-  if (/[\\/]_npx[\\/]/.test(script)) return "npx openmausbot";
-  return "openmausbot";
+  if (/[\\/]_npx[\\/]/.test(script)) return "npx rethos";
+  return "rethos";
 }
 
 /** `openmausbot <rest>` the way this CLI was started. */

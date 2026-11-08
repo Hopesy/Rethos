@@ -47,7 +47,7 @@ function inbox(apps: FakeConnectedApps, now: number) {
   }];
 }
 
-describe("MausBot keeps an eye on the day, hidden from the sidebar", () => {
+describe("Rethos keeps an eye on the day, hidden from the sidebar", () => {
   let apps: FakeConnectedApps;
   let fixture: Fixture;
   let api: ReturnType<typeof client>;
@@ -83,7 +83,7 @@ describe("MausBot keeps an eye on the day, hidden from the sidebar", () => {
     return (await runs()).find((run) => run.id === id);
   };
 
-  it("a personal install's MausBot has the one default watch: checks, reads and drafts only, delivered to the brief", async () => {
+  it("a personal install's Rethos has the one default watch: checks, reads and drafts only, delivered to the brief", async () => {
     expect((await api("GET", "/api/routines")).routines.filter((routine: any) => routine.deliver === "brief")).toHaveLength(1);
     expect(watch).toMatchObject({ name: "Keep an eye on my day", enabled: true, checks: ["calendar", "mail", "runs"], access: "read-and-draft", deliver: "brief",
       schedule: { type: "interval", everyMinutes: 15 } });
@@ -133,7 +133,7 @@ describe("MausBot keeps an eye on the day, hidden from the sidebar", () => {
     expect(widgetActions(card.widget.root as WidgetRoot).map((entry) => entry.label)).toEqual(expect.arrayContaining(["Draft a reply to Ada", "Dismiss Ada's email", "Join"]));
     expect(rows.some((message) => message.automation?.runId === run.id)).toBe(false);
     const told = (await api("GET", "/api/notifications")).notifications as any[];
-    expect(told.findLast((entry) => entry.kind === "brief"), "the notification opens MausBot's chat").toMatchObject({ botId: chief.id, threadId: chief.threadId });
+    expect(told.findLast((entry) => entry.kind === "brief"), "the notification opens Rethos's chat").toMatchObject({ botId: chief.id, threadId: chief.threadId });
   });
 
   it("the same mail again is nothing new: no second turn", async () => {

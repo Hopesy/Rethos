@@ -81,7 +81,7 @@ afterEach(async () => {
 
 const printed = () => vi.mocked(console.log).mock.calls.map(([line]) => String(line)).join("\n");
 
-describe("openmausbot pair", () => {
+describe("rethos pair", () => {
   it("never asks anything: one code, the running server's own link, a QR, and the phone command", async () => {
     expect(await runPair(options)).toBe(0);
     expect(mocks.ui.choose).not.toHaveBeenCalled();
@@ -92,7 +92,7 @@ describe("openmausbot pair", () => {
     expect(printed()).toMatch(new RegExp(`Pairing code {3}${code} {3}works once, until .+ · everything`));
     expect(printed()).toContain(`Link           ${advertisedOrigin}/pair#code=${code}`);
     expect(printed()).toMatch(/[▀▄█]/);
-    expect(printed()).toContain("For a phone (chat and approvals only)   openmausbot pair --phone");
+    expect(printed()).toContain("For a phone (chat and approvals only)   rethos pair --phone");
     expect(printed()).not.toContain("doesn't reach");
   });
 
@@ -127,18 +127,18 @@ describe("openmausbot pair", () => {
     });
     expect(await runPair(options)).toBe(0);
     expect(printed()).toContain(`http://127.0.0.1:${options.port}/pair#code=${code}`);
-    expect(printed()).toContain("pick a way in first: openmausbot serve --help");
+    expect(printed()).toContain("pick a way in first: rethos serve --help");
     expect(printed()).not.toMatch(/[▀▄█]/);
   });
 
   it("says how to start a server when none runs", async () => {
     fetchMock.mockImplementation(async () => { throw new Error("offline"); });
     expect(await runPair(options)).toBe(1);
-    expect(console.error).toHaveBeenCalledWith(expect.stringContaining("No MausBot server is running here. Start it: openmausbot serve"));
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining("No Rethos server is running here. Start it: rethos serve"));
   });
 });
 
-describe("the phone-app link `openmausbot pair --phone android` scans", () => {
+describe("the phone-app link `rethos pair --phone android` scans", () => {
   const credential = `omb_pair_${"b".repeat(43)}`;
   const serverName = "Miguel's computer";
   const pairingResponse = (fields: Record<string, unknown>) => {
@@ -157,7 +157,7 @@ describe("the phone-app link `openmausbot pair --phone android` scans", () => {
     expect(await runPair({ ...options, phone: "android", publicUrl: explicitOrigin })).toBe(0);
     expect(printed()).not.toContain("openmausbot://");
     expect(printed()).not.toContain(credential);
-    expect(printed()).toContain("scan this with the MausBot app");
+    expect(printed()).toContain("scan this with the Rethos app");
   });
 
   it("keeps a proxy path in the web link", async () => {

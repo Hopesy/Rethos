@@ -1,4 +1,6 @@
-# Self-hosting the MausBot server
+# Self-hosting the Rethos server
+
+Rethos 的当前镜像、安装与更新入口见 [Rethos VPS 部署与维护](rethos-vps.md)。下文保留上游技术参考；部署命令以 Rethos 文档为准。
 
 Run the server on a machine you control (a VPS, a home server, a Mac mini in a
 closet). Then connect the desktop app, browsers and phones to it. Every path

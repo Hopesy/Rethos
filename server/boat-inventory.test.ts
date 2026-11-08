@@ -590,7 +590,7 @@ describe("OpenMaus-managed Boat inventory", () => {
     deleteRemovesBoat = false;
 
     await expect(boat.deleteManagedBoat(cfg, owners, boxId, managedName)).rejects.toThrow(
-      `boat.dev accepted the deletion of cloud computer ${boxId}, but says it is blocked without a reason OpenMausBot knows. boat.dev keeps retrying on its own; if ${boxId} is still listed in boat.dev later, delete it there.`,
+      `boat.dev accepted the deletion of cloud computer ${boxId}, but says it is blocked without a reason Rethos knows. boat.dev keeps retrying on its own; if ${boxId} is still listed in boat.dev later, delete it there.`,
     );
     expect(deleteJournal.boatDeletionSnapshot()).toEqual([expect.objectContaining({ boxId, phase: "blocked" })]);
     expect(journal.boatCreateRecoverySnapshot()).toContainEqual({ botId, boxId, resolved: true });

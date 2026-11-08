@@ -34,7 +34,7 @@ describe("a lent screen's answers carry the fix", () => {
   });
 
   it("replaces an older desktop's raw failure with the fix, and never passes its path on", () => {
-    const quarantined = lentScreenResult(call("get_desktop_state"), failed("spawn C:\\Users\\Ana\\AppData\\Local\\Programs\\OpenMausBot\\resources\\cua-driver.exe ENOENT"));
+    const quarantined = lentScreenResult(call("get_desktop_state"), failed("spawn C:\\Users\\Ana\\AppData\\Local\\Programs\\Rethos\\resources\\cua-driver.exe ENOENT"));
     expect(texts(quarantined)).toHaveLength(1);
     expect(texts(quarantined)[0]).toMatch(/^Computer control could not start on this computer: its helper, cua-driver, is missing or blocked\. .*Protection history/);
     expect(JSON.stringify(quarantined)).not.toContain("Ana");

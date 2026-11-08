@@ -1,16 +1,11 @@
-name: ${COMPOSE_PROJECT_NAME:-openmausbot}
+name: ${COMPOSE_PROJECT_NAME:-rethos}
 services:
-  omb:
+  rethos:
     # Collects exited browser processes; Chrome's shared memory as on the
     # desktop containers (docs/browser-packaging.md, "Process hygiene").
     init: true
     shm_size: 512m
-    build:
-      context: ./deploy/local
-      args:
-        BASE_IMAGE: ${OMB_BASE_IMAGE:-ghcr.io/milind-soni/openmausbot:latest}
-        ENGINES: ${ENGINES-@anthropic-ai/claude-code @openai/codex}
-    image: ${OMB_LOCAL_IMAGE:-openmausbot-local:latest}
+    image: ${RETHOS_IMAGE:-ghcr.io/hopesy/rethos:latest}
     restart: unless-stopped
     volumes:
       - data:/data
@@ -20,7 +15,7 @@ services:
       OMB_PORT: "8799"
       OMB_WEBHOOK_PORT: "8800"
       # The name the desktop app shows for this server (a container's own hostname is a random id).
-      OMB_SERVER_NAME: ${OMB_SERVER_NAME:-mausbot-docker}
+      OMB_SERVER_NAME: ${OMB_SERVER_NAME:-rethos}
       OMB_PUBLIC_URL: ${OMB_PUBLIC_URL:-http://localhost:${OMB_HTTP_PORT:-8080}}
       OMB_WEBHOOK_PUBLIC_URL: ${OMB_WEBHOOK_PUBLIC_URL:-${OMB_PUBLIC_URL:-http://localhost:${OMB_HTTP_PORT:-8080}}}
     healthcheck:
@@ -36,7 +31,7 @@ services:
   caddy:
     image: ${CADDY_IMAGE:-caddy:2}
     restart: unless-stopped
-    network_mode: service:omb
+    network_mode: service:rethos
     environment:
       OMB_HTTPS_HOST: ${OMB_HTTPS_HOST:-}
       OMB_BIND_ADDRESS: ${OMB_BIND_ADDRESS:-127.0.0.1}
@@ -54,7 +49,7 @@ services:
         fi
         exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
     depends_on:
-      omb:
+      rethos:
         condition: service_healthy
     volumes:
       - ./deploy/local/Caddyfile:/etc/caddy/Caddyfile:ro
@@ -63,6 +58,6 @@ services:
 volumes:
   data:
     external: ${OMB_DATA_EXTERNAL:-false}
-    name: ${OMB_DATA_VOLUME:-${COMPOSE_PROJECT_NAME:-openmausbot}_data}
+    name: ${OMB_DATA_VOLUME:-${COMPOSE_PROJECT_NAME:-rethos}_data}
   caddy_data:
   caddy_config:

@@ -101,7 +101,7 @@ async function run(): Promise<void> {
   const state = new StateStore(PATHS.state);
   const docker = new SocketDocker(PATHS.docker);
   const instance = process.env.MAUSBOT_INSTANCE || "unknown";
-  log(`MausBot connector ${CONNECTOR_VERSION} starting`);
+  log(`Rethos connector ${CONNECTOR_VERSION} starting`);
   const audit = auditLog();
   const note = (event: Parameters<AuditLog["append"]>[0]) => {
     try { audit.append(event); } catch (error) { log(`could not write the audit log ${audit.file}: ${errorText(error)}`); }
@@ -115,7 +115,7 @@ async function run(): Promise<void> {
     await sleep(10 * 60_000);
   }
   let record: AgentRecord | null = state.agent();
-  if (!record) log("waiting for this server to be connected: run the install command with the code MausBot shows");
+  if (!record) log("waiting for this server to be connected: run the install command with the code Rethos shows");
   const enrolledNow = !record;
   while (!record) {
     await sleep(2_000);
@@ -125,7 +125,7 @@ async function run(): Promise<void> {
   let current: AgentRecord = record;
   if (enrolledNow) note({ event: "connector", what: "enrolled", version: CONNECTOR_VERSION, image: identity().image, boxId: record.boxId });
   const kept = savedConfig(state.adminConfig(), current);
-  if (kept) log(`going by MausBot's schedule and policy kept on this server (version ${kept.version}) until MausBot answers`);
+  if (kept) log(`going by Rethos's schedule and policy kept on this server (version ${kept.version}) until Rethos answers`);
   const host = hostReporter(docker, () => current.admin);
   const home = new Home({
     docker, state, log, readHealth, seccomp, transfer: httpTransfer,
@@ -158,10 +158,10 @@ async function run(): Promise<void> {
     saveAdminKeys: (keys) => {
       current = { ...current, adminKeys: keys };
       state.saveAgent(current);
-      log(`MausBot's signing keys are now ${Object.keys(keys).join(", ")}`);
+      log(`Rethos's signing keys are now ${Object.keys(keys).join(", ")}`);
     },
     config: { saved: () => state.adminConfig(), save: (config) => state.saveAdminConfig(config) },
-    onConfig: (config) => log(`MausBot's schedule and policy (version ${config.version}) are kept on this server`),
+    onConfig: (config) => log(`Rethos's schedule and policy (version ${config.version}) are kept on this server`),
     stream: (stream, accept) => serveRequest(stream, accept, { connectHome, record: note }),
     refused: (refusal) => note({ event: "refused", by: "admin", code: refusal.code, why: refusal.message, ...(refusal.id ? { id: refusal.id } : {}), ...(refusal.type ? { type: refusal.type } : {}) }),
   });
@@ -235,7 +235,7 @@ async function enrollCommand(): Promise<void> {
   state.saveAgent(record);
   // Connected again only once the service has connected with this token.
   state.saveStatus({ connected: false, unauthorized: false, lastError: null });
-  console.log(`This server is connected to MausBot (server ${record.boxId}).`);
+  console.log(`This server is connected to Rethos (server ${record.boxId}).`);
 }
 
 function statusCommand(): void {

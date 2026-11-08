@@ -526,5 +526,5 @@ export function checkConfig(payload: Record<string, unknown>, box: string): Chec
 export function checkEnrollCode(value: unknown): Checked<string> {
   return typeof value === "string" && /^[A-Za-z0-9][A-Za-z0-9-]{5,127}$/.test(value)
     ? { ok: true, value }
-    : { ok: false, message: "the code is the one-time code MausBot shows next to the install command" };
+    : { ok: false, message: "the code is the one-time code Rethos shows next to the install command" };
 }

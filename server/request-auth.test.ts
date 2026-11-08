@@ -546,7 +546,7 @@ describe("resolveRequestAuth", () => {
   });
 });
 
-describe("a listener on the local network (openmausbot serve --lan)", () => {
+describe("a listener on the local network (rethos serve --lan)", () => {
   // SAFETY: only headers, method and the socket peer are read
   const fromPeer = (remoteAddress: string, headers: Record<string, string>) => ({ headers, method: "GET", socket: { remoteAddress } }) as unknown as IncomingMessage;
   const gate = (dir: string) => ({ sessions: new SessionRegistry({ file: join(dir, "sessions.json") }), cookieName: "omb_session_test", streamPath: "/api/events", url: new URL("/api/bots", "http://x") });
@@ -568,7 +568,7 @@ describe("a listener on the local network (openmausbot serve --lan)", () => {
   });
 });
 
-describe("an IPC listener (openmausbot serve --tunnel) is remote by construction", () => {
+describe("an IPC listener (rethos serve --tunnel) is remote by construction", () => {
   // SAFETY: only headers, method and the socket peer are read; a unix-socket peer has no address
   const overSocket = (headers: Record<string, string>) => ({ headers, method: "GET", socket: {} }) as unknown as IncomingMessage;
 

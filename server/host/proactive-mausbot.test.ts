@@ -74,13 +74,13 @@ function existingInstall() {
   return { first, clive, watch };
 }
 
-describe("MausBot keeps an eye on the day", () => {
+describe("Rethos keeps an eye on the day", () => {
   beforeEach(() => {
     closeMessageDb();
     rmSync(DATA_DIR, { recursive: true, force: true });
   });
 
-  it("on a new install, its MausBot is the Chief and gets the one watch, once", () => {
+  it("on a new install, its Rethos is the Chief and gets the one watch, once", () => {
     const first = start();
     first.store.seedIfEmpty();
     const maus = ensureDefaultBot(first.store, { dataDir: DATA_DIR })!;
@@ -91,7 +91,7 @@ describe("MausBot keeps an eye on the day", () => {
     expect(again.briefing().map((routine) => routine.botId)).toEqual([maus.id]);
   });
 
-  it("on an install where MausBot comes later, the watch is made on MausBot, not the Chief", () => {
+  it("on an install where Rethos comes later, the watch is made on Rethos, not the Chief", () => {
     const first = start();
     const clive = first.store.createBot({ name: "Clive" });
     first.store.setChiefOfStaff(clive.id);
@@ -101,7 +101,7 @@ describe("MausBot keeps an eye on the day", () => {
     expect(start().briefing()).toHaveLength(1);
   });
 
-  it("on an existing install, the Chief's watch moves to MausBot once, exactly as the person left it", async () => {
+  it("on an existing install, the Chief's watch moves to Rethos once, exactly as the person left it", async () => {
     const { first, clive, watch } = existingInstall();
     await first.proactive.brief.report({ routine: watch, at: Date.now(), picked: [{ email: ada, why: "Ada needs the numbers.", needsReply: true }] });
     expect(briefCards(first.store, clive)).toHaveLength(1);
@@ -163,10 +163,10 @@ describe("MausBot keeps an eye on the day", () => {
     expect(json(WATCH_FILE).handed[watch.id]).toBe(maus.id);
   });
 
-  it("never leaves two watches on: the Chief's is the one kept, MausBot's own is paused, and none is deleted", () => {
+  it("never leaves two watches on: the Chief's is the one kept, Rethos's own is paused, and none is deleted", () => {
     const { first, watch } = existingInstall();
     const maus = ensureDefaultBot(first.store, { dataDir: DATA_DIR })!;
-    const own = first.routines.create({ name: "MausBot's watch", prompt: "Watch.", botId: maus.id, enabled: true, checks: ["mail"], deliver: "brief",
+    const own = first.routines.create({ name: "Rethos's watch", prompt: "Watch.", botId: maus.id, enabled: true, checks: ["mail"], deliver: "brief",
       schedule: { type: "interval", everyMinutes: 15, anchorAt: Date.now() + 60_000 } });
     const after = start();
     after.proactive.ensureWatch();
@@ -178,7 +178,7 @@ describe("MausBot keeps an eye on the day", () => {
     const { first, watch } = existingInstall();
     first.routines.update(watch.id, { enabled: false });
     const maus = ensureDefaultBot(first.store, { dataDir: DATA_DIR })!;
-    first.routines.create({ name: "MausBot's watch", prompt: "Watch.", botId: maus.id, enabled: true, checks: ["mail"], deliver: "brief",
+    first.routines.create({ name: "Rethos's watch", prompt: "Watch.", botId: maus.id, enabled: true, checks: ["mail"], deliver: "brief",
       schedule: { type: "interval", everyMinutes: 15, anchorAt: Date.now() + 60_000 } });
     const after = start();
     after.proactive.ensureWatch();
@@ -209,7 +209,7 @@ describe("MausBot keeps an eye on the day", () => {
     expect(frozen.briefing().map((routine) => routine.botId)).toEqual([clive.id]);
   });
 
-  it("posts the brief, its notification, the presence answer and the add-a-key card to MausBot hidden from the sidebar", async () => {
+  it("posts the brief, its notification, the presence answer and the add-a-key card to Rethos hidden from the sidebar", async () => {
     const { first, clive, watch } = existingInstall();
     await first.proactive.brief.report({ routine: watch, at: Date.now(), picked: [{ email: { ...ada, id: "m0" }, why: "Earlier today.", needsReply: false }] });
     expect(briefCards(first.store, clive)).toHaveLength(1);
@@ -232,7 +232,7 @@ describe("MausBot keeps an eye on the day", () => {
     expect(watch.id).toBe(moved.id);
   });
 
-  it("on a Team Cloud: no watch, nothing handed over, and a member's MausBot never reads the shared inbox", async () => {
+  it("on a Team Cloud: no watch, nothing handed over, and a member's Rethos never reads the shared inbox", async () => {
     const first = start({ team: true });
     first.store.seedIfEmpty({ defaultBot: false });
     const chief = first.store.bots.find((bot) => bot.chiefOfStaff)!;
@@ -255,7 +255,7 @@ describe("MausBot keeps an eye on the day", () => {
     expect([...first.reads, ...untagged.reads]).toEqual([]);
   });
 
-  it("moves to My Cloud with MausBot, untouched as it looks, once the person changed the watch, and is the only watch on there", async () => {
+  it("moves to My Cloud with Rethos, untouched as it looks, once the person changed the watch, and is the only watch on there", async () => {
     // This computer: the watch was handed to a MausBot nobody has opened yet.
     const { first, clive, watch } = existingInstall();
     const maus = ensureDefaultBot(first.store, { dataDir: DATA_DIR })!;
@@ -300,7 +300,7 @@ describe("MausBot keeps an eye on the day", () => {
       return status;
     };
     cloud.store.createBot({ name: "Clive" }, { id: clive.id, seedMessages: false });
-    cloud.store.createBot({ name: "MausBot" }, { id: maus.id, seedMessages: false });
+    cloud.store.createBot({ name: "Rethos" }, { id: maus.id, seedMessages: false });
     expect(await take(`bot:${clive.id}`, cliveFields)).toBe(200);
     expect(await take(`bot:${maus.id}`, mausFields)).toBe(200);
     cloud.proactive.ensureWatch();

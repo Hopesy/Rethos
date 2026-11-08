@@ -1,57 +1,57 @@
 export { HEADLESS_VERBS as HEADLESS_VERB_NAMES } from "./headless/args.ts";
 
 export const HEADLESS_USAGE = `Drive a running workspace (scripts, CI, other agents):
-  openmausbot doctor                    check the server answers and an engine is ready
-  openmausbot doctor --host             check this Linux machine can run a server (exit 7 if not)
-  openmausbot bots | channels | models  your bots, your rooms, the engines and their models
-  openmausbot run BOT "do this"         give a bot one job and wait until it and every teammate it asked are done
-  openmausbot send BOT "text"           send one message and return at once
-  openmausbot wait BOT                  wait on work already running
-  openmausbot messages BOT              the latest messages of a conversation
-  openmausbot interrupt BOT [--tree]    press Stop (--tree: and every teammate on its job)
-  openmausbot export BOT --out DIR      write a job's transcripts, files and screens to DIR
-  openmausbot events [--job THREAD]     the server's live events as JSON lines
-  openmausbot team apply FILE           make the workspace match a team file (team export writes one)
-  openmausbot engine set claude --key-env ANTHROPIC_API_KEY   give it an engine without a screen
-  openmausbot connect URL --code CODE --out FILE              get a token for a workspace elsewhere
-  openmausbot token create NAME --out FILE [--expires 90d]    a token for CI that ends on its date (token list, token revoke ID)
-  openmausbot new-bot | new-channel | set-model | edit | mcp
+  rethos doctor                    check the server answers and an engine is ready
+  rethos doctor --host             check this Linux machine can run a server (exit 7 if not)
+  rethos bots | channels | models  your bots, your rooms, the engines and their models
+  rethos run BOT "do this"         give a bot one job and wait until it and every teammate it asked are done
+  rethos send BOT "text"           send one message and return at once
+  rethos wait BOT                  wait on work already running
+  rethos messages BOT              the latest messages of a conversation
+  rethos interrupt BOT [--tree]    press Stop (--tree: and every teammate on its job)
+  rethos export BOT --out DIR      write a job's transcripts, files and screens to DIR
+  rethos events [--job THREAD]     the server's live events as JSON lines
+  rethos team apply FILE           make the workspace match a team file (team export writes one)
+  rethos engine set claude --key-env ANTHROPIC_API_KEY   give it an engine without a screen
+  rethos connect URL --code CODE --out FILE              get a token for a workspace elsewhere
+  rethos token create NAME --out FILE [--expires 90d]    a token for CI that ends on its date (token list, token revoke ID)
+  rethos new-bot | new-channel | set-model | edit | mcp
 
   Server: --url URL (or OPENMAUSBOT_URL), --port N (or OMB_PORT), else this computer's.
   Token: OPENMAUSBOT_TOKEN or --token-file FILE. --json prints one JSON document;
-  progress goes to stderr (--quiet drops it). openmausbot help VERB for the details.`;
+  progress goes to stderr (--quiet drops it). rethos help VERB for the details.`;
 
-/** The usage text, its commands written the way this CLI was started (`npx openmausbot …`). */
-export function usage(prefix = "openmausbot"): string {
-  return USAGE.split("\n").map((line) => line.replace(/^(\s+)openmausbot(?= )/, `$1${prefix}`)).join("\n");
+/** The usage text, its commands written the way this CLI was started (`npx rethos …`). */
+export function usage(prefix = "rethos"): string {
+  return USAGE.split("\n").map((line) => line.replace(/^(\s+)rethos(?= )/, `$1${prefix}`)).join("\n");
 }
 
-export const USAGE = `openmausbot — your team of AI bots, ready in a few steps
+export const USAGE = `rethos — your team of AI bots, ready in a few steps
 
-  openmausbot                         set up once, then open your workspace
-  openmausbot setup [--data-dir DIR]
-  openmausbot start [the same options as serve]
-  openmausbot serve [--port 8799] [--data-dir DIR] [--label NAME]
+  rethos                         set up once, then open your workspace
+  rethos setup [--data-dir DIR]
+  rethos start [the same options as serve]
+  rethos serve [--port 8799] [--data-dir DIR] [--label NAME]
                     [--public-url https://host | --domain HOST | --tunnel | --tailscale] [--lan]
-  openmausbot pair  [--label NAME] [--phone [ios|android]] [--ttl 24h] [--public-url https://host]
-  openmausbot devices [revoke ID]
-  openmausbot status
-  openmausbot --version
-  openmausbot login [--email you@example.com]
-  openmausbot logout
-  openmausbot access list | add EMAIL [--chat-only] | remove EMAIL
-  openmausbot service install [the same way-in options as serve] [--port N] [--data-dir DIR] | uninstall
+  rethos pair  [--label NAME] [--phone [ios|android]] [--ttl 24h] [--public-url https://host]
+  rethos devices [revoke ID]
+  rethos status
+  rethos --version
+  rethos login [--email you@example.com]
+  rethos logout
+  rethos access list | add EMAIL [--chat-only] | remove EMAIL
+  rethos service install [the same way-in options as serve] [--port N] [--data-dir DIR] | uninstall
                     [--sentinel]   (the health scan below, every two minutes, instead of the server)
-  openmausbot sentinel [--data-dir DIR] [--out DIR] [--once] [--json]   (read-only health scan; see --help)
-  openmausbot browser install [--with-deps] | status
-  openmausbot fleet init --domain HOST [--operator USER] | create NAME --admin EMAIL [--member EMAIL] [--brand FILE]
+  rethos sentinel [--data-dir DIR] [--out DIR] [--once] [--json]   (read-only health scan; see --help)
+  rethos browser install [--with-deps] | status
+  rethos fleet init --domain HOST [--operator USER] | create NAME --admin EMAIL [--member EMAIL] [--brand FILE]
                     [--anthropic-key-file FILE] [--cap USD] [--license-key KEY] [--memory 1G]
                   | list | users NAME add|remove EMAIL [--chat-only] | suspend NAME | resume NAME
                   | delete NAME --yes [--keep-data] | upgrade   (all take --dry-run)
                   | agent [--socket PATH] [--group USER]   (root; installed by init --operator)
 
 setup   choose AI access and optional phone access; keep existing bots and chats
-start   same as openmausbot: use your saved settings and open the workspace
+start   same as rethos: use your saved settings and open the workspace
 serve   starts the server without prompts; in a terminal it prints a pairing
         code, the link to paste into the desktop app (＋ → Connect to a
         server) and a QR for a phone
@@ -97,7 +97,7 @@ Ways in (pick one; --lan can join any):
              when serve stops
 --tunnel     serve at a public https://c-… address through a
              Cloudflare tunnel: no domain, no proxy, no open port. Run
-             \`openmausbot login\` once on this machine first.
+             \`rethos login\` once on this machine first.
 --domain     serve at https://HOST on your own domain: a pinned Caddy is
              downloaded once and run alongside the server, and gets the
              certificate itself. Point the domain's DNS at this machine and
@@ -109,6 +109,6 @@ Ways in (pick one; --lan can join any):
 
 ${HEADLESS_USAGE}
 
-Install once with \`npm install -g openmausbot\`, then type \`openmausbot\`.
-Or run without a global install: \`npx openmausbot\`. Node 24+ is required.
+Install once with \`npm install -g rethos\`, then type \`rethos\`.
+Or run without a global install: \`npx rethos\`. Node 24+ is required.
 `;

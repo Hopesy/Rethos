@@ -47,8 +47,8 @@ export function readPolicy(file: string): ReturnType<typeof parsePolicy> {
 /** Why the server's policy refuses `job` from MausBot, or null. A self-update is never refused. */
 export function policyRefusal(job: Job, read: ReturnType<typeof parsePolicy>, file: string): string | null {
   if (job.type === "self-update") return null;
-  if (!read.ok) return READS.has(job.type) ? null : `This server's policy ${file} cannot be used (${read.problem}), so MausBot changes nothing here until it is fixed.`;
-  if (read.policy.jobs && !read.policy.jobs.includes(job.type)) return `This server's policy ${file} does not let MausBot run ${job.type} jobs.`;
+  if (!read.ok) return READS.has(job.type) ? null : `This server's policy ${file} cannot be used (${read.problem}), so Rethos changes nothing here until it is fixed.`;
+  if (read.policy.jobs && !read.policy.jobs.includes(job.type)) return `This server's policy ${file} does not let Rethos run ${job.type} jobs.`;
   if (job.type === "update" && read.policy.updates === "hold") return `This server's policy ${file} holds updates.`;
   return null;
 }

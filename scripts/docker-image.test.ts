@@ -136,15 +136,17 @@ describe("container images", () => {
     expect(grokRun(chain("server"))).toBe(-1);
   });
 
-  it("scans the saved images for every throwaway build directory, and for one Grok", () => {
-    const scan = (workflow.jobs["build-and-smoke"].steps as { name?: string; run?: string }[])
-      .find(step => step.name?.startsWith("Prove each image ships its files once"))!.run!;
-    const cache = new RegExp(/cache = re\.compile\(r"(.*)"\)/.exec(scan)![1]);
-    const removed = shipped().flatMap(step => [...step.args.matchAll(/\brm -rf ([^;&|]+)/g)].flatMap(match => match[1].trim().split(/\s+/)));
-    const throwaway = [...new Set(removed.filter(path => path.startsWith("/tmp/")))].sort();
-    expect(throwaway).toEqual(["/tmp/grok-install", "/tmp/node-compile-cache", "/tmp/npm-cache", "/tmp/omb-build-home", "/tmp/uv-install"]);
-    for (const path of throwaway) expect(cache.test(`${path.slice(1)}/leftover`), path).toBe(true);
-    expect(scan).toContain('grok = files["usr/local/bin/grok"]');
+  it("publishes the tested image only after the boot and pairing smoke", () => {
+    const build = workflow.jobs["build-and-smoke"];
+    const steps = build.steps as { name?: string; run?: string; if?: string }[];
+    const smoke = steps.findIndex(step => step.run === "bash scripts/smoke-docker.sh");
+    const push = steps.findIndex(step => step.name === "Push the verified image");
+    expect(smoke).toBeGreaterThan(-1);
+    expect(push).toBeGreaterThan(smoke);
+    expect(steps[push].if).toContain("github.event_name != 'pull_request'");
+    expect(workflow.jobs.publish.needs).toBe("build-and-smoke");
+    expect(workflow.env.IMAGE).toBe("ghcr.io/hopesy/rethos");
+    expect(workflow.concurrency["cancel-in-progress"]).toContain("pull_request");
   });
 
   it("keeps each image's runtime contract", () => {
@@ -242,40 +244,18 @@ describe("container images", () => {
     const runtime = chain("runtime");
     expect(runtime.slice(0, runtime.indexOf(browserRun()))).toContainEqual({ op: "ARG", args: "TARGETARCH" });
     expect(browserRun().args).toMatch(/if \[ "\$TARGETARCH" = arm64 \]; then .*apt-get install -y --no-install-recommends chromium .*ln -s \/usr\/lib\/chromium\/chromium \/opt\/openmausbot-browser\/chrome; +else .*agent-browser install .*; +fi/);
-    // Published for both CPUs; the Cloud home (Fly, amd64) stays as it is.
-    const steps = workflow.jobs.publish.steps as { id?: string; uses?: string; with?: Record<string, string> }[];
-    const server = steps.findIndex(step => step.uses?.startsWith("docker/build-push-action@") && step.id !== "home");
-    const qemu = steps.findIndex(step => step.uses?.startsWith("docker/setup-qemu-action@"));
-    expect(qemu).toBeGreaterThan(-1);
-    expect(qemu).toBeLessThan(server);
-    expect(steps[server].with!.platforms).toBe("linux/amd64,linux/arm64");
-    expect(steps.find(step => step.id === "home")!.with).not.toHaveProperty("platforms");
-    // and an arm64 runner proves the arm64 image boots, serves and browses before anything is published
-    const arm = workflow.jobs["arm64-smoke"];
-    expect(arm["runs-on"]).toBe("ubuntu-24.04-arm");
-    expect(workflow.jobs.publish.needs).toEqual(expect.arrayContaining(["build-and-smoke", "arm64-smoke"]));
-    const armRun = (arm.steps as { run?: string }[]).map(step => step.run ?? "").join("\n");
-    expect(armRun).toContain("/api/health");
-    expect(armRun).toContain("agent-browser --session ci-browser open");
-  });
-
-  it("builds Cloud home from the same Dockerfile in CI, with its own layer cache", () => {
-    const smoke = workflow.jobs["build-and-smoke"].steps.map((step: { run?: string }) => step.run ?? "").join("\n");
-    expect(smoke).toContain("docker build --target cloud-home --build-arg CLOUD_HOME_ENGINES= -t omb-cloud-home:ci .");
-    const steps = workflow.jobs.publish.steps as { id?: string; uses?: string; with?: Record<string, string> }[];
-    const server = steps.find(step => step.uses?.startsWith("docker/build-push-action@") && step.id !== "home")!;
-    const home = steps.find(step => step.id === "home")!;
-    expect(home.with).not.toHaveProperty("file");
-    expect(home.with!.target).toBe("cloud-home");
-    expect(home.with!["build-args"]).not.toContain("BASE_IMAGE");
-    expect(home.with!["cache-from"].split("\n")).toEqual(expect.arrayContaining(["type=gha", "type=gha,scope=cloud-home"]));
-    expect(home.with!["cache-to"]).toBe("type=gha,scope=cloud-home,mode=max");
-    // Both builds key the browser layer on the same Chrome, so they share it.
-    for (const build of [server, home]) expect(build.with!["build-args"]).toContain("CHROME_CACHE_TAG=${{ steps.keys.outputs.chrome }}");
-    // and the arm64 one on Debian's newest Chromium, so a security update rebuilds it
-    for (const build of [server, home]) expect(build.with!["build-args"]).toContain("CHROMIUM_CACHE_TAG=${{ steps.keys.outputs.chromium }}");
-    expect(home.with!["build-args"]).toContain("CLOUD_HOME_ENGINES=${{ steps.keys.outputs.engines }}");
-    expect(home.with!["build-args"]).toContain("ENGINES_CACHE_TAG=${{ steps.keys.outputs.engines_tag }}");
+    const buildJob = workflow.jobs["build-and-smoke"];
+    expect(buildJob.strategy.matrix.include).toEqual([
+      { arch: "amd64", runner: "ubuntu-latest" },
+      { arch: "arm64", runner: "ubuntu-24.04-arm" },
+    ]);
+    const image = buildJob.steps.find((step: { uses?: string }) => step.uses?.startsWith("docker/build-push-action@"));
+    expect(image.with.target).toBe("server");
+    expect(image.with.platforms).toBe("linux/${{ matrix.arch }}");
+    expect(image.with.load).toBe(true);
+    const smoke = readFileSync(new URL("./smoke-docker.sh", import.meta.url), "utf8");
+    for (const check of ["/api/health", "agent-browser --session ci-browser open", "DuckDBInstance", "--force-recreate", "/api/auth/session"])
+      expect(smoke).toContain(check);
   });
 
   it("keys the browser and engine layers on the versions they install, so a release rebuilds them", () => {
@@ -292,12 +272,12 @@ describe("container images", () => {
     // the engines' install, not the tools layer's pinned pnpm beneath it
     const engines = home.find(step => npmInstall(step) && step.args.includes("$CLOUD_HOME_ENGINES"));
     expect(engines?.args).toContain("${ENGINES_CACHE_TAG");
-    const keys = (workflow.jobs.publish.steps as { id?: string; env?: Record<string, string> }[]).find(step => step.id === "keys")!;
-    expect(keys.env!.CLOUD_HOME_ENGINES).toBe("@anthropic-ai/claude-code @openai/codex");
+    const keys = (workflow.jobs.prepare.steps as { id?: string; env?: Record<string, string> }[]).find(step => step.id === "keys")!;
+    expect(keys.env!.ENGINE_PACKAGES).toBe("@anthropic-ai/claude-code @openai/codex");
   });
 
   it.skipIf(!jq)("resolves the current Chrome and engine releases, and keys on the date when a lookup fails", () => {
-    const keys = (workflow.jobs.publish.steps as { id?: string; run?: string; env?: Record<string, string> }[]).find(step => step.id === "keys")!;
+    const keys = (workflow.jobs.prepare.steps as { id?: string; run?: string; env?: Record<string, string> }[]).find(step => step.id === "keys")!;
     const resolve = (ok: boolean) => {
       const root = mkdtempSync(join(tmpdir(), "omb-docker-keys-"));
       temporaryDirectories.push(root);
@@ -326,7 +306,8 @@ describe("container images", () => {
   // shared memory OpenMausBot's desktop containers give it.
   it("runs every compose service of the server image with an init and Chrome's shared memory", () => {
     for (const file of ["../compose.yaml", "../deploy/docker-compose.yml", "../deploy/podman/compose.yaml"]) {
-      const service = parse(readFileSync(new URL(file, import.meta.url), "utf8")).services.omb;
+      const services = parse(readFileSync(new URL(file, import.meta.url), "utf8")).services;
+      const service = services.rethos ?? services.omb;
       expect(service.init, file).toBe(true);
       expect(service.shm_size, file).toBe("512m");
     }

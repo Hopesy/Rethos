@@ -1,20 +1,21 @@
-# One OpenMausBot tenant: the harness server plus Caddy for TLS + login.
+name: ${COMPOSE_PROJECT_NAME:-rethos}
+# One Rethos tenant: the harness server plus Caddy for TLS + login.
 #
 # Caddy runs in the server's network namespace, so it reaches the server on
 # 127.0.0.1 — the server never binds a public interface. Ports are therefore
-# declared on the `omb` service (the namespace owner).
+# declared on the `rethos` service (the namespace owner).
 #
 #   cp .env.example .env   # set DOMAIN
-#   docker compose pull omb && docker compose up -d     # prebuilt image
+#   docker compose pull rethos && docker compose up -d     # prebuilt image
 #   docker compose up -d --build                        # or build from source
 services:
-  omb:
+  rethos:
     build:
       context: ..
       args:
-        ENGINES: ${ENGINES:-}
+        ENGINES: ${ENGINES-@anthropic-ai/claude-code @openai/codex}
     # prebuilt on every main push; `docker compose up --build` builds from source instead
-    image: ghcr.io/milind-soni/openmausbot:latest
+    image: ${RETHOS_IMAGE:-ghcr.io/hopesy/rethos:latest}
     restart: unless-stopped
     # The bots' browsers (docs/browser-packaging.md, "Process hygiene"): an
     # init collects the browser processes whose parents exit, and Chrome
@@ -50,12 +51,12 @@ services:
   caddy:
     image: caddy:2
     restart: unless-stopped
-    network_mode: "service:omb"
+    network_mode: "service:rethos"
     depends_on:
-      omb:
+      rethos:
         condition: service_healthy
     environment:
-      DOMAIN: ${DOMAIN}
+      DOMAIN: ${DOMAIN:?Set DOMAIN in deploy/.env}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -63,5 +64,7 @@ services:
 
 volumes:
   data:
+    external: ${OMB_DATA_EXTERNAL:-false}
+    name: ${OMB_DATA_VOLUME:-${COMPOSE_PROJECT_NAME:-rethos}_data}
   caddy_data:
   caddy_config:

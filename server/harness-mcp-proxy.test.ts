@@ -51,7 +51,7 @@ describe("harness MCP capability proxy", () => {
   it("sends Email calls to their own harness route with the Email instructions", async () => {
     status = 200;
     payload = { result: { tools: [{ name: "EMAIL_READ_MESSAGE" }], instructions: "mail" } };
-    await expect(harnessMcpRequest(frame("initialize"), connection("email"))).resolves.toMatchObject({ result: { serverInfo: { name: "openmausbot-email" }, instructions: expect.stringContaining("OpenMausBot holds the password") } });
+    await expect(harnessMcpRequest(frame("initialize"), connection("email"))).resolves.toMatchObject({ result: { serverInfo: { name: "openmausbot-email" }, instructions: expect.stringContaining("Rethos holds the password") } });
     await expect(harnessMcpRequest(frame("tools/list"), connection("email"))).resolves.toEqual({ jsonrpc: "2.0", id: 1, result: { tools: [{ name: "EMAIL_READ_MESSAGE" }], instructions: "mail" } });
     expect(requests.at(-1)).toEqual({ path: "/api/internal/email/mcp", auth: "Bearer scoped-capability", body: { method: "tools/list", params: {} } });
     status = 401;
@@ -126,7 +126,7 @@ describe("harness MCP capability proxy", () => {
     vi.stubGlobal("fetch", vi.fn(async () => { throw new DOMException("The operation was aborted due to timeout", "TimeoutError"); }));
     try {
       const late = textOf(await harnessMcpRequest(click, connection()));
-      expect(late).toMatch(new RegExp(`^OpenMausBot did not answer this browser call within ${HARNESS_PROXY_TIMEOUT_MS / 1_000} seconds\\. It may still be running`));
+      expect(late).toMatch(new RegExp(`^Rethos did not answer this browser call within ${HARNESS_PROXY_TIMEOUT_MS / 1_000} seconds\\. It may still be running`));
       expect(late).not.toMatch(/restart/i);
     } finally { vi.unstubAllGlobals(); }
   });

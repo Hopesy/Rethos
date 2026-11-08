@@ -84,7 +84,7 @@ describe("connect", () => {
     const remote = capture();
     expect(await runHeadless(["connect", "https://maus.example.com", "--out", join(dir, "t")], { io: remote.io, env: {} })).toBe(2);
     expect(remote.err[0]).toBe("error: a workspace elsewhere needs a pairing code");
-    expect(remote.err.join("\n")).toContain("npx openmausbot pair");
+    expect(remote.err.join("\n")).toContain("npx rethos pair");
     expect(() => writeTokenFile("-", "x", false)).toThrow("never to the terminal");
     expect(() => writeTokenFile("/dev/stdout", "x", true)).toThrow("never to the terminal");
   });
@@ -95,7 +95,7 @@ describe("connect", () => {
     expect(requests.at(-1)).toMatchObject({ path: "/api/auth/pair", body: { code: "ABCD-EFGH-JKLM" } });
     const lan = capture();
     expect(await runHeadless(["connect", "http://omb-test-no-such-host:1", "--code", "ABCD-EFGH-JKLM", "--out", join(dir, "token-lan")], { io: lan.io, env: {} })).toBe(5);
-    expect(lan.err[0]).toContain("no MausBot server answers at http://omb-test-no-such-host:1");
+    expect(lan.err[0]).toContain("no Rethos server answers at http://omb-test-no-such-host:1");
     const open = capture();
     expect(await runHeadless(["connect", "http://203.0.113.9:8799", "--code", "ABCD-EFGH-JKLM", "--out", join(dir, "token-open")], { io: open.io, env: {} })).toBe(2);
     expect(open.err.join("\n")).toContain("put HTTPS in front");

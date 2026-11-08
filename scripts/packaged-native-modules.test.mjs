@@ -30,16 +30,26 @@ describe("packaged native modules", () => {
     const checkout = mkdtempSync(join(tmpdir(), "omb-npm-package-"));
     temporaryDirectories.push(checkout);
     const pins = Object.fromEntries(nativelyRequired().map((name, i) => [name, `9.9.${i}`]));
-    writeFileSync(join(checkout, "package.json"), JSON.stringify({ version: "0.0.1", dependencies: { ...pins, react: "19.0.0" } }));
-    for (const file of ["dist-server/index.js", "dist-server/openmausbot.js", "dist/index.html", "LICENSE"]) {
+    writeFileSync(join(checkout, "package.json"), JSON.stringify({ name: "rethos", productName: "Rethos", repository: { url: "https://github.com/Hopesy/ZelosBot.git" }, version: "0.0.1", dependencies: { ...pins, react: "19.0.0" } }));
+    for (const file of ["dist-server/index.js", "dist-server/openmausbot.js", "dist/index.html"]) {
       mkdirSync(join(checkout, file, ".."), { recursive: true });
       writeFileSync(join(checkout, file), "");
     }
     mkdirSync(join(checkout, "scripts"));
+    mkdirSync(join(checkout, "public"));
+    mkdirSync(join(checkout, "skills"));
+    mkdirSync(join(checkout, "third_party"));
+    writeFileSync(join(checkout, "public", "manifest.webmanifest"), JSON.stringify({ name: "Rethos", short_name: "Rethos" }));
+    for (const file of ["LICENSE", "NOTICE", "LICENSING.md", "README.md"]) copyFileSync(join(root, file), join(checkout, file));
+    copyFileSync(join(root, "scripts", "check-oss.mjs"), join(checkout, "scripts", "check-oss.mjs"));
     copyFileSync(join(root, "scripts", "build-npm-package.mjs"), join(checkout, "scripts", "build-npm-package.mjs"));
     execFileSync(process.execPath, [join(checkout, "scripts", "build-npm-package.mjs")], { stdio: "pipe" });
     const manifest = JSON.parse(readFileSync(join(checkout, "release", "npm", "package.json"), "utf8"));
     expect(manifest.dependencies).toEqual(pins);
+    expect(manifest.name).toBe("rethos");
+    expect(manifest.bin).toEqual({ rethos: "cli.js" });
+    expect(manifest.files).not.toContain("enterprise");
+    expect(manifest.files).toContain("NOTICE");
   });
 
   it("stages the native tree in the Podman image where the server looks for it", () => {

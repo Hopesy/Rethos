@@ -227,7 +227,7 @@ describe("plans", () => {
       { kind: "note", text: "done" },
     ]);
     expect(lines).toEqual([
-      "# Create /var/lib/openmausbot/acme/.openmausbot mode 700 as omb-acme (use fleet --yes; never root chown on tenant paths)",
+      "# Create /var/lib/openmausbot/acme/.rethos mode 700 as omb-acme (use fleet --yes; never root chown on tenant paths)",
       "# Write /var/lib/openmausbot/acme/.openmausbot/config.json mode 600 as omb-acme (use fleet --yes; tenant content omitted)",
       "cat > /etc/openmausbot/instances/acme.env <<'OMB_EOF'",
       "OMB_PORT=8810",

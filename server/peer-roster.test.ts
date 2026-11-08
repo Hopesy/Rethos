@@ -157,7 +157,7 @@ describe("reach across departments", () => {
     expect(resolveTeammate([...fleet, sales], self, "@sales", undefined, lookedAfter)).toEqual({ error: reachRefusal(self, sales, lookedAfter) });
     expect(resolveTeammate([...fleet, { ...sales, hidden: true }], self, "Sales")).toMatchObject({ error: expect.stringContaining("No bot with id or name") });
     // Each member's own MausBot is nobody else's to share: asking for one stays "no such bot".
-    expect(resolveTeammate([...fleet, { ...sales, name: "MausBot", defaultBot: { person: "ada@acme.test" } }], self, "MausBot")).toMatchObject({ error: expect.stringContaining("No bot with id or name") });
+    expect(resolveTeammate([...fleet, { ...sales, name: "Rethos", defaultBot: { person: "ada@acme.test" } }], self, "Rethos")).toMatchObject({ error: expect.stringContaining("No bot with id or name") });
   });
 });
 

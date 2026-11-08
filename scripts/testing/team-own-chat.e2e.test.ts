@@ -79,7 +79,7 @@ if (!teamFixture) console.info("skipping the team own-chat e2e: the cloud fixtur
     // His own MausBot's main chat is his as well (server/host/mausbot-own-chat.ts); besides it, he opened one with Scout.
     const bots = (await team.as(tokens.ben!, "GET", "/api/bots")).body.bots as Array<{ threadId: string; defaultBot?: { person?: string } }>;
     const hisMausBot = bots.find((bot) => bot.defaultBot?.person === "ben@acme.test")!.threadId;
-    expect([...opened].sort(), "his MausBot's main chat and the one he opened with Scout").toEqual([hisMausBot, ownChatOf(await scoutAs("ben"), await chatsOf("ben"))].sort());
+    expect([...opened].sort(), "his Rethos's main chat and the one he opened with Scout").toEqual([hisMausBot, ownChatOf(await scoutAs("ben"), await chatsOf("ben"))].sort());
     const mine = opened.filter((threadId) => threadId !== hisMausBot);
     const second = (await team.pair({ email: "ben@acme.test", role: "admin" })).token!;
     // Another device: a page of its own that never made a conversation, signed in as Ben.

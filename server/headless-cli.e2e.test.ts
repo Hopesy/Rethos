@@ -43,7 +43,7 @@ afterAll(async () => {
   if (dir) await removeTempDir(dir);
 });
 
-describe("openmausbot headless: team apply → run --wait job → export", () => {
+describe("rethos headless: team apply → run --wait job → export", () => {
   let model: string;
   let lead: any;
   let priya: any;

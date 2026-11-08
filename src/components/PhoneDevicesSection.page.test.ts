@@ -63,7 +63,7 @@ describe("Phone & devices", () => {
     f.state = state({ enabled: true, routes: routes({ wifi: true, relay: true }), devices: [phone] });
     const html = page(true);
     expect(html).toContain("Your phone");
-    expect(html).toContain("Reaches this computer on Same Wi-Fi and anywhere through MausBot.");
+    expect(html).toContain("Reaches this computer on Same Wi-Fi and anywhere through Rethos.");
     expect(html).toContain(">Change<");
     expect(html).toContain(">Pair another device<");
     expect(html).not.toContain('data-route-row="wifi"');
@@ -77,7 +77,7 @@ describe("Pair a device", () => {
   it("says what it will turn on before anything listens", () => {
     const html = dialog();
     expect(html).toContain('data-pair-dialog="consent"');
-    expect(html).toContain("To reach this computer, MausBot will turn on:");
+    expect(html).toContain("To reach this computer, Rethos will turn on:");
     expect(html.match(/type="checkbox"/g)).toHaveLength(2);
     expect(html).toContain("You can turn these off any time in Phone &amp; devices.");
     expect(html).not.toContain("PAIRING_CODE_VIEW");
@@ -96,7 +96,7 @@ describe("route words", () => {
     expect(routeStateText(off, 0)).toBe("Off");
     expect(routeStateText({ on: true, since: NOV_7 }, 0)).toBe("On · waiting for a paired device");
     expect(reachLine({ routes: routes() })).toBe("No way in is on yet.");
-    expect(reachLine({ routes: routes({ tailscale: true, relay: true }) })).toBe("Reaches this computer on your tailnet and anywhere through MausBot.");
+    expect(reachLine({ routes: routes({ tailscale: true, relay: true }) })).toBe("Reaches this computer on your tailnet and anywhere through Rethos.");
   });
 });
 

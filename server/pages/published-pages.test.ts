@@ -46,11 +46,11 @@ function setup(options: { home?: boolean; quota?: number; selfHosted?: boolean; 
 }
 
 describe("publishing a page", () => {
-  it("asks the person to sign in to MausBot when this app has no account, and publishes nothing", async () => {
+  it("asks the person to sign in to Rethos when this app has no account, and publishes nothing", async () => {
     const f = setup();
     writeSite(join(f.work, "site"));
     const outcome = await f.publish({ path: "site" });
-    expect(outcome).toEqual({ status: 403, text: "Publishing a page needs a MausBot account. Sign in to MausBot in the app's Settings, then ask again." });
+    expect(outcome).toEqual({ status: 403, text: "Publishing a page needs a Rethos account. Sign in to Rethos in the app's Settings, then ask again." });
     expect(f.service.minted).toEqual([]);
     expect(f.cards).toEqual([]);
   });
@@ -86,7 +86,7 @@ describe("publishing a page", () => {
     const url = `https://${page}.mausbot.page/`;
     expect(outcome.text).toContain(`Published “Bake sale” at ${url}`);
     expect(outcome.text).toContain("This account now has 1 of 5 pages.");
-    expect(outcome.text.split("\n").at(-1)).toBe("Free pages carry a small “Made with MausBot” badge.");
+    expect(outcome.text.split("\n").at(-1)).toBe("Free pages carry a small “Made with Rethos” badge.");
     expect(f.cards).toEqual([{ threadId: "thread-1", id: "m1", text: `Published “Bake sale”: ${url} (1 of 5 pages)`,
       card: { state: "live", title: "Bake sale", pageId: page, url, usage: { pages: 1, limit: 5 } } }]);
     expect(Object.fromEntries(f.service.pages.get(page!)!.files)).toEqual(SITE);

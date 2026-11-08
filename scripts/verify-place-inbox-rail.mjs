@@ -12,7 +12,7 @@ import { setTimeout as delay } from "node:timers/promises";
 
 const option = (name) => { const at = process.argv.indexOf(name); return at === -1 ? undefined : process.argv[at + 1]; };
 if (process.env.GITHUB_ACTIONS !== "true" || process.platform !== "darwin") throw new Error("This check edits /etc/hosts and the system keychain: it runs on a disposable GitHub macOS runner only.");
-const APP = resolve(option("--app") ?? "release/mac-arm64/OpenMausBot.app");
+const APP = resolve(option("--app") ?? "release/mac-arm64/Rethos.app");
 const OUT = resolve(option("--out") ?? mkdtempSync(join(tmpdir(), "omb-rail-evidence-")));
 mkdirSync(OUT, { recursive: true });
 const ROOT = new URL("..", import.meta.url);
@@ -151,7 +151,7 @@ await import(${JSON.stringify(new URL("server/testing/fake-claude-cli.ts", ROOT)
     claude: { driver: "claudeAgent", displayName: "Claude", config: { cli } },
   } }));
 
-  const binary = join(APP, "Contents", "MacOS", "OpenMausBot");
+  const binary = join(APP, "Contents", "MacOS", "Rethos");
   assert.ok(existsSync(binary), `no app at ${binary}`);
   const appLog = join(OUT, "app.log");
   app = spawn(binary, ["--use-mock-keychain", `--remote-debugging-port=${DEBUG_PORT}`], { env: { ...process.env, HOME: home, OMB_DATA_DIR: dataDir, NODE_EXTRA_CA_CERTS: certFile }, stdio: ["ignore", "pipe", "pipe"] });

@@ -1361,7 +1361,7 @@ describe("§5/§2 ported from the delegation ledger", () => {
 
 describe("§2/§5 every turn a root", () => {
   const CARDS = ["msg-connector-1", "msg-secret-2"];
-  const CONNECTED = "OpenMausBot connection update: the user securely connected GitHub. Continue the task.";
+  const CONNECTED = "Rethos connection update: the user securely connected GitHub. Continue the task.";
 
   it("R-S1 a root ended on cards parks; answer(id) runs it again as the answered turn, cards cleared at dispatch", async () => {
     const w = world();
@@ -1808,7 +1808,7 @@ describe("§5 outward / §2 loop guard", () => {
     expect(ended).toMatchObject({ status: "failed", outcome: "interrupted", restarts: 0, executions: 1 });
     expect(ended.restart).toBeUndefined();
     expect(ended.outcomeDetail).toBe(`${INTERRUPTED_OUTWARD} sent an email (GMAIL_SEND_EMAIL), pushed (git push); not resumed, so nothing is done twice.`);
-    expect(ended.outcomeDetail!.startsWith("Interrupted by an OpenMausBot restart after it already")).toBe(true);
+    expect(ended.outcomeDetail!.startsWith("Interrupted by an Rethos restart after it already")).toBe(true);
     expect(ended.result).toBe(ended.outcomeDetail);
     expect(kinds(w, root.id)).toEqual(["enqueued", "started", "restart_reconciled", "settled", "reported"]);
     expect(w.store.events(root.id).map((e) => e.detail)).toEqual(["queued: root", "running: turn 1 (host), level auto", "failed: outward action done",

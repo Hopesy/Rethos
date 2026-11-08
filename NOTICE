@@ -100,3 +100,8 @@ Teams' display-name rule. Copyright 2025-2026 Vexa.ai Inc. and the Vexa
 contributors, used under the Apache License, Version 2.0
 (third_party/vexa/LICENSE). The adapted parts were rewritten in our own code;
 no Vexa file is included unmodified.
+
+Rethos modifications, 2026-11-08, by hopesy.
+Derived from OpenMausBot: proprietary enterprise sources removed; product
+branding, distribution metadata and OSS packaging checks updated.
+Original copyright and third-party attribution notices are retained above.

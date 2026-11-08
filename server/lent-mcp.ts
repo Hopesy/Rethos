@@ -112,11 +112,11 @@ export function lentLine(name: string, state: Exclude<LentState, { kind: "ready"
   const { computer, device } = state;
   const theirs = personal && device !== "computer" ? `your ${device} (${computer})` : computer;
   switch (state.kind) {
-    case "offline": return `${name} runs on ${theirs}, which is offline right now: OpenMausBot on it is closed, or the ${device} is asleep or off.`;
-    case "stopped": return `${name} runs on ${theirs}, which no longer lends itself to ${place}: OpenMausBot on it is paused or signed out.`;
-    case "never": return `${name} runs on ${theirs}, which isn't lent to ${place}: it works once OpenMausBot is open on that computer and signed in to ${place}.`;
-    case "outdated": return `${name} runs on ${theirs}, whose OpenMausBot is too old to run it for ${place}: update OpenMausBot on that ${device}.`;
-    case "no-terminal": return `${name} starts a program on ${theirs}, which doesn't let ${place} run programs right now: turn on "Let Clouds run commands on this ${device}" from the OpenMausBot icon on that ${device}.`;
+    case "offline": return `${name} runs on ${theirs}, which is offline right now: Rethos on it is closed, or the ${device} is asleep or off.`;
+    case "stopped": return `${name} runs on ${theirs}, which no longer lends itself to ${place}: Rethos on it is paused or signed out.`;
+    case "never": return `${name} runs on ${theirs}, which isn't lent to ${place}: it works once Rethos is open on that computer and signed in to ${place}.`;
+    case "outdated": return `${name} runs on ${theirs}, whose Rethos is too old to run it for ${place}: update Rethos on that ${device}.`;
+    case "no-terminal": return `${name} starts a program on ${theirs}, which doesn't let ${place} run programs right now: turn on "Let Clouds run commands on this ${device}" from the Rethos icon on that ${device}.`;
   }
 }
 
