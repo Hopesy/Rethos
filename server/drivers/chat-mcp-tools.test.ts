@@ -505,7 +505,7 @@ describe("Chat MCP session", () => {
       const f = bigFixture();
       const folder = workFolder();
       const elsewhere = workFolder();
-      symlinkSync(elsewhere, join(folder, SAVED_RESULTS_FOLDER));
+      symlinkSync(elsewhere, join(folder, SAVED_RESULTS_FOLDER), process.platform === "win32" ? "junction" : "dir");
       const result = await (await f.mount(false, false, undefined, folder)).execute("audit_write", { value: "test" }, f.controller.signal);
       expect(readdirSync(elsewhere)).toEqual([]);
       expect(result.text).toContain("[MCP result truncated at 50KB; request less output.]");
