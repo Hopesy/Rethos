@@ -164,12 +164,13 @@ Rethos 用 MCP 读取桌面当前可见界面。发送前确认聊天、输入�
 - VPS 桌面转发入口：`/home/zhouhl/rethos-desktop/cua-driver-desktop`。
 - SSH 配置启用了连接复用；新 MCP 会话可以复用已验证的桌面 SSH 连接。
 - 自定义 MCP 启动等待调整为 30 秒，适应跨 SSH 的初始化；内置工具维持 8 秒。
-- 已部署提交 `14145b0084d2e8f4195ac17e004e5377ab45d3c4`；镜像摘要 `sha256:b426456be8c06862c80c7781178b8969350c27aaa3ae2c7c5e88f972513ac7cd`。
-- 发布记录：[Actions 42557196790](https://github.com/Hopesy/Rethos/actions/runs/42557196790)。
+- 已部署提交 `effd6a98280307eec9fe072a3b4f3ac4c57a318c`；镜像摘要 `sha256:88c6f1a013b060c33ad9dba9c036c681ec672942cd8de29fc42248ae2819e06b`。
+- 发布记录：[Actions 42567245050](https://github.com/Hopesy/Rethos/actions/runs/42567245050)。
 - 正式机器人说明与工具选择保存在 `/home/zhouhl/rethos/production-desktop-monitor.md`、`desktop-team.yaml`，已通过 `rethos team apply` 写入持久化配置。
 - Hermes 迁移备份：`/home/zhouhl/rethos-backups/hermes-before-rethos-20261108-115245/`。
 - 首次 Rethos 升级备份：`/home/zhouhl/rethos-backups/rethos-before-update-20261108-162452/`。
 - 设置说明更新前备份：`/home/zhouhl/rethos-backups/rethos-before-copy-cleanup-20261109-034324/`，含数据卷、Compose 与原镜像配置。
+- 帮助提示与 AI 配置修复前备份：`/home/zhouhl/rethos-backups/rethos-before-settings-refinement-20261109-053155/`。
 
 保留上述备份的受限权限。备份包含凭据和历史数据。已有 `wb.hopesy.cc` 模型服务继续独立运行。
 
@@ -188,6 +189,8 @@ Windows 隧道改用无窗口 SSH 子进程，连接输出保存在 `%LOCALAPPDA
 兼容迁移时使用的 `wb` 实例 ID，服务器按实际服务配置返回展示信息，保留机器人、会话和默认模型的引用。服务默认模型是该服务的回退值，已有机器人的模型选择继续沿用各自设置。密钥只接收写入，配置响应仅包含是否已保存。服务正被任务使用时，保存等待该任务完成后重试。
 
 隔离验收使用本地模拟模型服务，覆盖保存后重新打开、模型刷新、密钥保留、旧实例 ID、忙碌保护及非法地址。浏览器验收覆盖悬停、Esc、触屏点击和 390px 下的帮助提示与编辑表单，过程证据位于 `.Rethos-temp/settings-refinement/`。
+
+2026-11-09 北京时间 13:32 已部署到 VPS。AMD64/ARM64 镜像构建与容器验收全部通过，服务健康检查及 doctor 均通过。正式网页确认 `wb` 显示 `https://wb.hopesy.cc/v1`、`gpt-6.1-sol` 和 10 个模型；“管理”与“API 密钥”中的编辑入口均加载同一项配置。生产仅做读取和打开编辑界面的验收。备份与当前文件对比确认模型配置、默认模型选择、自定义桌面 MCP 配置逐项相同。
 
 ## 本次迁移与验收
 
