@@ -6,6 +6,9 @@ import { EngineCard, EngineSections, RefreshEngines, engineReady } from "./Engin
 import { cn } from "@/lib/cn";
 import { useMenuMotion } from "./MenuMotion";
 import { t } from "@/lib/i18n";
+import { engineDisplayName } from "@/lib/engine-name";
+import { isCustomOpenAiEndpoint } from "../../shared/openai-endpoint";
+import { CustomModelSettings } from "./CustomModelSettings";
 import { ApiKeyEngineManage, EngineSetup, EngineUpdateNotice, EngineWarningNotice, isApiKeyEngine } from "./EngineSetup";
 import { AppCopyNotice } from "./EngineAppCopy";
 import { forgetAppCopySwitches } from "@/state/engine-install";
@@ -105,7 +108,7 @@ function CustomPicker({ instance, cliDefault, onClose, onSaved }: {
             setSelected(e.target.value);
             setManual("");
           }}
-          aria-label={t("engines.detectedAria", { name: instance.displayName })}
+          aria-label={t("engines.detectedAria", { name: engineDisplayName(instance) })}
           disabled={busy}
         >
           <option value="">{t("engines.selectBinary")}</option>
@@ -125,7 +128,7 @@ function CustomPicker({ instance, cliDefault, onClose, onSaved }: {
           save();
         }}
         placeholder={candidates?.length ? t("engines.manualPath") : "/absolute/path/to/cli"}
-        aria-label={t("engines.customAria", { name: instance.displayName })}
+        aria-label={t("engines.customAria", { name: engineDisplayName(instance) })}
         spellCheck={false}
         disabled={busy}
         className="w-full rounded-lg border border-hairline/40 bg-inset px-3 py-2 font-mono text-[12px] text-ink placeholder:font-sans placeholder:text-ink-secondary focus:outline-none disabled:opacity-50"
@@ -354,7 +357,7 @@ function AntigravityAccountAction({ instance, action }: { instance: InstanceInfo
       {usedBy > 0 && <p className="text-[11px] text-ink-secondary">{t("accounts.inUse", { count: String(usedBy) })}</p>}
     </div>
     {error && <p role="alert" className="text-[12px] text-danger">{error}</p>}
-    <ConfirmDialog open={confirming} title={t(remove ? "accounts.removeTitle" : "accounts.signOutTitle", { name: instance.displayName })}
+    <ConfirmDialog open={confirming} title={t(remove ? "accounts.removeTitle" : "accounts.signOutTitle", { name: engineDisplayName(instance) })}
       body={t(remove ? "accounts.removeBodyAntigravity" : "accounts.signOutBody")}
       confirmLabel={label} tone="neutral" pending={running} onCancel={() => { if (!running) setConfirming(false); }} onConfirm={() => void run()} />
   </>;
@@ -440,7 +443,7 @@ function SimpleEngines({ rows, isReady, renderEngine, more }: {
                   <span className="flex min-w-[min(100%,15rem)] flex-1 items-center gap-3">
                     <InstanceProviderMark instance={instance} size={14} subtle />
                     <span className="flex min-w-0 flex-col gap-0.5">
-                      <span className="truncate text-[14px] leading-5 text-ink">{instance.displayName}</span>
+                      <span className="truncate text-[14px] leading-5 text-ink">{engineDisplayName(instance)}</span>
                       <span className="truncate text-[13px] leading-[18px] text-ink-secondary">{simpleStatus(instance, ready)}</span>
                     </span>
                   </span>
@@ -501,7 +504,7 @@ export function HiddenEngines() {
       <div className="mt-2 flex flex-col gap-1.5">
         {hidden.map((entry) => (
           <div key={entry.instanceId} className="flex items-center justify-between gap-3 rounded-lg border border-hairline/40 bg-inset px-3 py-2">
-            <span className="min-w-0 truncate text-[13px] text-ink">{entry.displayName}</span>
+            <span className="min-w-0 truncate text-[13px] text-ink">{engineDisplayName(entry)}</span>
             <button type="button" data-unhide-engine={entry.instanceId} disabled={busy !== null} onClick={() => unhide(entry.instanceId)}
               className="shrink-0 text-[12px] font-medium text-accent hover:underline disabled:opacity-50">
               {busy === entry.instanceId ? t("engines.unhiding") : t("engines.unhide")}
@@ -518,7 +521,7 @@ export function EnginesSettings({ simple = false, more }: { simple?: boolean; mo
   const { state } = useStore();
   // Leaving Settings ends the "now uses the copy OpenMausBot installed" lines.
   useEffect(() => forgetAppCopySwitches, []);
-  const listed = state.instances.filter((i) => i.readOnly || i.cli !== undefined || i.cliDefault !== undefined || i.snapshot.state === "unavailable" || isApiKeyEngine(i) || i.claudeEndpoint !== undefined);
+  const listed = state.instances.filter((i) => (i.readOnly || !isCustomOpenAiEndpoint(i.instanceId, i.driverKind)) && (i.readOnly || i.cli !== undefined || i.cliDefault !== undefined || i.snapshot.state === "unavailable" || isApiKeyEngine(i) || i.claudeEndpoint !== undefined));
   // A provider's accounts share one card, which takes the place of its first account.
   const groups = new Map<AccountGroup, InstanceInfo[]>();
   for (const instance of listed) {
@@ -544,12 +547,14 @@ export function EnginesSettings({ simple = false, more }: { simple?: boolean; mo
   };
 
   if (simple && more) return <>
+    <CustomModelSettings />
     <SimpleEngines rows={rows} isReady={isReady} renderEngine={renderEngine} more={more} />
     {orphanEndpoints && <div className="px-4"><ClaudeEndpoints /></div>}
   </>;
 
   return (
     <div className="flex min-w-0 flex-col gap-6 pb-2">
+      <CustomModelSettings />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1 basis-60 space-y-2 px-4">
           <h1 className="text-[22px] font-semibold tracking-tight text-ink">{t("settings.engines.title")}</h1>

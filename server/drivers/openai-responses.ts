@@ -33,12 +33,12 @@ export function isOpenAIAddress(apiUrl: string): boolean {
 
 /** Each model only moves forward (chat, responses, chat-reasoning-off), so a resend can never loop. A call without tools
  * never meets the refusal and stays on Chat Completions. */
-export function createModelRoutes(apiUrl: string) {
+export function createModelRoutes(apiUrl: string, protocol?: "chat" | "responses") {
   const servesResponses = isOpenAIAddress(apiUrl);
   const routes = new Map<string, ModelRoute>();
   const noSummaries = new Set<string>();
   return {
-    routeFor: (model: string, hasTools: boolean): ModelRoute => hasTools ? routes.get(model) ?? "chat" : "chat",
+    routeFor: (model: string, hasTools: boolean): ModelRoute => protocol ?? (hasTools ? routes.get(model) ?? "chat" : "chat"),
     summaries: (model: string) => !noSummaries.has(model),
     /** False when the model has nothing left to try. */
     advance(model: string, refusal: RouteRefusal): boolean {
@@ -48,6 +48,7 @@ export function createModelRoutes(apiUrl: string) {
         noSummaries.add(model);
         return true;
       }
+      if (protocol) return false;
       if (refusal === "tools-need-responses" && route === "chat") {
         routes.set(model, servesResponses ? "responses" : "chat-reasoning-off");
         return true;

@@ -38,6 +38,12 @@ afterEach(() => {
 });
 
 describe("locale draft validation", () => {
+  it("keeps Simplified Chinese complete with every interpolation parameter", () => {
+    const source = JSON.parse(readFileSync(new URL("../src/locales/en.json", import.meta.url), "utf8"));
+    const chinese = JSON.parse(readFileSync(new URL("../src/locales/zh.json", import.meta.url), "utf8"));
+    expect(validateTranslationCatalog(source, chinese, { requireComplete: true })).toEqual([]);
+  });
+
   it("accepts every shipped catalog", () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
     try {

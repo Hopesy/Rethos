@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Archive, ChartNoAxesColumn, Cloud, CloudDownload, Coins, Download, FlaskConical, KeyRound, LockKeyhole, Monitor, Palette, ScrollText, Search, Settings, Sparkles, TabletSmartphone, Terminal, User, Users, X, Building2, Zap, BookOpen, ImagePlus } from "lucide-react";
+import { Archive, ChartNoAxesColumn, CloudDownload, Coins, Download, FlaskConical, KeyRound, LockKeyhole, Monitor, Palette, ScrollText, Search, Settings, Sparkles, TabletSmartphone, Terminal, User, X, Building2, Zap, BookOpen, ImagePlus } from "lucide-react";
 import { useStore, type AppSettingsSection } from "@/state/store";
 import { skillsLibraryEnabled } from "@/lib/feature-flags";
 import { type LocaleKey } from "@/locales";
@@ -22,11 +22,9 @@ import { LocalComputerSection } from "./LocalComputerSection";
 import { PhoneDevicesSection } from "./PhoneDevicesSection";
 import { pageIsThisComputer } from "@/lib/companion-bridge";
 import { ServerPairingCard } from "./ServerPairingCard";
-import { PeopleSection } from "./PeopleSection";
 import { ActivitySection } from "./ActivitySection";
-import { AccessOverview } from "./bot-access/AccessOverview";
 import { useOwnerOrAdmin } from "@/lib/use-owner-or-admin";
-import { currentPhonePairingTarget, phonePairingSettingsAction } from "@/lib/phone-pairing";
+import { currentPhonePairingTarget } from "@/lib/phone-pairing";
 import { CustomDomainSettings } from "./CustomDomainSettings";
 import { BuiltInBrowserRow, ServerSitesRow } from "./BrowserSettingsRows";
 import { LoginsSettings } from "./LoginsSettings";
@@ -35,16 +33,10 @@ import { ConnectedWorkspacesSettings } from "./ConnectedWorkspacesSettings";
 import { PlaceLookCard } from "./PlaceLookCard";
 import { ChromeRailRow } from "./ChromeRailToggle";
 import { WindowFrameRow } from "./WindowFrameRow";
-import { OrganizationSettings } from "./OrganizationSettings";
-import { CloudAccountSettings } from "./CloudAccountSettings";
-import { ProSettingsCard } from "./ProIntroduction";
-import { CloudUsageSettings } from "./CloudUsageMeter";
 import { Card, SettingsGroup, SIMPLE_BUTTONS } from "./SettingsPrimitives";
 import { shortcutLabel } from "./ShortcutHint";
 import { UsageSection } from "./UsageSection";
 import { SkillsSection } from "./SkillsSection";
-import { LicenseExpiryBanner } from "./LicenseExpiryBanner";
-import { WorkspacesSection, workspacesAvailable } from "./WorkspacesSection";
 import { SkinPicker } from "./SkinPicker";
 import { ThemeRow } from "./ThemeRow";
 import { ChatWidthRow, FontRow, SidebarToolsLayoutRow } from "./AppearanceSelectRows";
@@ -57,7 +49,6 @@ import { ThreadCleanupSettings } from "./ThreadCleanupSettings";
 import { PinnedPanelsSettings } from "./PinnedPanelsSettings";
 import { DefaultBotSettings } from "./NewBotDialog";
 import { WorkspaceBackupSettings } from "./WorkspaceBackupSettings";
-import { CompanyBackupSettings } from "./CompanyBackupSettings";
 import { ImportSettings } from "./ImportSettings";
 import { cn } from "@/lib/cn";
 import { scrollWithin } from "@/lib/scroll-within";
@@ -99,15 +90,10 @@ export const SECTIONS: Array<{
   { id: "desktopWorkspaces", group: "computers", labelKey: "settings.section.desktopWorkspaces", icon: Building2, keywords: ["workspace", "cloud", "hosted", "vps", "server", "servers", "connect", "pair", "switch", "local"] },
   { id: "computer", group: "computers", labelKey: "settings.section.computer", icon: Monitor, keywords: ["vm", "virtual", "desktop", "browser", "built-in browser", "profiles", "browser profiles"] },
   { id: "logins", group: "computers", labelKey: "settings.section.logins", icon: LockKeyhole, keywords: ["logins", "login", "passwords", "password", "sign in", "2fa", "one-time code", "totp", "fill_login", "1password", "vault"] },
-  { id: "cloudAccount", group: "account", labelKey: "settings.section.cloudAccount", icon: Cloud, keywords: ["cloud", "my cloud", "account", "personal", "sign in", "pro", "subscription", "billing", "sync", "send", "this computer", "bots", "logins", "1password"] },
-  { id: "organization", group: "account", labelKey: "settings.section.organization", icon: Building2, keywords: ["company", "organization", "organisation", "sign in", "enroll", "managed", "models", "disconnect"] },
   { id: "usage", group: "account", labelKey: "settings.section.usage", icon: Coins, keywords: ["tokens", "cost", "billing", "plan", "quota", "remaining", "weekly", "5-hour", "model", "used"] },
   { id: "backups", group: "account", labelKey: "settings.section.backups", icon: Archive, keywords: ["export", "import", "restore", "full backup", "password", "recovery"] },
   { id: "import", group: "account", labelKey: "settings.section.import", icon: Download, keywords: ["import", "grok", "grok bot", "move", "cursor", "claude code", "codex", "gemini", "skills", "mcp", "tools", "bring"] },
-  { id: "people", group: "account", labelKey: "settings.section.people", icon: Users, keywords: ["people", "users", "invite", "sign in", "members", "admins", "access"] },
-  { id: "botAccess", group: "account", labelKey: "settings.section.botAccess", icon: Users, keywords: ["access", "share", "sharing", "who can", "view", "chat", "edit", "permissions", "team", "members", "bots"] },
   { id: "activity", group: "account", labelKey: "settings.section.activity", icon: ScrollText, keywords: ["activity", "audit", "log", "history", "who changed", "approvals", "decisions", "admin"] },
-  { id: "workspaces", group: "account", labelKey: "settings.section.workspaces", icon: Building2, keywords: ["clients", "tenants", "fleet", "workspaces", "installation", "installations"] },
   { id: "experimental", group: "account", labelKey: "settings.section.experimental", icon: FlaskConical, keywords: ["early", "preview", "learn", "skill", "authoring"] },
 ];
 
@@ -120,12 +106,11 @@ export type SimpleSettingsPage = {
 };
 
 export const SIMPLE_PAGES: SimpleSettingsPage[] = [
-  { id: "general", labelKey: "settings.section.general", icon: Settings, sections: ["general", "appearance", "people", "import", "organization", "activity"],
+  { id: "general", labelKey: "settings.section.general", icon: Settings, sections: ["general", "appearance", "import", "activity"],
     keywords: ["account", "theme", "looks", "open at login", "startup", "analytics", "advanced mode"] },
-  { id: "botAccess", labelKey: "settings.section.botAccess", icon: Users, sections: ["botAccess"] },
   { id: "ai", labelKey: "settings.group.ai", icon: Sparkles, sections: ["engines", "connections"] },
   { id: "computer", labelKey: "settings.simple.page.computer", icon: Monitor, sections: ["companion", "desktopWorkspaces", "computer", "logins"] },
-  { id: "billing", labelKey: "settings.simple.page.billing", icon: ChartNoAxesColumn, sections: ["usage", "cloudAccount"], keywords: ["billing", "included", "allowance", "cloud hours", "voice"] },
+  { id: "billing", labelKey: "settings.simple.page.billing", icon: ChartNoAxesColumn, sections: ["usage"], keywords: ["usage", "tokens", "cost", "limits"] },
   { id: "updates", labelKey: "settings.simple.page.updates", icon: CloudDownload, sections: ["updates"],
     keywords: ["update", "version", "release", "product updates", "newsletter", "email updates", "welcome", "tour", "diagnostics", "logs", "support"] },
 ];
@@ -204,12 +189,7 @@ export function SettingsModal() {
     : entry);
   const baseSections = sectionsHere.filter((entry) => !remoteActive || entry.id === "companion" || entry.id === "appearance" || entry.id === "desktopWorkspaces")
     .filter((entry) => entry.id !== "desktopWorkspaces" || Boolean(window.ogb?.environments))
-    .filter((entry) => entry.id !== "organization" || Boolean(window.ogb?.organization))
-    .filter((entry) => entry.id !== "cloudAccount" || Boolean(window.ogb?.cloudAccount || (window.ogb?.cloudPlan && state.config?.cloudHome === true)))
-    .filter((entry) => entry.id !== "workspaces" || workspacesAvailable(state.config))
-    .filter((entry) => entry.id !== "people" || (!window.ogb && state.config?.cloudHome !== true))
     .filter((entry) => entry.id !== "activity" || (!window.ogb && ownerOrAdmin === true))
-    .filter((entry) => entry.id !== "botAccess" || (Boolean(state.config?.team) && ownerOrAdmin === true));
   const availableSections = baseSections.filter((entry) => entry.id !== "skills" || skillsLibraryEnabled(state.config));
   const visibleSections = availableSections.filter((entry) => sectionMatches(entry, q));
 
@@ -332,23 +312,12 @@ export function SettingsModal() {
     switch (id) {
       case "desktopWorkspaces":
         return <><ConnectedWorkspacesSettings />{remoteAccess.client}</>;
-      case "organization":
-        return window.ogb?.organization && !remoteActive ? <OrganizationSettings /> : null;
-      case "cloudAccount":
-        return (window.ogb?.cloudAccount || (window.ogb?.cloudPlan && state.config?.cloudHome === true)) && !remoteActive
-          ? <CloudAccountSettings linkRequest={state.appSettingsCloudLink} cloudHome={state.config?.cloudHome === true} teamHome={state.config?.team}
-            onConnectPhone={() => dispatch(phonePairingSettingsAction())} onAddCloud={advanced ? () => dispatch({ type: "openCloudAdd", source: "app_settings" }) : undefined}
-            onSignIn={() => dispatch({ type: "openCloudAdd", source: "app_settings", signIn: true })} />
-          : null;
       case "general":
         return (
           <>
             <AdvancedModeRow />
             <DefaultBotSidebarRow />
             <TalkShortcutRow />
-
-            <ProSettingsCard />
-            <CloudUsageSettings />
             <Card title={t("settings.profile.title")} subtitle={t("settings.profile.sharedSubtitle")}>
               <ProfileFields />
             </Card>
@@ -413,7 +382,7 @@ export function SettingsModal() {
       case "decisionModel": return <AdminOnly><DecisionModelSettings /></AdminOnly>;
       case "imageGeneration": return <AdminOnly><ImageGenerationSettings /></AdminOnly>;
       case "engines": return <AdminOnly><EnginesSettings /></AdminOnly>;
-      case "backups": return <AdminOnly><WorkspaceBackupSettings /><CompanyBackupSettings /></AdminOnly>;
+      case "backups": return <AdminOnly><WorkspaceBackupSettings /></AdminOnly>;
       case "import": return <AdminOnly><ImportSettings /></AdminOnly>;
       case "companion":
         return <>{remoteAccess.companion}{remoteAccess.pairing}{remoteAccess.domain}{window.ogb?.environments ? null : remoteAccess.client}</>;
@@ -425,14 +394,8 @@ export function SettingsModal() {
         return <AdminOnly note="settings.adminOnly.usage"><UsageSection /></AdminOnly>;
       case "skills":
         return skillsLibraryEnabled(state.config) ? <SkillsSection /> : null;
-      case "people":
-        return <PeopleSection />;
       case "activity":
         return <ActivitySection />;
-      case "botAccess":
-        return <AccessOverview />;
-      case "workspaces":
-        return <WorkspacesSection />;
       default:
         return null;
     }
@@ -443,10 +406,10 @@ export function SettingsModal() {
     switch (page.id) {
       case "general": return looks
         ? <SimpleLooksPage onBack={() => { setLooks(false); setReveal("appearance"); }} />
-        : <SimpleGeneralPage has={has} peopleOpen={section === "people"} onLooks={() => setLooks(true)} />;
+        : <SimpleGeneralPage has={has} onLooks={() => setLooks(true)} />;
       case "ai": return <SimpleAiPage has={has} disclose={disclose} connections={renderSection("connections")} />;
       case "computer": return <SimpleComputerPage has={has} remoteAccess={remoteAccess} servers={<ConnectedWorkspacesSettings />} disclose={disclose} />;
-      case "billing": return <SimpleBillingPage has={has} disclose={disclose} cloudAccount={renderSection("cloudAccount")} />;
+      case "billing": return <SimpleBillingPage has={has} disclose={disclose} />;
       case "updates": return <SimpleUpdatesPage remoteActive={remoteActive} />;
       default:
         return page.sections.map((id) => <section key={id} data-settings-block={id} className="flex scroll-mt-4 flex-col gap-4">{renderSection(id)}</section>);
@@ -576,7 +539,6 @@ export function SettingsModal() {
                 "[&_.uppercase]:normal-case [&_.uppercase]:tracking-normal",
               )}
             >
-              <LicenseExpiryBanner config={state.config} />
               {currentPage ? renderSimplePage(currentPage) : null}
             </div>
           </div>
@@ -681,7 +643,6 @@ export function SettingsModal() {
           </div>
 
           <div ref={scrollRef} className="flex flex-1 flex-col gap-4 overflow-y-auto px-3 py-4 sm:px-5 sm:pb-5">
-            <LicenseExpiryBanner config={state.config} />
             {renderSection(section)}
           </div>
         </div>

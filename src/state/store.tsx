@@ -1536,6 +1536,7 @@ export function reducer(state: AppState, action: Action): AppState {
     case "toggleNotificationsPinned":
       return { ...state, notificationsPinned: action.pinned ?? !state.notificationsPinned };
     case "toggleAppSettings": {
+      if (action.section && ["cloudAccount", "organization", "people", "botAccess", "workspaces"].includes(action.section)) return state;
       const open = action.open ?? !state.appSettingsOpen;
       return {
         ...state,
@@ -1559,11 +1560,10 @@ export function reducer(state: AppState, action: Action): AppState {
       };
     }
     case "openCloudAdd":
-      return { ...state, cloudAdd: state.cloudAdd ?? { source: action.source, ...(action.signIn ? { signIn: true as const } : {}) }, cloudHowTo: false };
+    case "cloudHowTo":
+      return state;
     case "closeCloudAdd":
       return state.cloudAdd ? { ...state, cloudAdd: null } : state;
-    case "cloudHowTo":
-      return state.cloudHowTo === action.open ? state : { ...state, cloudHowTo: action.open };
     case "toggleTour": {
       const open = action.open ?? !state.tourOpen;
       return { ...state, tourOpen: open, appSettingsOpen: open ? false : state.appSettingsOpen };

@@ -133,7 +133,7 @@ export function CustomDomainSettings() {
   };
 
   return (
-    <Card title={t("settings.domain.title")} help={<>{t("settings.domain.subtitle")}<br />{t("settings.domain.httpsNeeded")}</>}>
+    <Card compact title={t("settings.domain.title")} help={<>{t("settings.domain.subtitle")}<br />{t("settings.domain.httpsNeeded")}</>}>
       <div className="space-y-3" data-custom-domain-settings>
         {busy === "loading" && <p role="status" className="flex items-center gap-2 text-[13px] text-ink-secondary"><Loader2 size={14} className="animate-spin" />{t("settings.domain.loading")}</p>}
         {status && !status.supported && <p className="text-[13px] leading-relaxed text-ink-secondary">{t("settings.domain.serverOnly")}</p>}

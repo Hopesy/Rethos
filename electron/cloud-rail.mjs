@@ -146,7 +146,7 @@ export function createAddedCloudNotice({ Notification, focused, sheetOpen, open,
 const plain = value => (typeof value === "string" ? value : "");
 /** A circle as the rail's page sees it: never the Cloud's id or which account main switches to, which only main acts on. */
 const seen = ({ cloudId: _cloudId, account: _account, ...place }) => place;
-const CHOICES = Object.freeze(["cloud", "link", "address"]);
+const CHOICES = Object.freeze(["link", "address"]);
 
 /**
  * The rail's and ＋'s channels, each behind main's guard (`guard`: the window's page, or the rail's own). Only the rail's
@@ -172,7 +172,7 @@ export function installCloudRail({ ipcMain, guard, trusted, lists = trusted, bes
   const view = async () => addCloudView(account()?.state() ?? null, account() ? await account().offer().catch(() => null) : null);
   // ＋'s choices: main's, and a new organization while this account runs a Team plan's organizations (unless the Admin has
   // turned adding them off).
-  const choices = () => { const organizations = account()?.state().organizations; return { ...add.choices(), organization: Boolean(organizations) && organizations.blocked !== "off", local: local?.creatable() === true }; };
+  const choices = () => ({ ...add.choices(), cloud: false, organization: false, account: false, local: local?.creatable() === true });
   ipcMain.handle("workspaces:places", guard((event) => (lists(event) ? { places: places().map(seen), add: choices() }
     : { places: [], add: { cloud: false, link: false, address: false, organization: false }, ...(beside() ? { beside: true } : {}) })));
   // A Cloud the Admin is still making has no saved place: its own screen opens, by main's word for which Cloud it is.

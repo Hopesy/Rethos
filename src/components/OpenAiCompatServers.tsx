@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Loader2, Pencil, Plus, RotateCw, Trash2 } from "lucide-react";
-import { OpenAiEndpointSettings } from "./OpenAiEndpointSettings";
+import { Loader2, Plus, RotateCw, Trash2 } from "lucide-react";
 import { api, useStore, type InstanceInfo } from "@/state/store";
 import { t } from "@/lib/i18n";
 import { keySaved } from "@/lib/product-events";
@@ -83,7 +82,6 @@ function AddedServers({ servers }: { servers: Array<InstanceInfo & { url?: strin
   const [models, setModels] = useState("");
   const [busy, setBusy] = useState<"add" | "other" | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const ready = Boolean(name.trim() && url.trim() && key.trim());
 
   const run = (kind: "add" | "other", request: () => Promise<{ instances?: unknown }>, onDone?: () => void) => {
@@ -118,8 +116,7 @@ function AddedServers({ servers }: { servers: Array<InstanceInfo & { url?: strin
       <p className="mb-2 text-[12px] leading-4 text-ink-secondary">{t("apiInstances.subtitle")}</p>
       {servers.length === 0 && <p className="text-[12px] leading-4 text-ink-secondary">{t("apiInstances.empty")}</p>}
       {servers.map((server) => (
-        <div key={server.instanceId} className="mb-1.5">
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-hairline/60 bg-inset px-3 py-1.5">
+        <div key={server.instanceId} className="mb-1.5 flex items-center justify-between gap-2 rounded-lg border border-hairline/60 bg-inset px-3 py-1.5">
           <div className="min-w-0 flex-1">
             <div className="truncate text-[12px] text-ink">{server.displayName}</div>
             {server.url && <div className="truncate font-mono text-[11px] text-ink-secondary">{server.url}</div>}
@@ -129,8 +126,6 @@ function AddedServers({ servers }: { servers: Array<InstanceInfo & { url?: strin
             disabled={busy !== null}
             onPick={(minutes) => run("other", () => saveReplyWait(server.instanceId, minutes))}
           />
-          {server.openaiEndpoint && !server.readOnly && <button type="button" className={ICON_BUTTON} aria-label={t("apiInstances.editFor", { name: server.displayName })}
-            disabled={busy !== null} onClick={() => setEditingId(editingId === server.instanceId ? null : server.instanceId)}><Pencil size={13} /></button>}
           <button
             type="button"
             onClick={() => run("other", () => api(`/api/instances/${encodeURIComponent(server.instanceId)}/refresh-models`, { method: "POST" }))}
@@ -151,8 +146,6 @@ function AddedServers({ servers }: { servers: Array<InstanceInfo & { url?: strin
           >
             <Trash2 size={13} aria-hidden="true" />
           </button>
-        </div>
-        {editingId === server.instanceId && <OpenAiEndpointSettings instance={server} initialEditing className="mt-1.5" />}
         </div>
       ))}
       <div className="mt-2 flex flex-col gap-1.5">

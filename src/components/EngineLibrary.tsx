@@ -4,6 +4,7 @@ import { ArrowUpRight, Check, ChevronDown, RefreshCw } from "lucide-react";
 import { useStore, type InstanceInfo } from "@/state/store";
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
+import { engineDisplayName } from "@/lib/engine-name";
 import { InstanceProviderMark } from "./ProviderIcons";
 
 export function engineReady(instance: InstanceInfo): boolean {
@@ -33,7 +34,7 @@ export function EngineCard({ instance, children, summary, bare = false }: { inst
   if (bare) return <div data-engine-card={instance.instanceId} className="min-w-0">{children}</div>;
   const ready = summary?.ready ?? engineReady(instance);
   const email = instance.snapshot.authenticated === true ? instance.snapshot.account?.email : undefined;
-  const title = summary?.title ?? instance.displayName;
+  const title = summary?.title ?? engineDisplayName(instance);
   const subtitle = summary?.subtitle ?? email ?? (instance.access === "custom"
     ? t("engines.library.custom")
     : providerName(instance));

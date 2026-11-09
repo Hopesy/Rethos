@@ -52,7 +52,7 @@ describe("Settings → Remote access: server pairing card visibility", () => {
 
   it("on an OMB Cloud home, which is personal, tells the card so and offers no People section to invite anyone", () => {
     vi.stubGlobal("window", {});
-    expect(render()).toContain(">People<");
+    expect(render()).not.toContain(">People<");
     fixture.config = { cloudHome: true };
     const html = render();
     expect(html).toContain("SERVER_PAIRING_CARD_MARKER cloud");

@@ -34,27 +34,25 @@ export function VpsComputersCard({
 }) {
   return (
     <Card
+      compact
       title={t("vm.vps.title")}
       help={t("vm.vps.subtitle")}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <div className="text-[12px] text-ink-secondary">
-          {configured === true
+      status={configured === true
             ? t("vm.vps.sshHost", { alias: aliases.join(", ") || t("vm.vps.configuredFallback") })
             : configured === false
               ? <>{t("vm.vps.needsAlias")} <KeysLink id="vps" /></>
               : t("vm.vps.refreshHint")}
-        </div>
+      actions={
         <button
           type="button"
           onClick={onRefresh}
           disabled={loading || removingName !== null}
           aria-label={t("vm.vps.refreshAria")}
-          className="flex shrink-0 items-center gap-1.5 rounded-lg border border-hairline/40 px-2.5 py-1.5 text-[12px] text-ink-secondary hover:bg-control hover:text-ink disabled:opacity-40"
+          className="settings-action"
         >
           <RefreshCw size={12} className={cn(loading && "animate-spin")} /> {t("vm.refresh")}
-        </button>
-      </div>
+        </button>}
+    >
 
       {error && <div role="alert" className="mt-3 rounded-lg bg-danger/10 px-3 py-2 text-[12px] text-danger">{error}</div>}
 

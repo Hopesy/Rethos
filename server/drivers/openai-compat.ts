@@ -72,6 +72,7 @@ export function isOpenAIChatModel(id: string): boolean {
 }
 
 export interface OpenAICompatConfig {
+  protocol?: import("../../shared/openai-endpoint.ts").OpenAiProtocol;
   tools?: boolean;
   url: string;
   apiKeyEnv: string;
@@ -125,6 +126,7 @@ function loopbackLmStudioV1Url(baseUrl: string): string | null {
 
 function decodeConfig(raw: unknown): OpenAICompatConfig {
   const config = (raw ?? {}) as Record<string, unknown>;
+  if (config.protocol !== undefined && config.protocol !== "chat" && config.protocol !== "responses") throw new Error("Invalid OpenAI protocol.");
   if (config.tools !== undefined && typeof config.tools !== "boolean") throw new Error("tools must be a boolean");
   if (config.managedModels !== undefined && (!Array.isArray(config.managedModels) || !config.managedModels.length || config.managedModels.some(model => typeof model !== "string" || !model.trim()))) throw new Error("Invalid managed models.");
   const ownKey = typeof config.apiKeyEnv === "string" && OWN_KEY_ENVS.has(config.apiKeyEnv);
@@ -132,6 +134,7 @@ function decodeConfig(raw: unknown): OpenAICompatConfig {
   if (config.replyWaitMinutes !== undefined && !isReplyWait(config.replyWaitMinutes)) throw new Error(`replyWaitMinutes must be a whole number from 1 to ${MAX_REPLY_WAIT_MINUTES}`);
   const envUrl = ownKey ? undefined : process.env.OPENAI_COMPAT_URL;
   return {
+    ...(config.protocol ? { protocol: config.protocol as "chat" | "responses" } : {}),
     ...(config.tools !== undefined ? { tools: config.tools as boolean } : {}),
     ...(config.managedModels ? { managedModels: config.managedModels as string[] } : {}),
     ...(isReplyWait(config.replyWaitMinutes) ? { replyWaitMinutes: config.replyWaitMinutes } : {}),
@@ -184,7 +187,7 @@ export const OpenAICompatDriver: ProviderDriver<OpenAICompatConfig> = {
       : `no API key — set ${config.apiKeyEnv} or add it to the instance config`;
     const seeded = config.catalog === "openai" ? OPENAI_MODELS : DEFAULT_MODELS;
     let catalog: ModelCatalog = config.managedModels
-      ? { default: config.managedModels[0], options: config.managedModels.map(id => ({ id, label: id })) }
+      ? { default: config.model && config.managedModels.includes(config.model) ? config.model : config.managedModels[0], options: config.managedModels.map(id => ({ id, label: id })) }
       : config.model
       ? {
           default: config.model,
@@ -308,6 +311,7 @@ export const OpenAICompatDriver: ProviderDriver<OpenAICompatConfig> = {
       ...(servedModel ? { servedModel } : {}),
       apiKey,
       apiUrl: config.url,
+      protocol: config.protocol,
       tools: config.tools,
       computerUse: true,
       nudgeAnnouncedAction: true,

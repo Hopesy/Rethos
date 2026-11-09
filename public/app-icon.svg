@@ -1,4 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Rethos">
-  <rect width="1024" height="1024" rx="224" fill="#17191d"/>
-  <path d="M294 244h238c138 0 208 70 208 181 0 81-42 137-116 164l151 191H628L491 602h-76v178H294V244Zm121 109v144h109c58 0 89-24 89-72 0-47-31-72-89-72H415Z" fill="#f4f1eb"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1536" height="1536" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+<title id="title">CAT-07 · 眨眼小猫</title><desc id="desc">奶油色短耳圆脸小猫从蓝紫背景右下角探出，眨着一只眼睛，带一点小小笑意。</desc>
+<defs><clipPath id="tile"><rect width="1024" height="1024" rx="210"/></clipPath></defs><g clip-path="url(#tile)">
+<rect width="1024" height="1024" fill="#5E77D5"/>
+<path fill="#F5F2EC" d="M600 1134C347 1132 173 1029 174 834C174 698 226 608 288 558L274 408C271 373 295 358 321 379L447 470C528 434 610 417 693 420L797 317C824 290 849 304 858 337L884 469C1010 515 1080 624 1080 785C1080 1003 894 1140 600 1134Z"/>
+<path d="M429 706C436 687 454 682 471 695" fill="none" stroke="#3C3F3C" stroke-width="16" stroke-linecap="round"/>
+<ellipse cx="681" cy="657" rx="23" ry="30" transform="rotate(-10 681 657)" fill="#3C3F3C"/>
+<path d="M526 755C552 774 582 766 602 740" fill="none" stroke="#3C3F3C" stroke-width="14" stroke-linecap="round"/>
+</g></svg>

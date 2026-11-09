@@ -30,7 +30,7 @@ import { createServerSupervisor } from "./server-supervisor.mjs";
 import { serverChildLaunch } from "./server-child-launch.mjs";
 import { packageUrlFromCommandLine, packageUrlFromDeepLink } from "./package-link.mjs";
 import { chatLinkFrom, chatLinkFromCommandLine } from "./chat-link.mjs"; import { installDesktopNotifications } from "./desktop-notifications.mjs";
-import { createOrganizationEntry, isOrganizationDeepLink, takeOrganizationDeepLink, organizationRestartIntent, withOrganizationRestartIntent, withoutOrganizationRestartIntent } from "./organization-entry.mjs";
+import { createOrganizationEntry, takeOrganizationDeepLink, organizationRestartIntent, withOrganizationRestartIntent, withoutOrganizationRestartIntent } from "./organization-entry.mjs";
 import { windowBackground, windowChromeOptions } from "./window-chrome.mjs";
 import { createAllWindowsClosedQuit } from "./window-all-closed.mjs";
 import { createStartupScreen } from "./startup-screen.mjs";
@@ -97,7 +97,7 @@ import { reviveAfterFailedSwitch, switchLocalEnvironment } from "./environment-s
 import { createManagedDesktopClient, createManagedDesktopRelay, createManagedDesktopStore } from "./managed-desktop.mjs";
 import { CHECKOUT_SOURCES, cloudMenuSublabel, cloudTarget, createCloudAccountClient as cloudAccountClient, createCloudAccountStore } from "./cloud-account.mjs";
 import { installCloudPlanIpc } from "./cloud-plan-ipc.mjs";
-import { cloudLinkOpensSheet, colorDotIcons, createCloudLook, createCloudReadyNotice, installCloudBuy, lookFile } from "./cloud-buy.mjs";
+import { colorDotIcons, createCloudLook, createCloudReadyNotice, installCloudBuy, lookFile } from "./cloud-buy.mjs";
 import { createTrialNotices } from "./cloud-trial-notice.mjs";
 import { createDesktopText, DESKTOP_PORTS, jsonFile, registerDesktopPrefs, relabelDesktop } from "./desktop-prefs.mjs";
 import { createDesktopIncludedX } from "./included-x.mjs"; import { createDesktopIncludedPages } from "./included-pages.mjs";
@@ -845,7 +845,7 @@ async function readCloudOfferBrand() {
   refreshApplicationMenu();
 }
 function cloudOffersAllowed() {
-  return app.isPackaged && !desktopRemoteAccess && brandedBuild === false;
+  return false;
 }
 async function cloudOffersReady() {
   if (brandedBuild === null && serverReady) await readCloudOfferBrand();
@@ -1737,12 +1737,8 @@ const organizationEntry = createOrganizationEntry({
   relaunch: relaunchAfterDesktopRemoteChange,
 });
 
-function queueOrganizationEntry(link) {
-  if (!isOrganizationDeepLink(link)) return false;
-  pendingOrganizationEntry = true;
-  if (!desktopTray?.show()) activateExistingWindow(appWindows());
-  void deliverOrganizationEntry();
-  return true;
+function queueOrganizationEntry() {
+  return false;
 }
 
 async function deliverOrganizationEntry() {
@@ -1754,24 +1750,7 @@ async function deliverOrganizationEntry() {
 }
 
 async function openCloudEntry() {
-  if (!app.isPackaged) throw new Error("MausBot Cloud requires the installed desktop app.");
-  if (desktopRemoteAccess) throw new Error("This app is connected to another computer. Disconnect it to use MausBot Cloud on this computer.");
-  if (!serverReady) throw new Error("This installation is unavailable. Restart the app and open My Cloud again.");
-  await cloudAccountRestored();
-  if ((await homeWindow.refresh()).kind !== "computer") { await showHome({ place: "cloud" }); return true; }
-  const active = activeRemote(environmentsState);
-  const showingCloud = Boolean(active) && active.origin === cloudAccount?.homeTarget()?.origin;
-  if (active && !showingCloud) persistEnvironments(withActive(environmentsState, LOCAL_ID));
-  const win = mainWindow && !mainWindow.isDestroyed() ? mainWindow : createWindow({ deferNavigation: !showingCloud });
-  if (showingCloud) return true;
-  const action = cloudLinkOpensSheet(cloudAccount?.state()) ? "cloud-add" : "cloud";
-  void cloudAccount?.refresh().catch(() => {});
-  if (!win.webContents.isLoadingMainFrame() && senderIsLocal({ sender: win.webContents })) {
-    win.webContents.send("app:open-settings", action);
-  } else {
-    await win.loadURL(`${rendererOrigin()}/?desktop-settings=${action}`);
-  }
-  return true;
+  return false;
 }
 
 function openWorkspaceSettings(computerId) {
@@ -2491,7 +2470,9 @@ const workspaceOnly = (handler) => (event, ...args) => {
   if (!workspaceSenderAllowed(event, mainWindow?.webContents, environmentsState, rendererOrigin())) throw new Error("These controls are only available in the main desktop window");
   return handler(event, ...args);
 };
-const localWorkspaceOnly = (channel, handler) => localOnly(channel, workspaceOnly(handler));
+const localWorkspaceOnly = (channel, handler) => localOnly(channel, workspaceOnly(/^(cloud-account|cloud-buy|organization|company-backups):/.test(channel)
+  ? () => { throw new Error("Rethos uses self-hosted servers."); }
+  : handler));
 // No renderer-supplied address, token, paid flag or callback can choose an account or activate Pro.
 for (const method of ["state", "begin", "signInAgain", "reopen", "cancel", "refresh", "signOut", "openDashboard", "offer"]) {
   ipcMain.handle(`cloud-account:${method}`, localWorkspaceOnly(`cloud-account:${method}`, () => (method === "signOut" ? accounts.signOutActive() : ensureCloudAccount()[method]())));
@@ -2648,7 +2629,7 @@ const rail = installCloudRail({ t: nativeT, ipcMain, clipboard, openCloud: openO
   lists: event => chromeRail.owns(event), trusted: event => chromeRail.owns(event) || senderIsLocal(event), beside: () => chromeRail.shown(),
   targets: () => [mainWindow && !mainWindow.isDestroyed() ? mainWindow.webContents : null, { send: channel => chromeRail.send(channel), isDestroyed: () => false }],
   places: railList, open: id => workspaceMenuAction(() => switchEnvironment(id)), makeHome: id => ownHome.start(id), forget: id => forgetEnvironment(id, false, true), openProfile: id => workspaceMenuAction(async () => { const opened = await localProfiles.open(id); railChanged(); if (opened === false) throw new Error(nativeT("native.places.profileFailed")); }), local: localProfiles,
-  add: { choices: () => ({ cloud: cloudOffersAllowed(), link: !desktopRemoteAccess, address: !desktopRemoteAccess && !homeWindow.cloudOrigin(), account: !desktopRemoteAccess && Boolean(accounts.view().active) }),
+  add: { choices: () => ({ cloud: false, link: !desktopRemoteAccess, address: !desktopRemoteAccess && !homeWindow.cloudOrigin(), account: false }),
     probe: serverConnect.probe, run: (choice, link, code) => (choice === "link" ? (link ? (code === null ? connectHostedWorkspace(link) : serverConnect.connect(link, code)) : addServerFromClipboard()) : choice === "address" ? openWorkspaceSettings() : homeWindow.cloudOrigin() ? undefined : openCloudAdd("app_menu")) } });
 const announceAddedCloud = createAddedCloudNotice({ t: nativeT, Notification, focused: () => Boolean(mainWindow && !mainWindow.isDestroyed() && mainWindow.isFocused()), sheetOpen: rail.sheetOpen,
   open: id => { if (!desktopTray?.show()) activateExistingWindow(appWindows()); void openOwnCloud(id); }, shown: () => cloudAccount?.addDone() }); const desktopNotifications = installDesktopNotifications({ ipcMain, Notification, nativeImage, fetch: (...args) => session.defaultSession.fetch(...args), window: () => mainWindow, mayNotify: (contents, url) => appPermissions?.check(contents, "notifications", url, { isMainFrame: true }) === true, reveal: revealForLink, openPlace: origin => (origin === homeWindow.cloudOrigin() ? showHome({ place: "cloud" }) : workspaceMenuAction(() => switchEnvironment(origin === rendererOrigin() ? LOCAL_ID : environmentsState.environments.find(entry => entry.origin === origin)?.id))) });
@@ -3033,12 +3014,7 @@ app.whenReady().then(async () => {
     }
   }
   if (desktopShutdownStarted) return;
-  if (app.isPackaged && !desktopRemoteAccess) void ensureManagedDesktop().start().then(() => companyBackupSchedule.start()).catch(() => {});
-  // Fresh local use never makes a Cloud request; start only restores an existing grant.
-  if (app.isPackaged && !desktopRemoteAccess) {
-    cloudAccountRestoring = true;
-    cloudAccountStarted = ensureCloudAccount().start().catch(() => {}).then(() => accountRing()?.start()).finally(() => { cloudAccountRestoring = false; });
-  }
+
   void cloudAccountStarted.then(() => { cloudSignInRestored = true; void oneHome.kick(); void homeWindow.refresh(); }); void ownHome?.kick();
   if (companionStartsAtLaunch({ remoteClient: Boolean(desktopRemoteAccess), serverReady })) {
     // Retries stop once the person turns the phone off, starts it by hand or quits.
@@ -3067,7 +3043,7 @@ app.whenReady().then(async () => {
     void cloudAccountStarted.then(() => computerSharing?.cloudChanged());
   });
   let restoredOrganizationEntry = false;
-  await workspaceMenuAction(async () => { restoredOrganizationEntry = await organizationEntry.restore(); });
+  restoredOrganizationEntry = false;
   organizationEntryReady = true;
   // A cold-start action owns its first navigation; a default load started first would be aborted by it.
   const deliveredOrganizationEntry = await deliverOrganizationEntry();

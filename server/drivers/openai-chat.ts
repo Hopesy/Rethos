@@ -84,8 +84,8 @@ interface NativeLog {
 }
 
 const LIVENESS_MISSES = 3;
-
 interface RuntimeOptions<Config> {
+  protocol?: import("../../shared/openai-endpoint.ts").OpenAiProtocol;
   input: DriverCreateInput<Config>;
   driverKind: string;
   apiKey: string;
@@ -219,7 +219,7 @@ export function createOpenAIChatRuntime<Config>(options: RuntimeOptions<Config>)
     ending: boolean;
   }>();
   const reasoningReplayRejected = new Set<string>();
-  const routes = createModelRoutes(options.apiUrl);
+  const routes = createModelRoutes(options.apiUrl, options.protocol);
   /** Beside the messages, not on them, so encrypted reasoning never reaches a Chat Completions body, a log or a handoff. */
   const responseOutputs = new WeakMap<OpenAIChatMessage, ResponseItem[]>();
   const assistantReply = (model: string, completion: Completion, content: string | null, toolCalls?: ChatToolCall[]): OpenAIChatMessage => {

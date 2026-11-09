@@ -131,7 +131,7 @@ describe("Settings in Simple mode", () => {
   it("draws five pages on the desktop, General, AI, Computer, Usage & billing and Updates, and none of the Advanced-only ones", () => {
     const html = render();
     expect(pages(html)).toEqual(["general", "ai", "computer", "billing", "updates"]);
-    expect(SIMPLE_PAGES.map((page) => page.id)).toEqual(["general", "botAccess", "ai", "computer", "billing", "updates"]);
+    expect(SIMPLE_PAGES.map((page) => page.id)).toEqual(["general", "ai", "computer", "billing", "updates"]);
     expect(html).toMatch(/General<\/span>[\s\S]*AI<\/span>[\s\S]*Computer<\/span>[\s\S]*Usage &amp; billing<\/span>[\s\S]*Updates<\/span>/);
     expect(html).not.toContain("data-settings-group=");
     expect(html).not.toContain("data-settings-section=");
@@ -142,31 +142,25 @@ describe("Settings in Simple mode", () => {
     expect(html).toContain('data-settings-look="simple"');
   });
 
-  it("gives a team's admins Bot access as its own page, found by its search words, and nobody else", () => {
+  it("excludes official accounts and team spaces even with a legacy bridge", () => {
     fixture.config = { ...fixture.config, team: { id: "team-acme", name: "Acme" }, cloudHome: true };
     fixture.ownerOrAdmin = true;
-    expect(pages(render())).toContain("botAccess");
-    expect(pages(render())[1]).toBe("botAccess");
-    expect(blocks(render())).not.toContain("botAccess");
-    fixture.section = "botAccess";
-    expect(currentPage(render())).toBe("botAccess");
-    fixture.section = "general";
-    fixture.ownerOrAdmin = false;
     expect(pages(render())).not.toContain("botAccess");
+    for (const removed of ["organization", "cloudAccount", "people", "botAccess", "workspaces"]) expect(SECTIONS.some(entry => entry.id === removed)).toBe(false);
   });
 
   it("files every Advanced page under one Simple page, or hides it", () => {
     const placed = SIMPLE_PAGES.flatMap((page) => page.sections);
     expect(new Set(placed).size).toBe(placed.length);
     const hidden = SECTIONS.map((entry) => entry.id).filter((id) => !placed.includes(id));
-    expect(hidden).toEqual(["decisionModel", "imageGeneration", "skills", "backups", "workspaces", "experimental"]);
+    expect(hidden).toEqual(["decisionModel", "imageGeneration", "skills", "backups", "experimental"]);
     for (const id of hidden) expect(SIMPLE_HIDDEN_SECTIONS).toContain(id);
   });
 
   it("opens General on Account, then Appearance, Notifications, System and Import, with Advanced mode last as a plain row", () => {
     const html = render();
     expect(currentPage(html)).toBe("general");
-    expect(groupLabels(html)).toEqual(["Account", "Appearance", "Notifications", "System", "Import", "Organization"]);
+    expect(groupLabels(html)).toEqual(["Account", "Appearance", "Notifications", "System", "Import"]);
     expect(blocks(html).at(-1)).toBe("advanced-mode");
     expect([...html.matchAll(/<button[^>]*role="switch"[^>]*>/g)].at(-1)?.[0]).toContain('aria-label="Advanced mode"');
     expect(html).toContain("Show every control, including tools for builders. Nothing is deleted either way.");
@@ -223,7 +217,7 @@ describe("Settings in Simple mode", () => {
     vi.stubGlobal("window", { ogb: { ...desktop.ogb, updater: { check: vi.fn(), install: vi.fn(), onState: vi.fn() } } });
     fixture.updater = { status: "idle" };
     const html = open("updates");
-    expect(html).toMatch(/>MausBot [^<]+<\/div>/);
+    expect(html).toMatch(/>Rethos [^<]+<\/(?:span|div)>/);
     for (const shown of ["Check for updates", "MARKER:updatesConsent;", "Replay welcome tour", "Diagnostics"]) expect(placement(html, shown), shown).toBe("shown");
   });
 
@@ -232,7 +226,7 @@ describe("Settings in Simple mode", () => {
     const onSelect = vi.fn();
     fixture.serverUpdate = { phase: "up-to-date", pending: false, label: "Up to date", item: { key: "update", label: "Up to date", subtitle: "v1.2.3", icon: null, disabled: false, onSelect } };
     const html = open("updates");
-    expect(html).toMatch(/>MausBot [^<]+<\/div>/);
+    expect(html).toMatch(/>Rethos [^<]+<\/(?:span|div)>/);
     expect(html).toContain("Up to date v1.2.3");
     expect(placement(html, "Check for updates")).toBe("shown");
   });
@@ -265,24 +259,24 @@ describe("Settings in Simple mode", () => {
     expect(html).toContain('aria-label="Enable the built-in browser"');
   });
 
-  it("leads Usage & billing with one usage block, folds the limits, then shows the plan", () => {
-    fixture.section = "cloudAccount";
+  it("shows API usage with folded limits and no official plan", () => {
+    fixture.section = "usage";
     const html = render();
     expect(currentPage(html)).toBe("billing");
-    expect(blocks(html)).toEqual(["usage", "cloudAccount"]);
-    expect(html.indexOf("See all limits")).toBeLessThan(html.indexOf("MARKER:cloudAccount;"));
+    expect(blocks(html)).toEqual(["usage"]);
+    expect(html).not.toContain("MARKER:cloudAccount;");
     expect(placement(html, "MARKER:usage;")).toBe("folded");
-    expect(groupLabels(html)).toContain("Plan");
+    expect(groupLabels(html)).not.toContain("Plan");
   });
 
-  it("shows a hosted workspace's admins People in Account and Activity as its own group", () => {
+  it("retains activity without membership administration", () => {
     vi.stubGlobal("window", {});
     fixture.ownerOrAdmin = true;
-    fixture.section = "people";
+    fixture.section = "general";
     const html = render();
     expect(pages(html)).toEqual(["general", "ai", "computer", "billing", "updates"]);
     expect(currentPage(html)).toBe("general");
-    expect(placement(html, "MARKER:people;")).toBe("shown");
+    expect(html).not.toContain("MARKER:people;");
     expect(placement(html, "MARKER:activity;")).toBe("shown");
     expect(groupLabels(html)).toContain("Activity");
   });
@@ -307,7 +301,6 @@ describe("Settings in Simple mode", () => {
     ["general", "general"],
     ["appearance", "general"],
     ["import", "general"],
-    ["organization", "general"],
     ["engines", "ai"],
     ["connections", "ai"],
     ["companion", "computer"],
@@ -316,7 +309,6 @@ describe("Settings in Simple mode", () => {
     ["computer", "computer"],
     ["logins", "computer"],
     ["usage", "billing"],
-    ["cloudAccount", "billing"],
     ["updates", "updates"],
   ])("lands a deep link to %s on %s", (section, page) => {
     fixture.section = section;

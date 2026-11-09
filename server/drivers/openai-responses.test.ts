@@ -95,7 +95,7 @@ afterEach(async () => {
   forgetKey(KEY);
 });
 
-async function fixture(script: Script, apiUrl = OPENAI) {
+async function fixture(script: Script, apiUrl = OPENAI, protocol?: "chat" | "responses") {
   vi.spyOn(console, "warn").mockImplementation(() => {});
   const directory = mkdtempSync(join(tmpdir(), "omb-responses-"));
   const calls: Call[] = [];
@@ -123,7 +123,7 @@ async function fixture(script: Script, apiUrl = OPENAI) {
   writeFileSync(helper, MCP_SCRIPT);
   const instance: ProviderInstance = await OpenAICompatDriver.create({
     instanceId: randomUUID(), displayName: "Responses fixture", enabled: true,
-    config: { url: apiUrl === OPENAI ? OPENAI : local, apiKeyEnv: "FIXTURE_CHAT_KEY", ...(apiUrl === OPENAI ? { catalog: "openai" } : {}) },
+    config: { url: apiUrl === OPENAI ? OPENAI : local, apiKeyEnv: "FIXTURE_CHAT_KEY", ...(apiUrl === OPENAI ? { catalog: "openai" } : {}), ...(protocol ? { protocol } : {}) },
     environment: { FIXTURE_CHAT_KEY: KEY },
   });
   const recorder = recordEvents(instance.adapter);
@@ -156,6 +156,27 @@ const failureOf = (events: Array<{ type: string; message?: string }>) => events.
 const textOf = (events: Array<Record<string, any>>, kind: string) => events.filter((event) => event.type === "content.delta" && event.streamKind === kind).map((event) => event.delta).join("");
 
 describe("which API a model's turn uses", () => {
+  it("uses explicitly selected Responses for third-party text and tool turns", async () => {
+    const f = await fixture((_call, response, nth) => nth === 2 ? reasonedCall(response) : answer(response), "https://relay.example/v1", "responses");
+    const text = await f.turn({ integrations: undefined });
+    expect(failureOf(text.events)).toBe("");
+    expect(textOf(text.events, "assistant_text")).toContain("All done.");
+    const tool = await f.turn();
+    expect(failureOf(tool.events)).toBe("");
+    expect(f.paths()).toEqual(["/v1/responses", "/v1/responses", "/v1/responses"]);
+    expect(f.calls[1].body.tools).toEqual(expect.arrayContaining([expect.objectContaining({ name: "audit_write" })]));
+    expect(f.calls[2].body.input).toEqual(expect.arrayContaining([expect.objectContaining({ type: "function_call_output" })]));
+  });
+
+  it("respects an explicit protocol when the endpoint refuses it", async () => {
+    const chat = await fixture((_call, response) => reject(response, 400, refusalOf(MODEL)), OPENAI, "chat");
+    await chat.turn();
+    expect(chat.paths()).toEqual(["/v1/chat/completions"]);
+    const responses = createModelRoutes("https://relay.example/v1", "responses");
+    expect(responses.advance(MODEL, "responses-unavailable")).toBe(false);
+    expect(responses.routeFor(MODEL, false)).toBe("responses");
+  });
+
   it("names OpenAI's own address, and nothing that only resembles it", () => {
     for (const url of [OPENAI, `${OPENAI}/`, "https://eu.api.openai.com/v1"]) expect(isOpenAIAddress(url)).toBe(true);
     for (const url of ["http://api.openai.com/v1", "https://api.openai.com.evil.test/v1", "https://openrouter.ai/api/v1", "https://example.com/api.openai.com/v1", "https://api.openai.com/openai/v1", "not a url"]) {

@@ -563,7 +563,7 @@ describe("VPS computer inventory UI", () => {
 
 describe("Settings → Computers on an OMB Cloud home", () => {
   afterEach(() => { storeFixture.config = null; });
-  const cards = () => [...renderToStaticMarkup(createElement(LocalComputerSection)).matchAll(/<div class="text-\[16px\] font-semibold text-ink[^"]*">([^<]+)<\/div>/g)].map((match) => match[1]);
+  const cards = () => [...renderToStaticMarkup(createElement(LocalComputerSection)).matchAll(/<h4[^>]*>([^<]+)<\/h4>/g)].map((match) => match[1]);
 
   it("sets up a Local VM on a desktop or self-hosted server", () => {
     expect(cards()).toEqual(expect.arrayContaining(["Cloud desktops", "Private desktops", "Setup"]));

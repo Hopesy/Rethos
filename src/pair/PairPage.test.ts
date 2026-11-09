@@ -1,102 +1,95 @@
-import { createElement, type EffectCallback } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+// @vitest-environment happy-dom
+import { act, createElement } from "react";
+import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-
-const f = vi.hoisted(() => ({ effects: [] as EffectCallback[], pair: vi.fn() }));
-vi.mock("react", async original => ({ ...await original<typeof import("react")>(), useEffect: (effect: EffectCallback) => { f.effects.push(effect); } }));
-vi.mock("../lib/session", async original => ({ ...await original<typeof import("../lib/session")>(), pairWithCode: f.pair, readSessionState: vi.fn().mockResolvedValue({ kind: "unauthenticated", error: "" }) }));
+import { setLocale } from "../lib/i18n";
+const f = vi.hoisted(() => ({ pair: vi.fn(), session: vi.fn() }));
+vi.mock("../lib/session", async original => ({ ...await original<typeof import("../lib/session")>(), pairWithCode: f.pair, readSessionState: f.session }));
 vi.mock("../components/DesktopWorkspaceSwitcher", () => ({ DesktopWorkspaceSwitcher: () => null }));
-import { codeProblem, codeReady, openInAppLink, PairPage, pairIntro, pairsAutomatically, pairTitle, unencryptedPublic } from "./PairPage";
+import { codeProblem, codeReady, pairingCommand, PairPage, pairsAutomatically, unencryptedPublic } from "./PairPage";
 import en from "../locales/en.json";
 
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const code = "ABCD-EFGH-JK23";
-const render = (initialCode: string | null) => { f.effects = []; return renderToStaticMarkup(createElement(PairPage, { initialCode })); };
-const flush = async () => { for (let i = 0; i < 10; i++) await Promise.resolve(); };
-let replaced: string[];
+let root: Root, host: HTMLDivElement;
+const replace = vi.fn();
 beforeEach(() => {
-  f.pair.mockReset(); replaced = [];
-  vi.stubGlobal("location", { replace: (url: string) => replaced.push(url) });
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
+  setLocale("en");
+  f.pair.mockReset(); f.session.mockResolvedValue({ kind: "unauthenticated", error: "" }); replace.mockReset();
+  vi.stubGlobal("location", { replace, protocol: "https:", hostname: "rethos.example.com", host: "rethos.example.com", search: "" });
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ label: "My VPS", version: "1", platform: "linux", capabilities: { install: "docker", emailSignIn: true, cloudHome: true } }) }));
+  delete window.ogb;
+  host = document.createElement("div"); document.body.append(host); root = createRoot(host);
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { act(() => root.unmount()); host.remove(); vi.unstubAllGlobals(); });
+const render = async (initialCode: string | null = null) => { await act(async () => root.render(createElement(PairPage, { initialCode }))); };
+const submit = async () => { await act(async () => host.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }))); };
 
-it("in the desktop app, a code the link carried connects at once; a browser still asks", () => {
-  expect(pairsAutomatically(code, true)).toBe(true);
-  expect(pairsAutomatically(code, false)).toBe(false);
-  expect(pairsAutomatically(null, true)).toBe(false);
-});
-
-it("opening My Cloud from the app needs no click and no code to type", async () => {
-  vi.stubGlobal("window", { ogb: { workspaces: {} } });
-  f.pair.mockResolvedValue({ ok: true });
-  const html = render(code);
-  expect(html).toContain("Connecting to this Rethos…");
-  expect(html).not.toContain("Pairing code"); expect(html).not.toContain("<form");
-  f.effects[0](); await flush();
-  expect(f.pair).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ code }));
-  expect(replaced).toEqual(["/"]);
-});
-
-it("a code that no longer works falls back to the form, with the reason", async () => {
-  vi.stubGlobal("window", { ogb: { workspaces: {} } });
-  f.pair.mockResolvedValue({ ok: false, error: "That pairing code has expired." });
-  render(code); f.effects[0](); await flush();
-  expect(replaced).toEqual([]);
+it("uses one input and collapsed help, even with a legacy cloud descriptor", async () => {
+  await render();
+  expect(host.querySelectorAll("input")).toHaveLength(1);
+  expect(host.querySelector("details")!.open).toBe(false);
+  expect(host.querySelector("code")!.textContent).toBe("docker compose exec rethos rethos pair");
+  expect(host.textContent).not.toContain("My Cloud");
+  expect(host.querySelector('[type="email"]')).toBeNull();
+  expect(host.querySelector("button[type=submit]")!.hasAttribute("disabled")).toBe(true);
+  expect(host.querySelector("img")!.src).toContain("/app-icon.svg");
 });
 
-it("a browser keeps the code in the form for the person to confirm", () => {
-  vi.stubGlobal("window", {});
-  const html = render(code);
-  expect(html).toContain(`value="${code}"`); expect(html).toContain(">Connect</button>");
-  f.effects[0]?.(); expect(f.pair).not.toHaveBeenCalled();
+it("requires a browser confirmation then pairs with an automatic device label", async () => {
+  f.pair.mockResolvedValue({ ok: true }); await render(code);
+  expect(f.pair).not.toHaveBeenCalled();
+  await submit();
+  expect(f.pair).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ code, label: expect.any(String), attemptId: expect.any(String) }));
+  expect(replace).toHaveBeenCalledWith("/");
 });
 
-it("My Cloud says where its connection starts, never 'the code shown on the server'", () => {
-  const cloud = pairIntro({ mode: "code", sent: false, email: "", cloudHome: true });
-  expect(cloud).toContain(`choose ${en["cloudHome.connect"]} in the Rethos app`);
-  expect(cloud).toContain(`Settings → ${en["settings.section.cloudAccount"]}`);
-  expect(cloud).toContain("on your Plan page");
-  expect(cloud).not.toContain("from the server");
-  expect(pairIntro({ mode: "code", sent: false, email: "", cloudHome: false })).toContain("from the server");
-  expect(pairIntro({ mode: "email", sent: true, email: "a@b.test", cloudHome: false })).toContain("a@b.test");
+it("automatically exchanges a desktop link and preserves the destination", async () => {
+  window.ogb = { workspaces: {} } as Window["ogb"];
+  f.pair.mockResolvedValue({ ok: true }); await render(code);
+  expect(f.pair).toHaveBeenCalledTimes(1);
+  expect(replace).toHaveBeenCalledWith("/");
 });
 
-it("a team's Cloud is called by the team's name, a person's own Cloud My Cloud", () => {
-  const descriptor = (capabilities: Record<string, unknown>) => ({ environmentId: "e", label: "Acme Labs", platform: "linux", version: "1", capabilities: { remoteSessions: true as const, selfUpdate: "operator" as const, ...capabilities } });
-  expect(pairTitle(descriptor({ cloudHome: true, cloudTeam: true }), "code")).toBe("Acme Labs");
-  expect(pairTitle(descriptor({ cloudHome: true }), "code")).toBe("My Cloud");
-  expect(pairTitle(descriptor({}), "email")).toBe("Sign in to Acme Labs");
-  expect(pairTitle(null, "code")).toBe("Connect to this Rethos");
+it("an expired desktop link returns to the form and allows an explicit retry", async () => {
+  window.ogb = { workspaces: {} } as Window["ogb"];
+  f.pair.mockResolvedValue({ ok: false, error: "This code has expired." }); await render(code);
+  expect(host.querySelector("[role=alert]")!.textContent).toBe("This code has expired.");
+  expect(replace).not.toHaveBeenCalled();
+  expect(host.querySelector("form")).not.toBeNull();
+  expect(f.pair).toHaveBeenCalledTimes(1);
+  f.pair.mockResolvedValue({ ok: true }); await submit();
+  expect(replace).toHaveBeenCalledWith("/");
 });
 
-it("names a wrong kind of code instead of letting it be sent as a wrong one", () => {
+it("an existing session offers entry without exchanging another code", async () => {
+  f.session.mockResolvedValue({ kind: "session", id: "existing", scopes: ["admin"] }); await render(code);
+  expect(host.querySelector("form")).toBeNull();
+  expect(host.querySelector("a")!.getAttribute("href")).toBe("/");
+  expect(f.pair).not.toHaveBeenCalled();
+});
+
+it("rejects other credential types and accepts formatted pairing codes", () => {
   expect(codeProblem("1234 5678")).toBe(en["serverError.pair.emailCode"]);
   expect(codeProblem("123456")).toBe(en["serverError.pair.oldCode"]);
-  expect(codeProblem(`omb_sess_${"a".repeat(43)}`)).toBe(en["serverError.pair.scriptKey"]);
-  expect(codeProblem("7KQ2-M9XD")).toBeNull();
+  expect(codeProblem("omb_sess_" + "a".repeat(43))).toBe(en["serverError.pair.scriptKey"]);
   expect(codeReady("7kq2 m9xd h4tp")).toBe(true);
   expect(codeReady("1234 5678")).toBe(false);
+  expect(pairsAutomatically(code, false)).toBe(false);
+  expect(pairsAutomatically(code, true)).toBe(true);
 });
 
-it("opens the phone app at this server with the code filled in", () => {
-  expect(openInAppLink("https://maus.example.com", "7kq2m9xdh4tp")).toBe("openmausbot://pair?address=https%3A%2F%2Fmaus.example.com&code=7KQ2-M9XD-H4TP");
-  expect(openInAppLink("http://192.168.1.20:8799", "")).toBe("openmausbot://pair?address=http%3A%2F%2F192.168.1.20%3A8799");
+it("gives installation-specific commands", () => {
+  expect(pairingCommand("docker")).toBe("docker compose exec rethos rethos pair");
+  expect(pairingCommand("source")).toBe("pnpm pair");
+  expect(pairingCommand("npx")).toBe("npx rethos pair");
+  expect(pairingCommand("global")).toBe("rethos pair");
 });
 
-it("warns only on plain http across the open internet", () => {
-  expect(unencryptedPublic({ protocol: "http:", hostname: "203.0.113.9" })).toBe(true);
+it("warns on a public unencrypted connection", async () => {
+  vi.stubGlobal("location", { protocol: "http:", hostname: "203.0.113.9", host: "203.0.113.9" });
+  await render();
+  expect(host.querySelector("[role=alert]")!.textContent).toBe(en["pair.notEncrypted"]);
+  expect(unencryptedPublic({ protocol: "https:", hostname: "rethos.example.com" })).toBe(false);
   expect(unencryptedPublic({ protocol: "http:", hostname: "192.168.1.20" })).toBe(false);
-  expect(unencryptedPublic({ protocol: "https:", hostname: "maus.example.com" })).toBe(false);
-});
-
-it("asks for the code first, with email sign-in as a link below, and says how to get a code", async () => {
-  vi.stubGlobal("window", {});
-  vi.stubGlobal("location", { replace: () => {}, protocol: "http:", hostname: "203.0.113.9", origin: "http://203.0.113.9:8799" });
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ environmentId: "e", label: "hetzner-1", platform: "linux", version: "1", capabilities: { emailSignIn: true } }) }));
-  const html = render(code);
-  expect(html).toContain(en["pair.notEncrypted"].replace("'", "&#x27;"));
-  expect(html).toContain(en["pair.fromLink"]);
-  expect(html).toContain("openmausbot://pair?address=http%3A%2F%2F203.0.113.9%3A8799&amp;code=ABCD-EFGH-JK23");
-  expect(html).toContain("rethos pair");
-  expect(html.indexOf("<form")).toBeLessThan(html.indexOf(en["pair.code"]));
 });

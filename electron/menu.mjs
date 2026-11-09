@@ -82,7 +82,7 @@ const whereItLives = (environment) => (environment.kind === "local" ? environmen
  * @param {{ checked: boolean, onToggle: (on: boolean) => void } | null} [input.openAtLogin] Open at Login, in the app
  *   menu on macOS and the File menu elsewhere; absent when this build cannot add a login item.
  */
-export function buildApplicationMenu({ environments, activeId, onSwitch, onAddFromClipboard, onConnect, onForget, onOpenSettings, onOrganizationSignIn, onAddCloud, sublabels = {}, home = null, openAtLogin = null, t = nativeText.englishText.t }) {
+export function buildApplicationMenu({ environments, activeId, onSwitch, onAddFromClipboard, onConnect, onForget, onOpenSettings, sublabels = {}, home = null, openAtLogin = null, t = nativeText.englishText.t }) {
   const isMac = process.platform === "darwin";
   const active = environments.find((e) => e.id === activeId) ?? null;
   const others = home ? environments.filter((e) => e.origin !== home.origin && e.kind !== "local") : [];
@@ -108,9 +108,7 @@ export function buildApplicationMenu({ environments, activeId, onSwitch, onAddFr
         checked: e.id === activeId,
         click: () => onSwitch(e.id),
       })),
-      ...(onAddCloud ? [{ id: "add-cloud", label: t("native.menu.addCloud"), click: () => onAddCloud() }] : []),
       { type: "separator" },
-      { id: "organization-sign-in", label: t("native.menu.orgSignIn"), click: onOrganizationSignIn },
       { label: t("native.menu.connect"), click: onConnect },
       { label: t("native.menu.addFromLink"), click: () => onAddFromClipboard() },
       {

@@ -27,11 +27,3 @@ test("the My Cloud page gets no Files bridge at all", () => {
   assert.equal(remote.bridge.cloudAccount, undefined);
   assert.equal(remote.bridge.cloudSync, undefined);
 });
-
-test("this computer's own window gets the Files controls", async () => {
-  const local = load({ remote: false });
-  await local.bridge.cloudAccount.files.share("token-1");
-  assert.deepEqual(local.invoked.at(-1), ["files:share", "token-1"]);
-  await local.bridge.cloudAccount.files.answerDeletes("f1", true);
-  assert.deepEqual(local.invoked.at(-1), ["files:deletes", "f1", true]);
-});

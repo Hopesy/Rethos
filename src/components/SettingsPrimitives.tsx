@@ -4,6 +4,7 @@ import { cn } from "@/lib/cn";
 import { useCopyFeedback } from "@/lib/copy-text";
 import { t } from "@/lib/i18n";
 import { SettingsHelp } from "./SettingsHelp";
+import "./settings-compact.css";
 
 export const SIMPLE_CARD = "rounded-[12px] border-[0.5px] border-(--settings-edge) bg-menu py-2";
 export const SIMPLE_BUTTONS = cn(
@@ -45,13 +46,29 @@ export function Card({
   title,
   subtitle,
   help,
+  compact = false,
+  status,
+  actions,
   children,
 }: {
   title?: string;
   subtitle?: string;
   help?: ReactNode;
+  compact?: boolean;
+  status?: ReactNode;
+  actions?: ReactNode;
   children?: React.ReactNode;
 }) {
+  if (compact) return <section className="settings-card-compact">
+    <div className="settings-card-header">
+      <div className="settings-card-heading">
+        <div className="settings-card-title">{title && <h4>{title}</h4>}{title && help && <SettingsHelp label={title}>{help}</SettingsHelp>}</div>
+        {(status || subtitle) && <div className="settings-card-status">{status ?? subtitle}</div>}
+      </div>
+      {actions && <div className="settings-card-actions">{actions}</div>}
+    </div>
+    {children && <div className="settings-card-body">{children}</div>}
+  </section>;
   return (
     <div className="rounded-xl bg-card p-4 max-md:rounded-2xl in-data-[settings-look=simple]:rounded-[12px] in-data-[settings-look=simple]:border-[0.5px] in-data-[settings-look=simple]:border-(--settings-edge) in-data-[settings-look=simple]:bg-menu">
       {title && <div className="flex items-center gap-1 text-[16px] font-semibold text-ink in-data-[settings-look=simple]:text-[14px] in-data-[settings-look=simple]:leading-5 in-data-[settings-look=simple]:font-medium">{title}{help && <SettingsHelp label={title}>{help}</SettingsHelp>}</div>}
@@ -157,7 +174,7 @@ export function SettingsDisclosureRow({ id, title, subtitle, trailing, block, op
   );
 }
 
-export function CommandLine({ command, copyLabel = "Copy command" }: { command: string; copyLabel?: string }) {
+export function CommandLine({ command, copyLabel = t("engineSetup.copyCommand") }: { command: string; copyLabel?: string }) {
   const { state, copy } = useCopyFeedback(command);
 
   return (

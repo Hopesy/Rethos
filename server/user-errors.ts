@@ -4,6 +4,12 @@ import { formatServerText, type ServerErrorBody, type ServerTextParams } from ".
 
 /** The client translates by key and falls back to this English, which the server keeps sending for older clients. */
 export const USER_ERROR = {
+  "serverError.endpoint.invalid": "Check the connection details and choose at least one model.",
+  "serverError.endpoint.url": "Enter an http or https base URL without credentials, query parameters or a fragment.",
+  "serverError.endpoint.key": "Enter an API key. When changing the API address, enter the key again.",
+  "serverError.endpoint.unknown": "This custom model connection is no longer available. Refresh and try again.",
+  "serverError.endpoint.busy": "Wait for tasks using this connection to finish before saving changes.",
+  "serverError.endpoint.save": "The connection could not be saved. Try again.",
   "serverError.pair.codeWrong": "pairing code is wrong or has expired; create a new one on the server",
   "serverError.pair.tooMany": "Too many wrong codes. Try again at {time}.",
   ...PAIRING_INPUT_PROBLEM_TEXT,

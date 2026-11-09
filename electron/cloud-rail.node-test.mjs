@@ -1,14 +1,11 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import test from "node:test";
-import vm from "node:vm";
 
 import { parseCloudList } from "./cloud-list.mjs";
 import { addCloudView, createAddedCloudNotice, installCloudRail, railPlaces } from "./cloud-rail.mjs";
 import { otherCloudSnapshot } from "./cloud-plan-ipc.mjs";
 
 const HOME = "https://omb-u-1a2b3c4d5e6f.fly.dev", CLIENT_A = "https://omb-c-a.fly.dev", TEAM = "https://omb-t-acme.fly.dev", VPS = "https://bots.example.test";
-const LOCAL = "http://127.0.0.1:8799";
 const entry = (over = {}) => ({ id: "c-a", name: "Client A", color: "green", role: "owner", tier: "pro", runsOn: "cloud", status: "ready", origin: CLIENT_A,
   teamId: null, primary: false, ...over });
 const PRIMARY = entry({ id: "c-home", name: "My Cloud", color: null, origin: HOME, primary: true });
@@ -179,28 +176,6 @@ test("buying another Cloud from a page: the plan must be on sale, the name is ch
   for (const channel of ["cloud-add:state", "cloud-add:start", "cloud-add:open", "cloud-add:copy-link", "cloud-add:interest"]) assert.throws(() => r.call(channel), /only available/, channel);
 });
 
-test("New organization on ＋: only while this account runs a Team plan's organizations and the Admin hasn't turned adding them off; the name is checked, the page gets only the outcome", async () => {
-  const r = rail(), plan = { planCloudId: "5d4c3b2a-1f0e-4d9c-8b7a-6f5e4d3c2b1a", canAdd: true, count: 2, max: 10 };
-  assert.equal((await r.call("workspaces:places")).add.organization, false, "no Team plan's organizations: no such choice");
-  r.w.state = session({ organizations: plan });
-  assert.deepEqual((await r.call("workspaces:places")).add, { cloud: true, link: true, address: false, organization: true, local: false });
-  r.w.state = session({ organizations: { ...plan, canAdd: false, blocked: "limit" } });
-  assert.equal((await r.call("workspaces:places")).add.organization, true, "at the plan's limit it is still there, to say so");
-  r.w.state = session({ organizations: { ...plan, canAdd: false, blocked: "off" } });
-  assert.equal((await r.call("workspaces:places")).add.organization, false, "turned off on the Admin: not offered");
-  r.installed.changed(); r.w.state = session({ organizations: plan }); r.installed.changed();
-  assert.deepEqual(r.sent.filter(item => item === "rail:workspaces:changed"), ["rail:workspaces:changed", "rail:workspaces:changed"], "the rail reads ＋'s choices again");
-  await assert.rejects(r.call("cloud-add:organization", " ", "rose"), /Give the organization a name/);
-  assert.deepEqual(await r.call("cloud-add:organization", "  Client   B ", "url(x)"), { outcome: "added" }, "only the outcome, never an id");
-  assert.deepEqual(r.w.organized, [{ name: "Client B", color: null }], "the name folded; an unknown swatch is none");
-  r.w.organization = { outcome: "blocked", blocked: "limit" };
-  assert.deepEqual(await r.call("cloud-add:organization", "Client C", "rose"), { outcome: "blocked", blocked: "limit" });
-  assert.deepEqual(addCloudView(session({ organizations: { ...plan, canAdd: false, blocked: "limit" } }), null).organizations, { canAdd: false, blocked: "limit", count: 2, max: 10 });
-  assert.equal(addCloudView(session(), null).organizations, undefined);
-  r.w.trusted = false;
-  assert.throws(() => r.call("cloud-add:organization", "Client D", null), /only available/);
-});
-
 test("what the add sheet says: an older Admin is one Cloud for now, the Admin's cap says why, and a new Cloud's setup is followed", () => {
   assert.deepEqual(addCloudView({ status: "signed-out" }, null), { signedIn: false });
   const older = addCloudView(session({ clouds: undefined }), null);
@@ -311,61 +286,6 @@ test("Make … my home: only on a server connected by hand that main offers it f
   assert.throws(() => rail().call("workspaces:make-home", "vps"), /can't be your bots' home/, "a main that offers it nowhere");
 });
 
-const PRELOAD = readFileSync(new URL("./preload.cjs", import.meta.url), "utf8");
-function preload(origin, { activation = false } = {}) {
-  let bridge; const invoked = [];
-  vm.runInNewContext(PRELOAD, {
-    process: { platform: "darwin", argv: [`--omb-local-origin=${LOCAL}`, "--omb-company-desktop=1"] },
-    location: { origin }, navigator: { userActivation: { isActive: activation } }, TextEncoder, localStorage: { getItem: () => null }, queueMicrotask,
-    require: () => ({ webUtils: {}, contextBridge: { exposeInMainWorld: (_name, value) => { bridge = value; } },
-      ipcRenderer: { on() {}, removeListener() {}, send() {}, sendSync: () => null, invoke: (...args) => { invoked.push(args); return Promise.resolve(); } } }),
-  });
-  return { bridge, invoked };
-}
-
-test("a Cloud's page gets the rail and the add sheet's narrow bridges; a circle, ＋ and checkout open only from the person's click", async () => {
-  const page = preload(HOME);
-  assert.deepEqual(Object.keys(page.bridge.workspaces), ["state", "menu", "line", "places", "open", "add", "probe", "look", "color", "recolor", "remove", "makeHome", "onChanged", "local", "onNewLocal"]);
-  assert.deepEqual(Object.keys(page.bridge.cloudAdd), ["state", "start", "reopen", "copyLink", "open", "interest", "sheet", "organization"]);
-  await page.bridge.workspaces.places();
-  await page.bridge.cloudAdd.state();
-  await assert.rejects(page.bridge.workspaces.open("a"), /Choose a place/);
-  await assert.rejects(page.bridge.workspaces.add("link"), /Choose what to add/);
-  await assert.rejects(page.bridge.cloudAdd.start("pro", "Client B", "rose"), /Continue to checkout/);
-  await assert.rejects(page.bridge.cloudAdd.reopen(), /Reopen checkout/);
-  await assert.rejects(page.bridge.cloudAdd.copyLink(), /Copy link/);
-  await assert.rejects(page.bridge.cloudAdd.open(), /Open/);
-  await assert.rejects(page.bridge.cloudAdd.organization("Client B", "rose"), /Create organization/);
-  await assert.rejects(page.bridge.workspaces.color("rose"), /Choose a color/, "a page changes its place's colour only from the person's click");
-  await assert.rejects(page.bridge.workspaces.recolor("vps", "rose"), /Choose a color/);
-  await assert.rejects(page.bridge.workspaces.remove("old"), /Choose Remove from list/, "Remove from list only from the person's click");
-  await assert.rejects(page.bridge.workspaces.makeHome("vps"), /Choose Make my home/, "a move starts only from the person's click");
-  await assert.rejects(page.bridge.workspaces.local.create("Work", "rose"), /Choose a name/, "a workspace of this computer's own only from the person's click");
-  await assert.rejects(page.bridge.workspaces.local.edit("profile:work", { name: "Office" }), /Choose a change/);
-  await assert.rejects(page.bridge.workspaces.local.remove("profile:work"), /Choose Remove/);
-  await page.bridge.workspaces.look();
-  assert.deepEqual(page.invoked.at(-1), ["workspaces:look"]);
-  const clicked = preload(HOME, { activation: true });
-  await clicked.bridge.workspaces.open({ toString: () => "a" });
-  await clicked.bridge.workspaces.add("link");
-  await clicked.bridge.cloudAdd.start("pro", "Client B", null);
-  await clicked.bridge.workspaces.color("rose");
-  await clicked.bridge.workspaces.color(null);
-  await clicked.bridge.cloudAdd.organization({ toString: () => "Client C" }, null);
-  assert.deepEqual(clicked.invoked, [["workspaces:open", "a"], ["workspaces:add", "link"], ["cloud-add:start", "pro", "Client B", null], ["workspaces:color", "rose"], ["workspaces:color", null],
-    ["cloud-add:organization", "Client C", null]]);
-  await clicked.bridge.cloudAdd.start("team", "Studio", "blue", { toString: () => "app_whats_new_team" });
-  assert.deepEqual(clicked.invoked.at(-1), ["cloud-add:start", "team", "Studio", "blue", "app_whats_new_team"], "a source travels as plain text");
-  assert.equal(page.bridge.cloudAccount, undefined, "never the account bridge");
-  const local = preload(LOCAL);
-  await local.bridge.workspaces.open("a");
-  await local.bridge.workspaces.local.create({ toString: () => "Work" }, "rose");
-  await local.bridge.workspaces.local.edit("profile:work", { name: "Office", color: "blue" });
-  await local.bridge.workspaces.local.edit("profile:work", { color: null });
-  await local.bridge.workspaces.local.remove("profile:work");
-  assert.deepEqual(JSON.parse(JSON.stringify(local.invoked)), [["workspaces:open", "a"], ["workspaces:local-new", "Work", "rose"], ["workspaces:local-edit", "profile:work", { name: "Office" }],
-    ["workspaces:local-edit", "profile:work", { color: null }], ["workspaces:local-remove", "profile:work"]], "this app's own page needs no click check, and only a name or a colour goes");
-});
 
 test("Remove from list on a server saved by hand: main forgets it here, by its own word for which one", async () => {
   const forgotten = [];

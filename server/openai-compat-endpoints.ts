@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { InstanceConfig, InstanceConfigMap } from "./contracts.ts";
-import { isCustomOpenAiEndpoint } from "../shared/openai-endpoint.ts";
+import { isCustomOpenAiEndpoint, isModelId, type OpenAiEndpointInfo } from "../shared/openai-endpoint.ts";
 
 export const ADDED_ENDPOINT_PREFIX = "openai-compat-";
 
@@ -26,13 +26,29 @@ export function endpointDisplayUrl(config: unknown): string | undefined {
   }
 }
 
+const modelIdSchema = z.string().trim().refine(isModelId);
+
 export const addEndpointSchema = z.object({
   displayName: z.string().trim().min(1).max(80),
   url: z.string().max(512),
   key: z.string().trim().min(1).max(4096),
-  models: z.array(z.string().trim().min(1).max(200)).max(64).optional(),
+  models: z.array(modelIdSchema).max(64).optional(),
   catalog: z.literal("lmstudio").optional(),
+  protocol: z.enum(["chat", "responses"]).optional(),
+  defaultModel: modelIdSchema.optional(),
 }).strict();
+
+export const updateEndpointSchema = addEndpointSchema.omit({ catalog: true }).partial().strict();
+export const discoverEndpointSchema = z.object({
+  instanceId: z.string().regex(/^[\w.-]+$/).optional(),
+  url: z.string().max(512),
+  key: z.string().trim().max(4096).optional(),
+}).strict();
+
+export function endpointKey(config: Record<string, unknown>): string {
+  return typeof config.key === "string" && config.key ? config.key
+    : process.env[typeof config.apiKeyEnv === "string" ? config.apiKeyEnv : "OPENAI_COMPAT_API_KEY"] ?? "";
+}
 
 export type AddEndpoint = z.infer<typeof addEndpointSchema>;
 
@@ -40,56 +56,91 @@ export function isAddedEndpoint(instanceId: string, entry: InstanceConfig | unde
   return Boolean(entry && isCustomOpenAiEndpoint(instanceId, entry.driver));
 }
 
-export const updateEndpointSchema = addEndpointSchema.omit({ catalog: true }).extend({
-  key: addEndpointSchema.shape.key.optional(),
-  model: z.string().trim().max(200).optional(),
-});
-
-export function updateEndpoint(instances: InstanceConfigMap, instanceId: string, body: z.infer<typeof updateEndpointSchema>): { error: string } | null {
-  const entry = instances[instanceId];
-  if (!isAddedEndpoint(instanceId, entry)) return { error: "This service is managed in its own provider settings." };
-  const url = endpointBaseUrl(body.url);
-  if (!url) return { error: "Enter an http or https base URL without a user name, password or query string." };
-  if (body.key && /^https?:\/\//i.test(body.key)) return { error: "Enter the API key itself." };
-  const config: Record<string, unknown> = { ...entry.config as Record<string, unknown>, url };
-  if (body.key !== undefined) config.key = body.key;
-  if (body.model !== undefined) {
-    if (body.model) config.model = body.model;
-    else delete config.model;
-  }
-  if (body.models !== undefined) {
-    if (body.models.length) config.managedModels = [...new Set(body.models)];
-    else delete config.managedModels;
-  }
-  instances[instanceId] = { ...entry, displayName: body.displayName, config };
-  return null;
-}
-
 export function addEndpoint(instances: InstanceConfigMap, body: AddEndpoint): { instanceId: string } | { error: string } {
   const url = endpointBaseUrl(body.url);
-  if (!url) return { error: "Enter an http or https base URL without a user name, password or query string." };
-  if (/^https?:\/\//i.test(body.key)) return { error: "That API key looks like a URL. Paste the secret key itself, not a web address." };
+  if (!url) return { error: "url" };
+  if (/^https?:\/\//i.test(body.key)) return { error: "key" };
   const instanceId = `${ADDED_ENDPOINT_PREFIX}${randomUUID()}`;
   const models = [...new Set(body.models ?? [])];
+  if (body.defaultModel && !models.includes(body.defaultModel)) return { error: "models" };
   instances[instanceId] = {
     driver: "openai-compat", displayName: body.displayName, access: "api",
-    config: { key: body.key, url, ...(models.length ? { managedModels: models } : {}), ...(body.catalog ? { catalog: body.catalog } : {}) },
+    config: { key: body.key, url, ...(models.length ? { managedModels: models } : {}), ...(body.catalog ? { catalog: body.catalog } : {}),
+      ...(body.protocol ? { protocol: body.protocol } : {}), ...(body.defaultModel ? { model: body.defaultModel } : {}) },
   };
   return { instanceId };
 }
 
+export function updateEndpoint(instances: InstanceConfigMap, instanceId: string, body: z.infer<typeof updateEndpointSchema>): string | null {
+  const entry = instances[instanceId];
+  if (!isAddedEndpoint(instanceId, entry)) return "unknown";
+  const config = { ...entry.config as Record<string, unknown> };
+  if (body.url !== undefined) {
+    const url = endpointBaseUrl(body.url);
+    if (!url) return "url";
+    if (url !== endpointDisplayUrl(config) && !body.key) return "key";
+    config.url = url;
+  }
+  if (body.key !== undefined) {
+    if (/^https?:\/\//i.test(body.key)) return "key";
+    config.key = body.key;
+  }
+  if (body.protocol !== undefined) config.protocol = body.protocol;
+  if (body.models !== undefined) {
+    if (!body.models.length) return "models";
+    config.managedModels = [...new Set(body.models)];
+    config.model = body.defaultModel ?? (body.models.includes(String(config.model)) ? config.model : body.models[0]);
+  }
+  if (body.defaultModel !== undefined) config.model = body.defaultModel;
+  if (config.managedModels && !(config.managedModels as string[]).includes(String(config.model))) return "models";
+  instances[instanceId] = { ...entry, ...(body.displayName ? { displayName: body.displayName } : {}), config };
+  return null;
+}
+
 export function withEndpointUrls(described: unknown, configs: InstanceConfigMap): unknown {
   if (!Array.isArray(described)) return described;
-  return described.map((instance: { instanceId?: string }) => {
+  return described.map((instance: { instanceId?: string; models?: { default: string; options: Array<{ id: string }> }; modelsUnconfirmed?: boolean }) => {
     const entry = instance.instanceId ? configs[instance.instanceId] : undefined;
     const url = entry && isAddedEndpoint(instance.instanceId!, entry) ? endpointDisplayUrl(entry.config) : undefined;
-    if (!entry || !isAddedEndpoint(instance.instanceId!, entry)) return instance;
+    if (!url || !entry) return instance;
     const config = (entry.config ?? {}) as Record<string, unknown>;
-    return { ...instance, ...(url ? { url } : {}), openaiEndpoint: {
-      url: url ?? "",
-      keySaved: Boolean(typeof config.key === "string" && config.key.trim()),
-      model: typeof config.model === "string" ? config.model : "",
-      managedModels: Array.isArray(config.managedModels) ? config.managedModels.filter((model): model is string => typeof model === "string") : [],
-    } };
+    const models = Array.isArray(config.managedModels) ? config.managedModels.filter((id): id is string => typeof id === "string")
+      : typeof config.model === "string" ? [config.model] : instance.modelsUnconfirmed ? [] : instance.models?.options.map(({ id }) => id) ?? [];
+    const configuredDefault = typeof config.model === "string" ? config.model : instance.models?.default;
+    const openaiEndpoint: OpenAiEndpointInfo = {
+      protocol: config.protocol === "responses" ? "responses" : "chat", models,
+      defaultModel: configuredDefault && models.includes(configuredDefault) ? configuredDefault : models[0] ?? "",
+      keySaved: Boolean(endpointKey(config)),
+    };
+    return { ...instance, url, openaiEndpoint };
   });
+}
+
+export async function discoverEndpointModels(url: string, key: string): Promise<{ models: string[]; error?: "unavailable" | "unauthorized" | "empty" }> {
+  try {
+    let response = await fetch(`${url}/models`, { headers: { authorization: `Bearer ${key}` }, redirect: "error", signal: AbortSignal.timeout(8000) });
+    if (response.status === 404 || response.status === 405) {
+      await response.body?.cancel();
+      response = await fetch(`${url}/model`, { headers: { authorization: `Bearer ${key}` }, redirect: "error", signal: AbortSignal.timeout(8000) });
+    }
+    if (!response.ok) { await response.body?.cancel(); return { models: [], error: [401, 403].includes(response.status) ? "unauthorized" : "unavailable" }; }
+    const reader = response.body?.getReader();
+    if (!reader) return { models: [], error: "empty" };
+    const chunks: Uint8Array[] = [];
+    let length = 0;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        length += value.length;
+        if (length > 2 * 1024 * 1024) { await reader.cancel(); return { models: [], error: "unavailable" }; }
+        chunks.push(value);
+      }
+    } finally { reader.releaseLock(); }
+    const data = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    const rows = Array.isArray(data) ? data : data?.data ?? data?.models;
+    const models = Array.isArray(rows) ? [...new Set(rows.map((row: unknown) => typeof row === "string" ? row : (row as { id?: unknown } | null)?.id)
+      .filter(isModelId))].slice(0, 1000) : [];
+    return models.length ? { models } : { models, error: "empty" };
+  } catch { return { models: [], error: "unavailable" }; }
 }

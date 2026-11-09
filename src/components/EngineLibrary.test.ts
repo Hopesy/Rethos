@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { InstanceInfo } from "@/state/store";
 import { EngineCard, EngineSections, engineReady } from "./EngineLibrary";
 import { CursorMark, HermesMark, InstanceProviderMark } from "./ProviderIcons";
+import { setLocale } from "@/lib/i18n";
 
 const instance = (overrides: Partial<InstanceInfo> = {}): InstanceInfo => ({
   instanceId: "claude", driverKind: "claudeAgent", displayName: "Claude",
@@ -12,6 +13,19 @@ const instance = (overrides: Partial<InstanceInfo> = {}): InstanceInfo => ({
 });
 
 describe("engine library", () => {
+  it("renders Chinese built-in names and preserves custom server names", () => {
+    setLocale("zh");
+    try {
+      const render = (displayName: string) => renderToStaticMarkup(createElement(EngineCard, {
+        instance: instance({ instanceId: "chatgpt", displayName }), children: null,
+      }));
+      expect(render("ChatGPT plan")).toContain("ChatGPT 套餐");
+      expect(render("Research AI")).toContain("Research AI");
+    } finally {
+      setLocale("en");
+    }
+  });
+
   it("keeps monochrome provider logos legible in light and dark skins", () => {
     for (const Mark of [CursorMark, HermesMark]) {
       const html = renderToStaticMarkup(createElement(Mark));

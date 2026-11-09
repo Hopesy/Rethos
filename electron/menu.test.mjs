@@ -76,26 +76,12 @@ describe("buildApplicationMenu", () => {
     }
   });
 
-  it.each(["darwin", "linux", "win32"])("offers native organisation sign-in while a hosted workspace is active on %s", platform => {
-    const onOrganizationSignIn = vi.fn();
-    const template = build(platform, { onOrganizationSignIn });
-    const item = template.find(entry => entry.label === "Server").submenu.find(entry => entry.id === "organization-sign-in");
-    expect(item.label).toBe("Sign in with your organization…");
-    item.click();
-    expect(onOrganizationSignIn).toHaveBeenCalledOnce();
-  });
-
-  it("mirrors Add a Cloud… under the saved servers only when main offers it, and names My Cloud's line", () => {
-    const servers = [{ id: "cloud", name: "My Cloud", origin: "https://omb-u-1.fly.dev" }];
-    const without = build("darwin", { environments: servers }).find(entry => entry.label === "Server").submenu;
-    expect(without.some(entry => entry.id === "add-cloud")).toBe(false);
-    expect(without.find(entry => entry.type === "radio" && entry.label.startsWith("My Cloud")).label).toBe("My Cloud — omb-u-1.fly.dev");
-    const onAddCloud = vi.fn();
-    const submenu = build("darwin", { environments: servers, onAddCloud, sublabels: { cloud: "Always on" } }).find(entry => entry.label === "Server").submenu;
-    expect(submenu.map(entry => entry.id ?? entry.label ?? entry.type).slice(0, 4)).toEqual(["This computer", "My Cloud — Always on", "add-cloud", "separator"]);
-    submenu.find(entry => entry.id === "add-cloud").click();
-    expect(onAddCloud).toHaveBeenCalledOnce();
-    expect(submenu.find(entry => entry.id === "add-cloud").label).toBe("Add a Cloud…");
+  it("offers self-hosted connections without official cloud or organization actions", () => {
+    const onConnect = vi.fn();
+    const menu = build("win32", { onConnect, onOrganizationSignIn: vi.fn(), onAddCloud: vi.fn() }).find(entry => entry.label === "Server").submenu;
+    expect(menu.some(entry => entry.id === "add-cloud" || entry.id === "organization-sign-in")).toBe(false);
+    menu.find(entry => entry.label === nativeText.englishText.t("native.menu.connect")).click();
+    expect(onConnect).toHaveBeenCalledOnce();
   });
 
   it("once My Cloud is home, lists only the other saved servers with Back to My Cloud, and has no Server menu without any", () => {
@@ -121,7 +107,7 @@ describe("buildApplicationMenu", () => {
     const template = build("darwin", { t, activeId: "local", onAddCloud: vi.fn() });
     const server = template.find((entry) => entry.label === "Servidor");
     expect(server.submenu[0].label).toBe(pt["place.local"]);
-    expect(server.submenu.find((entry) => entry.id === "add-cloud").label).toBe("Adicionar um Cloud…");
+    expect(server.submenu.find((entry) => entry.id === "add-cloud")).toBeUndefined();
     expect(template[0].submenu.find((entry) => entry.accelerator === "CmdOrCtrl+,").label).toBe("Configurações…");
     expect(template[0].submenu.at(-1)).toEqual({ role: "quit", label: "Sair do app Rethos" });
     expect(template.map((entry) => entry.label)).toEqual(["Rethos", "Arquivo", "Editar", "Servidor", "Visualizar", "Janela"]);

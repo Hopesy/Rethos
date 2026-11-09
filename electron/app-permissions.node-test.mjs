@@ -273,7 +273,8 @@ test("the app installs these handlers, with its one rule for My Cloud and a wait
   assert.match(main, /cloudPageSenderAllowed\(event, \{ contents, homeOrigin: myCloud\(\),/);
   assert.doesNotMatch(main, /rememberedHome\??\.accountId/);
   assert.doesNotMatch(main, /remembered: true/);
-  assert.match(main, /cloudAccountRestoring = true;\n\s+cloudAccountStarted = ensureCloudAccount\(\)\.start\(\)\.catch\(\(\) => \{\}\)\.then\(\(\) => accountRing\(\)\?\.start\(\)\)\.finally\(\(\) => \{ cloudAccountRestoring = false; \}\);/);
+  assert.doesNotMatch(main, /cloudAccountRestoring = true;/);
+  assert.doesNotMatch(main, /cloudAccountStarted = ensureCloudAccount\(\)\.start\(\)/);
 });
 
 const ADMIN = "http://127.0.0.1:9";

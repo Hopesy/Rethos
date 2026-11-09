@@ -304,6 +304,20 @@ describe("who has the browser", () => {
 });
 
 describe("a host that cannot run the browser yet", () => {
+  it("shows setup errors and actions in Chinese while keeping the executable command", async () => {
+    setLocale("zh");
+    const { show, events } = await mount();
+    await show(control("you"));
+    await act(async () => events().onHostSetup?.({ need: "sandbox" }));
+    expect(host.querySelector('[role="alert"]')?.textContent).toContain("服务器限制了浏览器沙箱");
+    expect(host.querySelector("a")?.textContent).toBe("浏览器沙箱设置步骤");
+    expect(host.querySelector("a")?.getAttribute("href")).toBe(PREVIEW_STREAM_SANDBOX_STEPS_URL);
+    await act(async () => button("重试").click());
+    await act(async () => events().onHostSetup?.({ need: "libraries", command: PREVIEW_STREAM_LIBRARIES_COMMAND }));
+    expect(host.querySelector('[role="alert"]')?.textContent).toContain("服务器缺少浏览器所需的依赖");
+    expect(host.querySelector("code")?.textContent).toBe(PREVIEW_STREAM_LIBRARIES_COMMAND);
+  });
+
   it("links a blocked sandbox to its setup steps, and shows missing libraries their command, never both", async () => {
     const { show, events } = await mount();
     await show(control("you"));

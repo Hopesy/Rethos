@@ -82,7 +82,7 @@ test("moves nothing until the person agrees in main's own confirm, which says th
     assert.equal(journal.value, null);
     assert.equal(asked[0].message, "Move Atlas to Acme?");
     assert.match(asked[0].detail, /no way back/);
-    assert.match(asked[0].detail, /what Atlas remembers, your connections, and MausBot/);
+    assert.match(asked[0].detail, /what Atlas remembers, your connections, and Rethos/);
     assert.deepEqual(asked[0].buttons, ["Move to Acme", "Cancel"]);
   } finally { done(); }
 });

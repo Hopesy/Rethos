@@ -17,7 +17,7 @@ import {
 } from "../claude-endpoints.ts";
 import { updateClaudeCli } from "../claude-update.ts";
 import { persistableInstanceConfigs, saveConfig, withInstanceCli, type AppConfig } from "../config.ts";
-import { addEndpoint, addEndpointSchema, isAddedEndpoint, updateEndpoint, updateEndpointSchema, withEndpointUrls } from "../openai-compat-endpoints.ts";
+import { addEndpoint, addEndpointSchema, discoverEndpointModels, discoverEndpointSchema, endpointBaseUrl, endpointDisplayUrl, endpointKey, isAddedEndpoint, updateEndpoint, updateEndpointSchema, withEndpointUrls } from "../openai-compat-endpoints.ts";
 import type { InstanceConfigMap, ModelSelection, ProviderInstance } from "../contracts.ts";
 import { removeAntigravityProfile } from "../drivers/antigravity-acp.ts";
 import { BUILT_IN_DRIVERS } from "../drivers/builtIn.ts";
@@ -155,44 +155,57 @@ export function createInstanceRoutes(deps: InstanceRouteDeps): RouteHandler {
       } finally { providerConfigBusy.set(false); }
     }
 
+    if (method === "POST" && path === "/api/instances/openai-compat/models") {
+      if (!String(req.headers["content-type"] ?? "").toLowerCase().startsWith("application/json")) return json(res, 415, userError("serverError.endpoint.invalid"));
+      const parsed = discoverEndpointSchema.safeParse(await readBody(req, 8192));
+      if (!parsed.success) return json(res, 400, userError("serverError.endpoint.invalid"));
+      const body = parsed.data;
+      const baseUrl = endpointBaseUrl(body.url);
+      if (!baseUrl) return json(res, 400, userError("serverError.endpoint.url"));
+      let key = body.key;
+      if (body.instanceId) {
+        const entry = cfg.instances?.[body.instanceId];
+        if (!isAddedEndpoint(body.instanceId, entry)) return json(res, 404, userError("serverError.endpoint.unknown"));
+        const config = (entry!.config ?? {}) as Record<string, unknown>;
+        if (!key && baseUrl === endpointDisplayUrl(config)) key = endpointKey(config);
+      }
+      if (!key || /^https?:\/\//i.test(key)) return json(res, 400, userError("serverError.endpoint.key"));
+      res.setHeader("cache-control", "no-store");
+      return json(res, 200, await discoverEndpointModels(baseUrl, key));
+    }
+
+    const openAiEndpointPatch = /^\/api\/instances\/([\w.-]+)\/openai-endpoint$/.exec(path);
+    if (method === "PATCH" && openAiEndpointPatch) {
+      if (!String(req.headers["content-type"] ?? "").toLowerCase().startsWith("application/json")) return json(res, 415, userError("serverError.endpoint.invalid"));
+      const parsed = updateEndpointSchema.safeParse(await readBody(req, 24576));
+      if (!parsed.success) return json(res, 400, userError("serverError.endpoint.invalid"));
+      const instanceId = openAiEndpointPatch[1];
+      if (providerConfigBusy.get() || busyProviderSelections().some((selection) => selection.instanceId === instanceId)) return json(res, 409, userError("serverError.endpoint.busy"));
+      providerConfigBusy.set(true);
+      providerInstancesChanging.add(instanceId);
+      try {
+        const instances = persistableInstanceConfigs(cfg);
+        const error = updateEndpoint(instances, instanceId, parsed.data);
+        if (error) return json(res, error === "unknown" ? 404 : 400, userError(error === "unknown" ? "serverError.endpoint.unknown" : error === "url" ? "serverError.endpoint.url" : error === "key" ? "serverError.endpoint.key" : "serverError.endpoint.invalid"));
+        await persistProviderInstance(instanceId, instances);
+        return json(res, 200, { instances: await describeInstances() });
+      } catch { return json(res, 500, userError("serverError.endpoint.save")); }
+      finally { providerInstancesChanging.delete(instanceId); providerConfigBusy.set(false); }
+    }
+
     if (method === "POST" && path === "/api/instances/openai-compat") {
       if (!String(req.headers["content-type"] ?? "").toLowerCase().startsWith("application/json")) return json(res, 415, { error: "content-type must be application/json" });
-      const parsed = addEndpointSchema.safeParse(await readBody(req, 8192));
-      if (!parsed.success) return json(res, 400, { error: "Enter a display name (up to 80 characters), a base URL and an API key." });
+      const parsed = addEndpointSchema.safeParse(await readBody(req, 24576));
+      if (!parsed.success) return json(res, 400, userError("serverError.endpoint.invalid"));
       if (providerConfigBusy.get()) return json(res, 409, { error: "provider settings are already being updated" });
       providerConfigBusy.set(true);
       try {
         const instances = persistableInstanceConfigs(cfg);
         const added = addEndpoint(instances, parsed.data);
-        if ("error" in added) return json(res, 400, { error: added.error });
+        if ("error" in added) return json(res, 400, userError(added.error === "url" ? "serverError.endpoint.url" : added.error === "key" ? "serverError.endpoint.key" : "serverError.endpoint.invalid"));
         await persistProviderInstance(added.instanceId, instances);
         return json(res, 201, { instanceId: added.instanceId, instances: await describeInstances() });
       } finally { providerConfigBusy.set(false); }
-    }
-
-    const openaiEndpointPatch = /^\/api\/instances\/([\w.-]+)\/openai-endpoint$/.exec(path);
-    if (method === "PATCH" && openaiEndpointPatch) {
-      if (!String(req.headers["content-type"] ?? "").toLowerCase().startsWith("application/json")) return json(res, 415, { error: "content-type must be application/json" });
-      const parsed = updateEndpointSchema.safeParse(await readBody(req, 16384));
-      if (!parsed.success) return json(res, 400, { error: "Check the service name, URL and model IDs." });
-      const instanceId = openaiEndpointPatch[1];
-      if (providerConfigBusy.get()) return json(res, 409, { error: "provider settings are already being updated" });
-      if (busyProviderSelections().some((selection) => selection.instanceId === instanceId)) {
-        return json(res, 409, { error: "Wait for bots using this service to finish before changing its settings." });
-      }
-      providerConfigBusy.set(true);
-      providerInstancesChanging.add(instanceId);
-      try {
-        const instances = persistableInstanceConfigs(cfg);
-        if (!Object.hasOwn(instances, instanceId)) return json(res, 404, { error: "unknown instance" });
-        const invalid = updateEndpoint(instances, instanceId, parsed.data);
-        if (invalid) return json(res, 400, invalid);
-        await persistProviderInstance(instanceId, instances);
-        return json(res, 200, { instances: await describeInstances() });
-      } finally {
-        providerInstancesChanging.delete(instanceId);
-        providerConfigBusy.set(false);
-      }
     }
 
     if (method === "POST" && path === "/api/instances/claude-endpoint") {

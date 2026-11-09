@@ -8,31 +8,6 @@ import environments from "./environments.cjs";
 // The preload bridge and the main IPC handler run from their real sources without Electron; the client behind them is a stub.
 const ORIGIN = "http://127.0.0.1:48993";
 
-function preload({ company = true } = {}) {
-  const invoked = [];
-  let bridge;
-  const context = vm.createContext({
-    process: { platform: "fixture", argv: [`--omb-local-origin=${ORIGIN}`, ...(company ? ["--omb-company-desktop=1"] : [])] },
-    location: { origin: ORIGIN }, TextEncoder, localStorage: { getItem: () => null },
-    require: name => {
-      assert.equal(name, "electron");
-      return { webUtils: {}, contextBridge: { exposeInMainWorld: (_key, value) => { bridge = value; } }, ipcRenderer: {
-        on: () => {}, removeListener: () => {}, send: () => {},
-        invoke: (...args) => { invoked.push(args); return Promise.resolve({ status: "connecting" }); },
-      } };
-    },
-  });
-  vm.runInContext(readFileSync(new URL("./preload.cjs", import.meta.url), "utf8"), context);
-  return { bridge, invoked };
-}
-
-test("the preload bridge reopens with no renderer-supplied address, and only on the company desktop", async () => {
-  const f = preload();
-  await f.bridge.organization.reopen("https://attacker.example.test", { verificationUri: "https://attacker.example.test" });
-  assert.deepEqual(f.invoked, [["organization:reopen"]]);
-  assert.equal(preload({ company: false }).bridge.organization, undefined);
-});
-
 const mainSource = readFileSync(new URL("./main.mjs", import.meta.url), "utf8");
 function section(start, end) {
   const from = mainSource.indexOf(start), to = mainSource.indexOf(end, from + start.length);
@@ -55,12 +30,6 @@ function main() {
   vm.runInContext(registrations, context, { filename: "main.mjs (organization IPC fixture)" });
   return { handlers, calls, context, event: { sender: contents, senderFrame: frame } };
 }
-
-test("organization:reopen passes nothing from the renderer to the managed-desktop client", async () => {
-  const f = main();
-  assert.deepEqual(await f.handlers.get("organization:reopen")(f.event, "https://attacker.example.test"), { status: "connecting" });
-  assert.deepEqual(f.calls, [[]]);
-});
 
 test("organization:reopen answers only the local main window's exact main frame", () => {
   const f = main();

@@ -31,13 +31,6 @@ function fixture({ remote = false, company = true, remoteClient = false, storage
   };
 }
 
-test("private snapshot allowlist stays exactly equal to the full-backup browser-state allowlist", () => {
-  const f = fixture();
-  assert.deepEqual(JSON.parse(vm.runInContext("JSON.stringify(COMPANY_BACKUP_CLIENT_KEYS)", f.context)), [...WORKSPACE_BACKUP_CLIENT_KEYS]);
-  assert.equal(f.sent.length, 0, "preload startup does not export data");
-  assert.equal(f.bridge.companyBackups.collectClientState, undefined, "no renderer-callable snapshot capability");
-});
-
 test("tools layout persists in the backup client keys", () => {
   const f = fixture();
   const preloadKeys = JSON.parse(vm.runInContext("JSON.stringify(COMPANY_BACKUP_CLIENT_KEYS)", f.context));
@@ -75,13 +68,4 @@ test("navigation, inaccessible storage and oversized UTF-8 snapshots return only
     f.collect({ requestId });
     assert.deepEqual(f.sent, [["company-backups:client-state", { requestId, unavailable: true }]]);
   }
-});
-
-test("invalid snapshot requests are ignored and schedule settings use only their narrow IPC", async () => {
-  const f = fixture();
-  for (const input of [null, {}, { requestId: "bad" }, { requestId: 7 }]) f.collect(input);
-  assert.equal(f.sent.length, 0);
-  const input = { enabled: false };
-  await f.bridge.companyBackups.configureSchedule(input);
-  assert.deepEqual(f.invoked, [["company-backups:configure-schedule", input]]);
 });

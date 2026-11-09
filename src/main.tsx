@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import {
-  previewBrowserSignIn, readSessionState, takeBrowserSignInFromLocation, takePairingCodeFromLocation, takeInvitedEmailFromLocation,
+  previewBrowserSignIn, readSessionState, takeBrowserSignInFromLocation, takePairingCodeFromLocation,
 } from "./lib/session";
 import { bootstrapBrand, productName } from "./lib/brand";
 import { t } from "./lib/i18n";
@@ -40,7 +40,7 @@ async function chooseRoot(): Promise<React.ReactNode> {
       await pageLanguage;
       return preview ? <BrowserSignInPage credential={signIn} owner={preview.owner} /> : <PairPage initialCode={null} reason={t("pair.browser.signInFailed")} />;
     }
-    return <PairPage initialCode={takePairingCodeFromLocation()} initialEmail={takeInvitedEmailFromLocation()} />;
+    return <PairPage initialCode={takePairingCodeFromLocation()} />;
   }
   const session = await readSessionState();
   if (session.kind === "unauthenticated") {

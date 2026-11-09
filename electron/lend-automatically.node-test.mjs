@@ -444,7 +444,7 @@ test("a Cloud's bot needing apps and screen on a Mac that lacks only macOS's per
   homes[HOME].push({ action: "computer_tools" });
   await until(() => homes[HOME].results.length === 1, "the answer");
   assert.deepEqual(asked, [missing]);
-  assert.match(homes[HOME].results[0].content[0].text, /allow Accessibility and Screen Recording for OpenMausBot in System Settings/);
+  assert.match(homes[HOME].results[0].content[0].text, /allow Accessibility and Screen Recording for Rethos in System Settings/);
 });
 
 test("the move's project folders are lent to My Cloud with editing on top; while paused the move is told to try later", async t => {

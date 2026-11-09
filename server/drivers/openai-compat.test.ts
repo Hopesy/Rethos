@@ -299,6 +299,19 @@ describe("OpenAICompatDriver", () => {
     await inst.dispose();
   });
 
+  it("keeps the selected default within managed models after refresh", async () => {
+    const inst = await OpenAICompatDriver.create({
+      instanceId: "managed-default", displayName: "Managed", enabled: true,
+      environment: {},
+      config: { url: "https://example.test/v1", apiKeyEnv: "FIXTURE_MANAGED_KEY", key: "fixture-key", managedModels: ["first", "second"], model: "second", protocol: "responses" },
+    });
+    expect(inst.models?.default).toBe("second");
+    await inst.refreshModels?.();
+    expect(inst.models?.default).toBe("second");
+    expect(inst.models?.options.map(model => model.id)).toEqual(["first", "second"]);
+    await inst.dispose();
+  });
+
   it("lists LM Studio chat keys from the native catalog and skips the OpenAI variant id", async () => {
     const fetchMock = vi.fn(async (input: string | URL | Request) => {
       const url = String(input);
