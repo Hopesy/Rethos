@@ -2181,8 +2181,10 @@ function createWindow({ deferNavigation = false } = {}) {
         result.hardwareAccelerationEnabled = app.isHardwareAccelerationEnabled();
         result.displayMediaRequests = displayMediaRequestCount;
         console.log(`[smoke] renderer-ready ${JSON.stringify(result)}`);
+        if (process.env.OMB_SMOKE_RESULT_FILE) fs.writeFileSync(process.env.OMB_SMOKE_RESULT_FILE, JSON.stringify({ ok: true, result }));
       } catch (error) {
         console.error(`[smoke] renderer-failed ${error?.stack ?? error}`);
+        if (process.env.OMB_SMOKE_RESULT_FILE) fs.writeFileSync(process.env.OMB_SMOKE_RESULT_FILE, JSON.stringify({ ok: false, error: error?.stack ?? String(error) }));
       } finally {
         if (process.env.OMB_SMOKE_KEEP_OPEN !== "1") win.close();
       }

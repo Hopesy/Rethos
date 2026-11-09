@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 assert.equal(process.platform, "win32");
@@ -12,6 +12,7 @@ const fixture = mkdtempSync(join(base, "installed-"));
 const home = join(fixture, "home");
 const installation = join(fixture, "app");
 const data = join(home, ".openmausbot");
+const report = join(fixture, "renderer.json");
 mkdirSync(data, { recursive: true });
 writeFileSync(join(data, "config.json"), JSON.stringify({ instances: { fixture: { driver: "not-a-real-driver", displayName: "Release verification" } } }));
 const env = {
@@ -25,6 +26,8 @@ const env = {
   OMB_SMOKE_TEST: "1",
   OMB_SMOKE_CUA: "0",
   OMB_SMOKE_KEEP_OPEN: "1",
+  OMB_SMOKE_RESULT_FILE: report,
+  ELECTRON_ENABLE_LOGGING: "1",
 };
 for (const key of ["ELECTRON_RUN_AS_NODE", "CUA_DRIVER_PATH", "OMB_RESOURCES_PATH"]) delete env[key];
 for (const directory of [env.APPDATA, env.LOCALAPPDATA]) mkdirSync(directory, { recursive: true });
@@ -53,7 +56,7 @@ async function runInstaller(executable, args) {
 await runInstaller(resolve(`release/Rethos-${version}-setup.exe`), ["/S", `/D=${installation}`]);
 const executable = join(installation, "Rethos.exe");
 assert(existsSync(executable), "installer did not create Rethos.exe");
-const child = spawn(executable, [`--user-data-dir=${join(home, "electron")}`], {
+const child = spawn(executable, [`--user-data-dir=${join(home, "electron")}`, "--enable-logging=file", `--log-file=${join(fixture, "chromium.log")}`], {
   env, cwd: fixture, windowsHide: true, stdio: ["ignore", "pipe", "pipe"],
 });
 let output = "";
@@ -65,6 +68,12 @@ try {
   let result;
   while (Date.now() < deadline) {
     if (launchError) throw launchError;
+    if (existsSync(report)) {
+      const recorded = JSON.parse(readFileSync(report, "utf8"));
+      assert(recorded.ok, recorded.error);
+      result = recorded.result;
+      break;
+    }
     const match = output.match(/\[smoke\] renderer-ready (\{[^\r\n]*\})/);
     if (match) { result = JSON.parse(match[1]); break; }
     assert(!output.includes("[smoke] renderer-failed"), output);
@@ -81,4 +90,10 @@ try {
 } finally {
   writeFileSync(join(fixture, "desktop.log"), output);
   killTree(child);
+  for (const directory of [join(process.env.APPDATA, "rethos", "logs"), join(env.APPDATA, "rethos", "logs"), join(home, "electron", "logs")]) {
+    if (!existsSync(directory)) continue;
+    for (const file of readdirSync(directory)) {
+      if (file.endsWith(".log")) copyFileSync(join(directory, file), join(fixture, `app-${file}`));
+    }
+  }
 }
