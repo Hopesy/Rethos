@@ -46,10 +46,15 @@ cp .env.example .env
 # 编辑 .env，设置 DOMAIN=rethos.example.com
 docker compose pull
 docker compose up -d --no-build
-docker compose exec rethos rethos pair
+docker compose exec rethos rethos token create "Web login" --scope admin --expires 90d --out /data/rethos-admin-token
+docker compose exec rethos cat /data/rethos-admin-token
 ```
 
-打开命令生成的 HTTPS 配对链接，即可使用网页。手机浏览器使用同一地址，可添加到主屏幕。
+首次部署后用以上命令创建并读取管理员 Token，打开 HTTPS 网页并粘贴 Token 登录。换浏览器时使用同一个 Token，各浏览器独立保持登录。登录后也可在 **设置 → 通用 → 访问 Token → 管理** 创建和管理 Token。
+
+手机登录：在已登录的电脑网页打开 **设置 → 通用 → 手机扫码登录 → 显示二维码**，手机相机扫码，确认服务器后点“登录”。二维码有效期为 5 分钟，使用一次即失效。登录后可将网页添加到手机主屏幕。
+
+访问 Token 有效期为 90 天，网页创建时完整内容仅显示一次。在管理面板撤销 Token，会同时退出使用它登录的浏览器及其扫码登录的手机。请将 Token 保存在密码管理器中；丢失或过期时，在服务器重新执行创建命令并指定新的输出文件。
 
 日常更新：
 

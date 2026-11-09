@@ -51,7 +51,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: node --test scripts/windows-release.test.mjs
-      - run: pnpm exec vitest run server/request-auth.test.ts server/live-access.test.ts
+      - run: pnpm exec vitest run server/request-auth.test.ts server/live-access.test.ts server/token-login.test.ts src/pair/PairPage.test.ts src/pair/BrowserSignInPage.test.ts src/pair/BrowserSignInPage.dom.test.ts src/components/BrowserAccessSettings.test.ts
       - run: node --test electron/server-session.node-test.mjs electron/desktop-server-auth.node-test.mjs electron/startup-tray.node-test.mjs electron/native-language.node-test.mjs electron/self-hosted.node-test.mjs electron/cloud-entry.node-test.mjs electron/company-backup-main.node-test.mjs
       - name: Clean build outputs
         run: pnpm clean

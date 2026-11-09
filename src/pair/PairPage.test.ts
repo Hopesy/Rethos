@@ -3,10 +3,10 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { setLocale } from "../lib/i18n";
-const f = vi.hoisted(() => ({ pair: vi.fn(), session: vi.fn() }));
-vi.mock("../lib/session", async original => ({ ...await original<typeof import("../lib/session")>(), pairWithCode: f.pair, readSessionState: f.session }));
+const f = vi.hoisted(() => ({ pair: vi.fn(), session: vi.fn(), login: vi.fn() }));
+vi.mock("../lib/session", async original => ({ ...await original<typeof import("../lib/session")>(), pairWithCode: f.pair, readSessionState: f.session, signInWithToken: f.login }));
 vi.mock("../components/DesktopWorkspaceSwitcher", () => ({ DesktopWorkspaceSwitcher: () => null }));
-import { codeProblem, codeReady, pairingCommand, PairPage, pairsAutomatically, unencryptedPublic } from "./PairPage";
+import { PairPage, pairsAutomatically, unencryptedPublic } from "./PairPage";
 import en from "../locales/en.json";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -15,7 +15,7 @@ let root: Root, host: HTMLDivElement;
 const replace = vi.fn();
 beforeEach(() => {
   setLocale("en");
-  f.pair.mockReset(); f.session.mockResolvedValue({ kind: "unauthenticated", error: "" }); replace.mockReset();
+  f.pair.mockReset(); f.login.mockReset(); f.session.mockResolvedValue({ kind: "unauthenticated", error: "" }); replace.mockReset();
   vi.stubGlobal("location", { replace, protocol: "https:", hostname: "rethos.example.com", host: "rethos.example.com", search: "" });
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ label: "My VPS", version: "1", platform: "linux", capabilities: { install: "docker", emailSignIn: true, cloudHome: true } }) }));
   delete window.ogb;
@@ -24,23 +24,50 @@ beforeEach(() => {
 afterEach(() => { act(() => root.unmount()); host.remove(); vi.unstubAllGlobals(); });
 const render = async (initialCode: string | null = null) => { await act(async () => root.render(createElement(PairPage, { initialCode }))); };
 const submit = async () => { await act(async () => host.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }))); };
+const fill = async (value: string) => { await act(async () => { const input = host.querySelector("input")!; Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, value); input.dispatchEvent(new Event("input", { bubbles: true })); }); };
 
-it("uses one input and collapsed help, even with a legacy cloud descriptor", async () => {
+it("shows one accessible masked token input without visible labels or alternate login instructions", async () => {
   await render();
   expect(host.querySelectorAll("input")).toHaveLength(1);
-  expect(host.querySelector("details")!.open).toBe(false);
-  expect(host.querySelector("code")!.textContent).toBe("docker compose exec rethos rethos pair");
+  expect(host.querySelector("details")).toBeNull();
+  expect(host.querySelector("label")).toBeNull();
+  expect(host.querySelector("input")!.getAttribute("aria-label")).toBe(en["login.token"]);
+  expect(host.textContent).not.toContain(en["login.usePair"]);
+  expect(host.textContent).not.toContain(en["login.help"]);
+  expect(host.textContent).not.toContain(en["login.subtitle"]);
+  expect(host.querySelector("input")!.type).toBe("password");
+  expect(host.querySelector("code")).toBeNull();
   expect(host.textContent).not.toContain("My Cloud");
   expect(host.querySelector('[type="email"]')).toBeNull();
   expect(host.querySelector("button[type=submit]")!.hasAttribute("disabled")).toBe(true);
   expect(host.querySelector("img")!.src).toContain("/app-icon.svg");
 });
 
-it("requires a browser confirmation then pairs with an automatic device label", async () => {
-  f.pair.mockResolvedValue({ ok: true }); await render(code);
-  expect(f.pair).not.toHaveBeenCalled();
+it("signs in with the reusable token and clears the input after success", async () => {
+  f.login.mockResolvedValue({ ok: true }); await render();
+  const input = host.querySelector("input")!;
+  await act(async () => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "omb_sess_" + "a".repeat(43)); input.dispatchEvent(new Event("input", { bubbles: true })); });
   await submit();
-  expect(f.pair).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ code, label: expect.any(String), attemptId: expect.any(String) }));
+  expect(f.login).toHaveBeenCalledWith("omb_sess_" + "a".repeat(43));
+  expect(f.pair).not.toHaveBeenCalled(); expect(replace).toHaveBeenCalledWith("/"); expect(input.value).toBe("");
+});
+
+it("shows an invalid token error and supports revealing the input", async () => {
+  f.login.mockResolvedValue({ ok: false, error: "Token expired" }); await render();
+  const input = host.querySelector("input")!;
+  await act(async () => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "invalid"); input.dispatchEvent(new Event("input", { bubbles: true })); });
+  await submit(); expect(host.querySelector('[role="alert"]')!.textContent).toBe("Token expired"); expect(replace).not.toHaveBeenCalled();
+  await act(async () => (host.querySelector('[aria-label="Show token"]') as HTMLButtonElement).click()); expect(input.type).toBe("text");
+});
+
+it("uses token login even when a browser opens an old pairing link", async () => {
+  f.login.mockResolvedValue({ ok: true }); await render(code);
+  expect(f.pair).not.toHaveBeenCalled();
+  expect(host.querySelector("input")!.name).toBe("access-token");
+  expect(host.querySelector("input")!.value).toBe("");
+  await fill("omb_sess_" + "a".repeat(43));
+  await submit();
+  expect(f.pair).not.toHaveBeenCalled(); expect(f.login).toHaveBeenCalledOnce();
   expect(replace).toHaveBeenCalledWith("/");
 });
 
@@ -51,14 +78,15 @@ it("automatically exchanges a desktop link and preserves the destination", async
   expect(replace).toHaveBeenCalledWith("/");
 });
 
-it("an expired desktop link returns to the form and allows an explicit retry", async () => {
+it("an expired desktop connection returns to token login", async () => {
   window.ogb = { workspaces: {} } as Window["ogb"];
   f.pair.mockResolvedValue({ ok: false, error: "This code has expired." }); await render(code);
   expect(host.querySelector("[role=alert]")!.textContent).toBe("This code has expired.");
   expect(replace).not.toHaveBeenCalled();
   expect(host.querySelector("form")).not.toBeNull();
   expect(f.pair).toHaveBeenCalledTimes(1);
-  f.pair.mockResolvedValue({ ok: true }); await submit();
+  f.login.mockResolvedValue({ ok: true }); await fill("omb_sess_" + "a".repeat(43)); await submit();
+  expect(f.pair).toHaveBeenCalledTimes(1); expect(f.login).toHaveBeenCalledOnce();
   expect(replace).toHaveBeenCalledWith("/");
 });
 
@@ -69,21 +97,9 @@ it("an existing session offers entry without exchanging another code", async () 
   expect(f.pair).not.toHaveBeenCalled();
 });
 
-it("rejects other credential types and accepts formatted pairing codes", () => {
-  expect(codeProblem("1234 5678")).toBe(en["serverError.pair.emailCode"]);
-  expect(codeProblem("123456")).toBe(en["serverError.pair.oldCode"]);
-  expect(codeProblem("omb_sess_" + "a".repeat(43))).toBe(en["serverError.pair.scriptKey"]);
-  expect(codeReady("7kq2 m9xd h4tp")).toBe(true);
-  expect(codeReady("1234 5678")).toBe(false);
+it("restricts automatic connection links to the desktop bridge", () => {
   expect(pairsAutomatically(code, false)).toBe(false);
   expect(pairsAutomatically(code, true)).toBe(true);
-});
-
-it("gives installation-specific commands", () => {
-  expect(pairingCommand("docker")).toBe("docker compose exec rethos rethos pair");
-  expect(pairingCommand("source")).toBe("pnpm pair");
-  expect(pairingCommand("npx")).toBe("npx rethos pair");
-  expect(pairingCommand("global")).toBe("rethos pair");
 });
 
 it("warns on a public unencrypted connection", async () => {

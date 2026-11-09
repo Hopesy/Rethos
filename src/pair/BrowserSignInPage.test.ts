@@ -6,12 +6,12 @@ import { BrowserSignInPage } from "./BrowserSignInPage";
 
 const credential = `omb_pair_${"c".repeat(43)}`;
 
-it("says whose Cloud a browser sign-in is for, with one Continue and no second step, and never shows the credential", () => {
+it("shows the server and one sign-in action without revealing the QR credential", () => {
   const html = renderToStaticMarkup(createElement(BrowserSignInPage, { credential, owner: "ada@example.test" }));
-  expect(html).toContain("Signing in to ada@example.test’s Cloud");
-  expect(html).toContain('<p class="mt-1.5 text-[14px] text-ink-secondary">Not your email? Close this tab.</p>');
-  expect(html.match(/<button/g)).toHaveLength(1);
-  expect(html).toContain(">Continue</button>");
+  expect(html).toContain("ada@example.test");
+  expect(html).toContain("Confirm the server below");
+  expect(html.match(/class="login-submit/g)).toHaveLength(1);
+  expect(html).toContain("Sign in</button>");
   expect(html).not.toContain(credential);
   expect(html).not.toContain("omb_pair_");
   expect(html).not.toMatch(/<input|<form|role="alert"/);

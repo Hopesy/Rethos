@@ -524,6 +524,8 @@ import { createGracefulShutdown } from "./graceful-shutdown.ts";
 import { acquireDataDirLeaseForProcess } from "./data-dir-lease.ts";
 import { createWorkspaceAccess, describeEdition, editionForSettings, editionStatus, entitled, hostedWorkspaceConfiguration, hostedWorkspaceConfigured, licenseWarning, sharedWorkspaceFullAccessConfigured, loadEnterpriseLayer, workspaceMembership, type WorkspaceAccess } from "./enterprise.ts";
 import { environmentDescriptor, loadEnvironmentId, OWNER_LENDING, serverVersion } from "./environment.ts";
+import { tokenLoginRoute } from "./routes/token-login.ts";
+import { createBrowserAccessRoutes } from "./routes/browser-access.ts";
 import { WorkspaceBackupMaintenance } from "./workspace-backup-maintenance.ts";
 import { createWorkspaceBackupRoutes, isWorkspaceBackupSessionControl } from "./workspace-backup-http.ts";
 import { applyPendingWorkspaceRestore, readLastWorkspaceRestore, type WorkspaceRestoreResult } from "./workspace-backup.ts";
@@ -9562,6 +9564,7 @@ const webhookIngressStatus = () => ({
   baseUrl: webhookIngress?.baseUrl ?? `http://127.0.0.1:${WEBHOOK_PORT}`,
   ...(webhookIngressError ? { error: webhookIngressError } : {}),
 });
+ROUTES.push(createBrowserAccessRoutes({ sessions, cookieName: SESSION_COOKIE, enabled: () => !HOSTED_WORKSPACE && !CLOUD_HOME && !CLOUD_TEAM && workspaceMembership().pairingCodes && !managedPolicy.remoteAccessRefusal(), base: req => pairingLinkBase(publicUrl(), requestOrigin(req)) }));
 ROUTES.push(createWebhookRoutes({ webhooks, ingress: webhookIngressStatus, visible: (auth) => visibleTo(viewerFor(auth)) }), botApi.routes);
 
 const RUNTIME_KEEP_MS = 30 * 24 * 60 * 60_000;
@@ -12634,6 +12637,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     }
     if (await emailSignInRoute({ cloudHome: Boolean(CLOUD_HOME), emailSignIn, sessions, cookieName: SESSION_COOKIE, target: (r) => signInMailTarget(publicUrl(), requestOrigin(r)),
       environment: () => environmentDescriptor({ environmentId: ENVIRONMENT_ID, ...TEAM_LABEL, desktopManaged: DESKTOP_MANAGED, emailSignIn: true, sharedComputers: lendingEnabled() }) }, req, res, path, method)) return;
+    if (await tokenLoginRoute({ sessions, cookieName: SESSION_COOKIE, enabled: !HOSTED_WORKSPACE && !CLOUD_HOME && !CLOUD_TEAM && workspaceMembership().pairingCodes && !managedPolicy.remoteAccessRefusal() }, req, res, path, method)) return;
     if ((cloudSigned && await cloudSigned({ req, res, url, path, method })) || chatApps.serveFile(req, res, path, method)) return;
     if (method === "POST" && path === "/api/auth/pair") {
       // JSON only: a cross-site HTML form cannot send this content type without a preflight, so no unused code is planted as a session.
@@ -12779,11 +12783,6 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     if (method === "POST" && path === "/api/auth/stream-ticket") {
       if (auth.kind === "loopback") return json(res, 200, { ticket: null, reason: "loopback needs no ticket" });
       return json(res, 200, sessions.issueStreamTicket(auth.session.id));
-    }
-    if (method === "POST" && path === "/api/auth/logout") {
-      if (auth.kind === "session") sessions.revoke(auth.session.id);
-      res.setHeader("set-cookie", clearSessionCookie(SESSION_COOKIE));
-      return json(res, 200, { ok: true });
     }
     if (method === "POST" && path === "/api/auth/pairing") {
       const body = await readBody(req);

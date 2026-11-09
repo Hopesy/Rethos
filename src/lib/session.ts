@@ -162,6 +162,10 @@ export function signInWithBrowserGrant(credential: string, attemptId: string, fe
   return pairWithCode({ code: credential, label: defaultDeviceLabel(), attemptId, browser: true }, fetchImpl);
 }
 
+export function signInWithToken(token: string, fetchImpl: typeof fetch = fetch): Promise<{ ok: true } | { ok: false; error: string }> {
+  return postAuth("/api/auth/token-login", { token: token.trim() }, fetchImpl);
+}
+
 export function cloudOwnerOf(session: unknown): string | null {
   const record = Object(session) as { cloudHome?: unknown; owner?: unknown };
   return record.cloudHome === true && typeof record.owner === "string" && record.owner ? record.owner : null;

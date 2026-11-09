@@ -31,6 +31,7 @@ import { useServerUpdateItem } from "./SidebarProfileMenu";
 import { AdvancedModeRow, BrowserProfilesRow, ColorUserBubblesRow, FollowUpRow, LanguageRow, ReplayTourRow, SendKeyRow, UpdatesRow } from "./AppSettingsRows";
 import { ThemeRow } from "./ThemeRow";
 import { AdminOnly } from "./AdminOnly";
+import { BrowserAccessSettings } from "./BrowserAccessSettings";
 
 export type SimpleDisclosureId = "ai-more" | "ai-keys" | "computer-elsewhere" | "billing-limits";
 
@@ -51,6 +52,7 @@ export function SimpleGeneralPage({ has, onLooks }: { has: Has; onLooks: () => v
         <SettingsGroup label={t("settings.group.account")} block="general">
           <SettingsRows>
             {has("general") && <ProfileSummaryRow />}
+            <BrowserAccessSettings />
           </SettingsRows>
         </SettingsGroup>
       )}

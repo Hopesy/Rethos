@@ -4,6 +4,10 @@ import { formatServerText, type ServerErrorBody, type ServerTextParams } from ".
 
 /** The client translates by key and falls back to this English, which the server keeps sending for older clients. */
 export const USER_ERROR = {
+  "serverError.token.invalid": "This access token is invalid, expired or revoked.",
+  "serverError.token.disabled": "Token sign-in is unavailable on this server.",
+  "serverError.token.origin": "Open this server's login page and try again.",
+  "serverError.token.qrAddress": "Open Rethos at its HTTPS address to connect your phone.",
   "serverError.endpoint.invalid": "Check the connection details and choose at least one model.",
   "serverError.endpoint.url": "Enter an http or https base URL without credentials, query parameters or a fragment.",
   "serverError.endpoint.key": "Enter an API key. When changing the API address, enter the key again.",

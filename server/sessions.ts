@@ -77,6 +77,8 @@ const sessionSchema = z.object({
   memberCheckedAt: z.number().optional(),
   /** A browser sign-in (PairingCode `browser`): accepted only as its browser's cookie, never as a bearer token. */
   cookieOnly: z.literal(true).optional(),
+  /** A browser opened by an access token ends when that token expires or is revoked. */
+  loginTokenId: z.string().uuid().optional(),
   owner: z.string().max(254).optional(),
   /** A Team Cloud's sign-in for moving one bot in (server/team-move-in.ts): it reaches that bot's move routes only. */
   moveIn: z.string().regex(/^[\w-]{1,128}$/).optional(),
@@ -119,6 +121,7 @@ export interface PairingCode {
   memberCheckedAt?: number;
   /** The session it opens is an access token that lasts exactly this long. */
   tokenTtlMs?: number;
+  loginTokenId?: string;
 }
 
 export interface PublicPairing {
@@ -303,7 +306,7 @@ export class SessionRegistry {
   private prune(): void {
     this.recheckMembership();
     const now = this.now();
-    this.pairings = this.pairings.filter((p) => p.expiresAt > now);
+    this.pairings = this.pairings.filter((p) => p.expiresAt > now && (!p.loginTokenId || this.sessions.some(s => s.id === p.loginTokenId && s.token && s.expiresAt > now)));
     this.replays = this.replays.filter((r) => r.expiresAt > now);
     for (const [hash, ticket] of this.tickets) if (ticket.expiresAt <= now) this.tickets.delete(hash);
     for (const [failures, policy] of [[this.failures, LOCKOUT], [this.codeFailures, PAIRING_LOCKOUT]] as const) {
@@ -311,9 +314,10 @@ export class SessionRegistry {
         if (entry.lockedUntil <= now && now - entry.windowStart > policy.windowMs) failures.delete(source);
       }
     }
-    const expired = this.sessions.filter((s) => s.expiresAt <= now);
+    const expired = this.sessions.filter((s) => s.expiresAt <= now || !this.loginTokenLive(s));
     if (expired.length) {
-      this.sessions = this.sessions.filter((s) => s.expiresAt > now);
+      const ids = new Set(expired.map(s => s.id));
+      this.sessions = this.sessions.filter((s) => !ids.has(s.id));
       for (const s of expired) this.forget(s.id);
       try {
         this.persist();
@@ -357,7 +361,7 @@ export class SessionRegistry {
     }
   }
 
-  openPairing(input: { scopes?: Scope[]; label?: string; ttlMs?: number; tokenTtlMs?: number; browser?: boolean; owner?: string; member?: TeamMember; memberCheckedAt?: number } = {}): { id: string; code: string; credential: string; expiresAt: number } {
+  openPairing(input: { scopes?: Scope[]; label?: string; ttlMs?: number; tokenTtlMs?: number; browser?: boolean; owner?: string; member?: TeamMember; memberCheckedAt?: number; loginTokenId?: string } = {}): { id: string; code: string; credential: string; expiresAt: number } {
     this.prune();
     const now = this.now();
     const code = generatePairingCode();
@@ -375,6 +379,7 @@ export class SessionRegistry {
       ...(input.browser ? { browser: true as const, ...(input.owner ? { owner: input.owner } : {}) } : {}),
       ...(input.member ? { member: input.member, ...(input.memberCheckedAt !== undefined ? { memberCheckedAt: input.memberCheckedAt } : {}) } : {}),
       ...(input.tokenTtlMs !== undefined && !input.browser && !input.member ? { tokenTtlMs: input.tokenTtlMs } : {}),
+      ...(input.browser && input.loginTokenId ? { loginTokenId: input.loginTokenId } : {}),
     };
     this.pairings.push(pairing);
     return { id: pairing.id, code, credential, expiresAt: pairing.expiresAt };
@@ -466,6 +471,8 @@ export class SessionRegistry {
     if (this.personal(pairing.scopes)) return { ok: false, status: 403, ...this.adminOnly! };
     const token = `omb_sess_${randomBytes(32).toString("base64url")}`;
     const checkedAt = pairing.memberCheckedAt ?? now;
+    const parent = pairing.loginTokenId ? this.sessions.find(s => s.id === pairing.loginTokenId && s.token && s.expiresAt > now) : undefined;
+    if (pairing.loginTokenId && (!parent || pairing.scopes.some(scope => !parent.scopes.includes(scope)))) return { ok: false, status: 401, ...userError("serverError.pair.linkExpired") };
     const record: SessionRecord = {
       id: randomUUID(),
       tokenHash: sha256(token),
@@ -473,7 +480,8 @@ export class SessionRegistry {
       scopes: [...pairing.scopes],
       createdAt: now,
       lastSeenAt: now,
-      expiresAt: pairing.member ? teamSessionExpiresAt(checkedAt, now + SESSION_TTL_MS) : now + Math.min(pairing.tokenTtlMs ?? SESSION_TTL_MS, SESSION_MAX_AGE_MS),
+      expiresAt: pairing.member ? teamSessionExpiresAt(checkedAt, now + SESSION_TTL_MS) : Math.min(parent?.expiresAt ?? Infinity, now + Math.min(pairing.tokenTtlMs ?? SESSION_TTL_MS, SESSION_MAX_AGE_MS)),
+      ...(parent ? { loginTokenId: parent.id } : {}),
       ...(pairing.tokenTtlMs !== undefined ? { token: true as const } : {}),
       ...(pairing.browser ? { cookieOnly: true as const, ...(pairing.owner ? { owner: pairing.owner } : {}) } : {}),
       ...(pairing.member ? { email: pairing.member.email, teamRole: pairing.member.role, membershipAuthority: "team" as const } : {}),
@@ -501,6 +509,30 @@ export class SessionRegistry {
 
   issue(input: { label: string; scopes: Scope[]; userId?: string; email?: string }): { token: string; session: PublicSession } {
     return this.issueAccount(input);
+  }
+
+  loginWithToken(input: { token: string; label: string }): { token: string; session: PublicSession } | null {
+    if (!/^omb_sess_[A-Za-z0-9_-]{43}$/.test(input.token)) return null;
+    const parent = this.authenticate(input.token);
+    if (!parent?.token || parent.cookieOnly || parent.email || parent.userId || parent.membershipAuthority || parent.loginTokenId) return null;
+    const now = this.now();
+    const token = `omb_sess_${randomBytes(32).toString("base64url")}`;
+    const record: SessionRecord = {
+      id: randomUUID(), tokenHash: sha256(token), label: (deviceLabel(input.label) || "Browser").slice(0, 80),
+      scopes: [...parent.scopes], createdAt: now, lastSeenAt: now,
+      expiresAt: Math.min(now + SESSION_TTL_MS, parent.expiresAt), cookieOnly: true, loginTokenId: parent.id,
+    };
+    this.sessions.push(record);
+    try { this.persist(); } catch (error) { this.sessions = this.sessions.filter(s => s.id !== record.id); throw error; }
+    this.lastSeenWrites.set(record.id, now);
+    for (const listener of this.onIssued) listener(record);
+    return { token, session: publicSession(record) };
+  }
+
+  private loginTokenLive(record: SessionRecord): boolean {
+    if (!record.loginTokenId) return true;
+    const parent = this.sessions.find(s => s.id === record.loginTokenId);
+    return Boolean(parent?.token && !parent.loginTokenId && parent.expiresAt > this.now() && record.scopes.every(scope => parent.scopes.includes(scope)));
   }
 
   /** The one sign-in that moves `bot` in for this team member, as long-lived as their own team session. Only the caller's
@@ -624,7 +656,7 @@ export class SessionRegistry {
     const hash = sha256(token);
     const now = this.now();
     const record = this.sessions.find((s) => sameDigest(s.tokenHash, hash));
-    if (!record || record.expiresAt <= now || this.personal(record.scopes)) return null;
+    if (!record || record.expiresAt <= now || this.personal(record.scopes) || !this.loginTokenLive(record)) return null;
     const lastWrite = this.lastSeenWrites.get(record.id) ?? 0;
     if (now - lastWrite >= LAST_SEEN_WRITE_INTERVAL_MS) {
       record.lastSeenAt = now;
@@ -639,9 +671,10 @@ export class SessionRegistry {
     this.recheckMembership();
     const record = this.sessions.find((s) => s.id === sessionId);
     const now = this.now();
-    if (!record || record.expiresAt <= now || record.token) return false;
+    if (!record || record.expiresAt <= now || record.token || !this.loginTokenLive(record)) return false;
     if (record.expiresAt - now > SESSION_RENEW_WHEN_LEFT_MS) return false;
-    const proposed = Math.min(now + SESSION_TTL_MS, record.createdAt + SESSION_MAX_AGE_MS);
+    const parentExpiry = record.loginTokenId ? this.sessions.find(s => s.id === record.loginTokenId)!.expiresAt : Infinity;
+    const proposed = Math.min(now + SESSION_TTL_MS, record.createdAt + SESSION_MAX_AGE_MS, parentExpiry);
     const next = record.membershipAuthority === "team" ? teamSessionExpiresAt(record.memberCheckedAt ?? record.createdAt, proposed) : proposed;
     if (next <= record.expiresAt) return false;
     record.expiresAt = next;
@@ -685,10 +718,12 @@ export class SessionRegistry {
   }
 
   revoke(id: string): boolean {
-    const before = this.sessions.length;
-    this.sessions = this.sessions.filter((s) => s.id !== id);
-    if (this.sessions.length === before) return false;
-    this.forget(id);
+    this.pairings = this.pairings.filter(p => p.loginTokenId !== id);
+    const ended = this.sessions.filter(s => s.id === id || s.loginTokenId === id);
+    if (!ended.length) return false;
+    const ids = new Set(ended.map(s => s.id));
+    this.sessions = this.sessions.filter(s => !ids.has(s.id));
+    for (const session of ended) this.forget(session.id);
     this.persist();
     return true;
   }

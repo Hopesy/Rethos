@@ -1,0 +1,26 @@
+.rethos-login { min-height:100dvh; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+.login-scene { position:relative; overflow:hidden; min-height:100dvh; color:#f8f7fc; background:#101b36; }
+.login-landscape { position:absolute; inset:0; width:100%; height:100%; }
+.login-scene-brand { position:absolute; top:32px; left:40px; display:flex; align-items:center; gap:9px; font-size:14px; font-weight:500; }
+.login-scene-brand img { border-radius:8px; }
+.login-scene-copy { position:absolute; bottom:8%; left:10%; right:10%; }
+.login-eyebrow { font-size:10px; letter-spacing:.22em; opacity:.55; margin-bottom:18px; }
+.login-scene-copy h2 { max-width:440px; font-size:clamp(28px,3vw,42px); font-weight:500; line-height:1.4; letter-spacing:-.045em; }
+.login-scene-copy > p:not(.login-eyebrow) { margin-top:18px; max-width:400px; font-size:13px; line-height:1.9; color:#b9c0d2; }
+.login-scene-foot { display:flex; gap:28px; margin-top:34px; padding-top:22px; border-top:1px solid #ffffff1a; font-size:11px; letter-spacing:.08em; color:#b9c0d2; }
+.login-main { min-width:0; display:flex; flex-direction:column; min-height:100dvh; }
+.login-header { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:28px 32px; }
+.login-body { flex:1; display:flex; align-items:center; justify-content:center; padding:36px 40px 64px; }
+.login-form { width:100%; max-width:360px; }
+.login-form h1 { font-size:24px; line-height:1.4; font-weight:600; letter-spacing:-.035em; }
+.login-footer { display:flex; align-items:center; justify-content:center; gap:6px; padding:18px 24px 26px; font-size:11px; }
+.login-input { width:100%; height:44px; border:1px solid var(--color-hairline); border-radius:10px; background:var(--color-inset); padding:0 40px 0 38px; color:var(--color-ink); outline:none; font-size:13px; transition:border-color .15s,box-shadow .15s; }
+.login-input:focus { border-color:var(--color-accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--color-accent) 12%,transparent); }
+.login-input::placeholder { color:var(--color-ink-tertiary); }
+.login-input:disabled { opacity:.5; }
+.login-submit { display:flex; height:40px; width:100%; align-items:center; justify-content:center; gap:8px; border-radius:10px; background:var(--color-ink); color:var(--color-app); font-size:13px; font-weight:500; transition:opacity .15s; }
+.login-submit:hover { opacity:.85; }
+.login-submit:disabled { cursor:default; opacity:.35; }
+.login-submit:focus-visible { outline:2px solid var(--color-accent); outline-offset:3px; }
+@media(max-width:900px) { .rethos-login { grid-template-columns:minmax(0,1fr); } .login-scene { display:none; } .login-header { padding:24px; } .login-body { padding:32px 28px 64px; } }
+@media(max-width:480px) { .login-input { font-size:16px; } .login-header { padding:22px 24px; } .login-form h1 { font-size:22px; } .login-body { align-items:flex-start; padding-top:clamp(36px,10dvh,88px); } }

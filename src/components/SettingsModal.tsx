@@ -22,6 +22,7 @@ import { LocalComputerSection } from "./LocalComputerSection";
 import { PhoneDevicesSection } from "./PhoneDevicesSection";
 import { pageIsThisComputer } from "@/lib/companion-bridge";
 import { ServerPairingCard } from "./ServerPairingCard";
+import { BrowserAccessSettings } from "./BrowserAccessSettings";
 import { ActivitySection } from "./ActivitySection";
 import { useOwnerOrAdmin } from "@/lib/use-owner-or-admin";
 import { currentPhonePairingTarget } from "@/lib/phone-pairing";
@@ -321,6 +322,7 @@ export function SettingsModal() {
             <Card title={t("settings.profile.title")} subtitle={t("settings.profile.sharedSubtitle")}>
               <ProfileFields />
             </Card>
+            <Card title={t("access.title")}><BrowserAccessSettings /></Card>
 
             <LanguageRow />
             <OpenAtLoginRow />

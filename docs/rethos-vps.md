@@ -45,16 +45,19 @@ COMPOSE_PROJECT_NAME=rethos
 RETHOS_IMAGE=ghcr.io/hopesy/rethos:latest
 ```
 
-启动并配对：
+启动并创建登录 Token：
 
 ```sh
 docker compose pull
 docker compose up -d --no-build
 docker compose ps
-docker compose exec rethos rethos pair
+docker compose exec rethos rethos token create "Web login" --scope admin --expires 90d --out /data/rethos-admin-token
+docker compose exec rethos cat /data/rethos-admin-token
 ```
 
-在电脑或手机浏览器打开生成的链接。手机添加到主屏幕后可使用 Web 应用。账号和模型在页面配置，也可使用 `docker compose exec rethos rethos setup`。Codex 登录可运行 `docker compose exec rethos codex login --device-auth`。
+打开 HTTPS 网页，粘贴上述 Token 登录。后续浏览器使用同一个 Token，登录后在 **设置 → 通用 → 访问 Token → 管理** 管理 Token。Token 文件权限为仅所属用户可读写，请将其内容保存在密码管理器中。
+
+手机打开相机，扫描电脑网页 **设置 → 通用 → 手机扫码登录** 中的二维码，确认服务器并点“登录”。添加到主屏幕后可使用 Web 应用。账号和模型在页面配置，也可使用 `docker compose exec rethos rethos setup`。Codex 登录可运行 `docker compose exec rethos codex login --device-auth`。
 
 两个容器共享网络命名空间；应用在容器回环地址监听，Caddy 对外提供经过配对认证的入口。持久化卷默认名为 `rethos_data`；内部数据路径沿用 `/data/.openmausbot`，配置环境变量继续兼容 `OMB_*`。
 
@@ -122,7 +125,7 @@ docker buildx imagetools inspect ghcr.io/hopesy/rethos:latest
 
 ## 日常使用
 
-1. 打开你的 Rethos HTTPS 地址，首次使用先在 VPS 执行 `docker compose exec rethos rethos pair`，将一次性配对链接用于该浏览器。每台手机、每个浏览器分别配对。
+1. 打开你的 Rethos HTTPS 地址，用已保存的访问 Token 登录。首次接入或丢失 Token 时，在 VPS 使用 `rethos token create` 命令创建管理员 Token，步骤见上文。手机使用已登录网页生成的二维码登录。
 2. Windows 用户保持登录，独立 CUA 和 `Rethos-Desktop-Tunnel` 计划任务保持运行，Codex 桌面打开目标聊天。休眠、关机或锁定桌面时，观察和输入会受影响。
 3. 在 Rethos 聊天中指定桌面聊天标题。首次绑定时让 Rethos 回报实际标题与最后一条回复，确认目标后再发送操作指令。
 4. 需要持续观察时，明确周期和结束条件。每 5 分钟检查一次会产生每天最多 288 次模型调用；按实际工作时段开启，完成后暂停。
