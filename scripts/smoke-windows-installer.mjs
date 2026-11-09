@@ -30,7 +30,9 @@ const env = {
   ELECTRON_ENABLE_LOGGING: "1",
 };
 for (const key of ["ELECTRON_RUN_AS_NODE", "CUA_DRIVER_PATH", "OMB_RESOURCES_PATH"]) delete env[key];
-for (const directory of [env.APPDATA, env.LOCALAPPDATA]) mkdirSync(directory, { recursive: true });
+for (const directory of [env.APPDATA, env.LOCALAPPDATA, ...["Desktop", "Documents", "Downloads", "Music", "Pictures", "Videos"].map(name => join(home, name))]) {
+  mkdirSync(directory, { recursive: true });
+}
 
 function killTree(child) {
   if (child?.pid && child.exitCode === null) {
