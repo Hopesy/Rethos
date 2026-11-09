@@ -9,7 +9,7 @@
 - Web、语言包、默认助手、桌面提示和安装包的产品名称改为 Rethos。
 - npm 包名和命令为 `rethos`，桌面应用标识为 `com.hopesy.rethos`。
 - 保留 `LICENSE`、上游版权、`NOTICE` 和第三方许可。
-- 更新来源指向已存在的 `Hopesy/ZelosBot` 仓库。
+- 更新来源指向已存在的 `Hopesy/Rethos` 仓库。
 - 移除上游旧发布仓库的镜像同步流程，发布校验使用 Rethos 的安装包名称。
 - Docker 镜像统一为 `ghcr.io/hopesy/rethos`，支持 AMD64/ARM64；发布前验证实际容器，Compose 使用预构建镜像更新。
 - VPS 安装、升级、备份、回退和迁移验收统一见 [部署维护文档](rethos-vps.md)。

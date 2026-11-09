@@ -100,7 +100,7 @@ jobs:
           tags: rethos:ci
           labels: |
             org.opencontainers.image.title=Rethos
-            org.opencontainers.image.source=https://github.com/Hopesy/ZelosBot
+            org.opencontainers.image.source=https://github.com/Hopesy/Rethos
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.licenses=Apache-2.0
           build-args: |
@@ -113,13 +113,13 @@ jobs:
       - name: Verify boot, OSS, browser, HTTPS pairing and persistent data
         run: bash scripts/smoke-docker.sh
       - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
-        if: github.event_name != 'pull_request' && github.repository == 'Hopesy/ZelosBot' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+        if: github.event_name != 'pull_request' && github.repository == 'Hopesy/Rethos' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Push the verified image
-        if: github.event_name != 'pull_request' && github.repository == 'Hopesy/ZelosBot' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+        if: github.event_name != 'pull_request' && github.repository == 'Hopesy/Rethos' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
         env:
           ARCH: ${{ matrix.arch }}
         run: |
@@ -128,7 +128,7 @@ jobs:
 
   publish:
     needs: build-and-smoke
-    if: github.event_name != 'pull_request' && github.repository == 'Hopesy/ZelosBot' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    if: github.event_name != 'pull_request' && github.repository == 'Hopesy/Rethos' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-latest
     permissions:
       packages: write

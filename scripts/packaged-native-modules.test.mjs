@@ -30,7 +30,7 @@ describe("packaged native modules", () => {
     const checkout = mkdtempSync(join(tmpdir(), "omb-npm-package-"));
     temporaryDirectories.push(checkout);
     const pins = Object.fromEntries(nativelyRequired().map((name, i) => [name, `9.9.${i}`]));
-    writeFileSync(join(checkout, "package.json"), JSON.stringify({ name: "rethos", productName: "Rethos", repository: { url: "https://github.com/Hopesy/ZelosBot.git" }, version: "0.0.1", dependencies: { ...pins, react: "19.0.0" } }));
+    writeFileSync(join(checkout, "package.json"), JSON.stringify({ name: "rethos", productName: "Rethos", repository: { url: "https://github.com/Hopesy/Rethos.git" }, version: "0.0.1", dependencies: { ...pins, react: "19.0.0" } }));
     for (const file of ["dist-server/index.js", "dist-server/openmausbot.js", "dist/index.html"]) {
       mkdirSync(join(checkout, file, ".."), { recursive: true });
       writeFileSync(join(checkout, file), "");

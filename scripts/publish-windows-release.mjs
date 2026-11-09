@@ -5,7 +5,7 @@ import { appendFileSync, mkdirSync, readFileSync, readdirSync, writeFileSync } f
 import { join } from "node:path";
 
 const repository = process.env.GITHUB_REPOSITORY;
-assert.equal(repository, "Hopesy/ZelosBot");
+assert.equal(repository, "Hopesy/Rethos");
 const directory = "release/windows-assets";
 const info = JSON.parse(readFileSync(join(directory, "BUILD-INFO.json"), "utf8"));
 assert.equal(info.version, process.env.RELEASE_VERSION);

@@ -114,7 +114,7 @@ jobs:
       # OIDC token, so no registry token is stored
       # anywhere and no one-time password is asked for. One-time setup on
       # npmjs.com: package → Settings → Publishing access → GitHub Actions,
-      # owner Hopesy, repository ZelosBot, workflow npm-package.yml.
+      # owner Hopesy, repository Rethos, workflow npm-package.yml.
       # Needs npm ≥ 11.5 (Node 24 ships it).
       - name: Publish to npm
         run: |

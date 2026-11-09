@@ -32,7 +32,7 @@ flowchart LR
 准备 Docker Engine 和 Compose 插件，将域名 A/AAAA 指向 VPS，开放 80、443。镜像发布在 GHCR。
 
 ```sh
-git clone https://github.com/Hopesy/ZelosBot.git Rethos
+git clone https://github.com/Hopesy/Rethos.git Rethos
 cd Rethos/deploy
 cp .env.example .env
 ```
@@ -113,8 +113,8 @@ docker compose logs --tail 80 rethos
 本次仓库的 `push` 触发未产生运行记录，已使用下列手动入口成功发布。更新时检查 Actions 确实出现新提交对应的运行；需要时执行：
 
 ```sh
-gh workflow run docker.yml --repo Hopesy/ZelosBot --ref main
-gh run list --repo Hopesy/ZelosBot --workflow docker.yml --limit 5
+gh workflow run docker.yml --repo Hopesy/Rethos --ref main
+gh run list --repo Hopesy/Rethos --workflow docker.yml --limit 5
 docker buildx imagetools inspect ghcr.io/hopesy/rethos:latest
 ```
 
@@ -153,7 +153,7 @@ Rethos 用 MCP 读取桌面当前可见界面。发送前确认聊天、输入�
 
 ## 当前部署记录
 
-2026-11-09 的部署位于 `/home/zhouhl/rethos`，入口暂用 `https://hermes.hopesy.cc`，产品显示 Rethos。GitHub 仓库地址继续使用 `Hopesy/ZelosBot`。
+2026-11-09 的部署位于 `/home/zhouhl/rethos`，入口暂用 `https://hermes.hopesy.cc`，产品显示 Rethos。GitHub 仓库地址继续使用 `Hopesy/Rethos`。
 
 - 服务为 `rethos-rethos-1` 与 `rethos-caddy-1`，主机入口 `127.0.0.1:8790`。
 - 持久化卷为 `rethos_data`，服务用户 UID/GID 1001。
@@ -165,7 +165,7 @@ Rethos 用 MCP 读取桌面当前可见界面。发送前确认聊天、输入�
 - SSH 配置启用了连接复用；新 MCP 会话可以复用已验证的桌面 SSH 连接。
 - 自定义 MCP 启动等待调整为 30 秒，适应跨 SSH 的初始化；内置工具维持 8 秒。
 - 已部署提交 `887cfff17bbcda9a7908c31ed2040c62ed9b06d6`；镜像摘要 `sha256:bf54c57fa73c0f0b887c424a0e7f0ff809d0ff67ed5dac5dc3f693d7879cc0f1`。
-- 发布记录：[Actions 42500609545](https://github.com/Hopesy/ZelosBot/actions/runs/42500609545)。
+- 发布记录：[Actions 42500609545](https://github.com/Hopesy/Rethos/actions/runs/42500609545)。
 - 正式机器人说明与工具选择保存在 `/home/zhouhl/rethos/production-desktop-monitor.md`、`desktop-team.yaml`，已通过 `rethos team apply` 写入持久化配置。
 - Hermes 迁移备份：`/home/zhouhl/rethos-backups/hermes-before-rethos-20261108-115245/`。
 - 首次 Rethos 升级备份：`/home/zhouhl/rethos-backups/rethos-before-update-20261108-162452/`。
@@ -200,4 +200,4 @@ Rethos 用 MCP 读取桌面当前可见界面。发送前确认聊天、输入�
 
 ## Windows 安装包与 VPS 镜像
 
-Windows 安装包通过 [Rethos Windows installer](https://github.com/Hopesy/ZelosBot/actions/workflows/package-win.yml) 构建、安装验收并发布。下载、更新、卸载和发布步骤见 [安装包发布文档](releasing.md)。桌面安装包与 VPS Docker 镜像分别发布；当前 VPS 的网页入口及 CUA 通道继续按本文维护。macOS 打包延后。
+Windows 安装包通过 [Rethos Windows installer](https://github.com/Hopesy/Rethos/actions/workflows/package-win.yml) 构建、安装验收并发布。下载、更新、卸载和发布步骤见 [安装包发布文档](releasing.md)。桌面安装包与 VPS Docker 镜像分别发布；当前 VPS 的网页入口及 CUA 通道继续按本文维护。macOS 打包延后。

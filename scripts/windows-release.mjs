@@ -37,7 +37,7 @@ function assemble() {
   const update = parse(readFileSync(join(resources, "app-update.yml"), "utf8"));
   assert.equal(update.provider, "github");
   assert.equal(update.owner, "Hopesy");
-  assert.equal(update.repo, "ZelosBot");
+  assert.equal(update.repo, "Rethos");
   assert.equal(update.publisherName, undefined, "unsigned builds must omit publisherName");
   for (const file of ["server/index.js", "server/desktop-entry.mjs", "ui/index.html", "cloudflared/cloudflared.exe", "cua-driver.exe", "cua-driver-background.exe", "cua-sdk/cua-sdk.mjs", "cua-sdk/native/cua_driver_sdk.dll", "cua-sdk/native/cua_driver_node_runtime.node", "licenses/Rethos-LICENSE.txt", "licenses/Rethos-NOTICE.txt"]) {
     assert(statSync(join(resources, file)).size > 0, `missing resource: ${file}`);

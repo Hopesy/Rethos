@@ -4,8 +4,8 @@
 
 ## 用户下载与安装
 
-- [Windows 安装程序（固定下载地址）](https://github.com/Hopesy/ZelosBot/releases/latest/download/Rethos-setup.exe)
-- [全部版本与便携 ZIP](https://github.com/Hopesy/ZelosBot/releases)
+- [Windows 安装程序（固定下载地址）](https://github.com/Hopesy/Rethos/releases/latest/download/Rethos-setup.exe)
+- [全部版本与便携 ZIP](https://github.com/Hopesy/Rethos/releases)
 
 运行 `Rethos-<版本>-setup.exe` 后，从开始菜单打开 Rethos。也可解压 `Rethos-<版本>-x64.zip`，运行其中的 `Rethos.exe`。当前 Windows 版本未配置代码签名，Windows SmartScreen 可能显示未知发布者提示；下载来源和校验值均在 Release 页面公开。
 
@@ -21,7 +21,7 @@ Get-FileHash .\Rethos-setup.exe -Algorithm SHA256
 
 ## 一键 Windows 发布
 
-打开 [Actions → Rethos Windows installer](https://github.com/Hopesy/ZelosBot/actions/workflows/package-win.yml)，选择 **Run workflow**：
+打开 [Actions → Rethos Windows installer](https://github.com/Hopesy/Rethos/actions/workflows/package-win.yml)，选择 **Run workflow**：
 
 1. 选择 `main`，或在 `ref` 填写要打包的提交、标签或分支。
 2. 默认仅构建并保留 Actions artifact，适合候选版本验证。
@@ -31,13 +31,13 @@ Get-FileHash .\Rethos-setup.exe -Algorithm SHA256
 
 ```sh
 # 构建验证，保存 Actions artifact 30 天
- gh workflow run package-win.yml --repo Hopesy/ZelosBot --ref main
+ gh workflow run package-win.yml --repo Hopesy/Rethos --ref main
 
 # 构建、验证并发布
- gh workflow run package-win.yml --repo Hopesy/ZelosBot --ref main -f publish=true
+ gh workflow run package-win.yml --repo Hopesy/Rethos --ref main -f publish=true
 
 # 查看当前运行
- gh run list --repo Hopesy/ZelosBot --workflow package-win.yml --limit 5
+ gh run list --repo Hopesy/Rethos --workflow package-win.yml --limit 5
 ```
 
 工作流在 Windows runner 完成以下步骤：
@@ -45,7 +45,7 @@ Get-FileHash .\Rethos-setup.exe -Algorithm SHA256
 - 按锁文件安装依赖并清理旧输出，编译前端、服务端、桌面资源和原生依赖。
 - 构建 NSIS 安装程序及 ZIP，验证内置浏览器和独立服务端运行。
 - 在临时用户数据目录实际安装，启动安装后的 `Rethos.exe`，检查桌面渲染、preload、服务健康和桌面访问权限。
-- 检查更新地址为 `Hopesy/ZelosBot`，验证 `latest.yml` 的版本、路径、文件大小和 SHA512。
+- 检查更新地址为 `Hopesy/Rethos`，验证 `latest.yml` 的版本、路径、文件大小和 SHA512。
 - 汇总安装包、ZIP、差分更新文件、固定下载名、SHA256 和构建来源。
 - 发布作业仅在构建成功且勾选 `publish` 时执行：先上传草稿、对照 GitHub 返回的文件摘要，随后公开 Release。
 

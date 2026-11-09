@@ -85,7 +85,7 @@ jobs:
   publish:
     name: Publish verified Windows release
     needs: package
-    if: inputs.publish && github.repository == 'Hopesy/ZelosBot'
+    if: inputs.publish && github.repository == 'Hopesy/Rethos'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:

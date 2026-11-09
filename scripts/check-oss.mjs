@@ -10,7 +10,7 @@ for (const relative of ["enterprise", "dist-server/enterprise", "release/npm/ent
 const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
 assert.equal(pkg.name, "rethos");
 assert.equal(pkg.productName, "Rethos");
-assert.equal(pkg.repository.url, "https://github.com/Hopesy/ZelosBot.git");
+assert.equal(pkg.repository.url, "https://github.com/Hopesy/Rethos.git");
 const manifest = JSON.parse(readFileSync(join(root, "public", "manifest.webmanifest"), "utf8"));
 assert.equal(manifest.name, "Rethos");
 assert.equal(manifest.short_name, "Rethos");

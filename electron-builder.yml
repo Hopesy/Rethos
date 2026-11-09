@@ -16,7 +16,7 @@ protocols:
 publish:
   - provider: github
     owner: Hopesy
-    repo: ZelosBot
+    repo: Rethos
 
 directories:
   buildResources: build
