@@ -4,6 +4,15 @@
 
 ## 已发布版本
 
+2026-11-09 已发布 [Rethos 0.1.150](https://github.com/Hopesy/Rethos/releases/tag/v0.1.150)，源码提交为 `593fcab46b444c0d35ac262165b0dfc033194c9e`。本次包含新图标、简化配对、自定义模型设置、中文与设置页优化，以及官方云和组织空间入口清理，详见[版本说明](releases/v0.1.150.md)。
+
+- [Windows 构建与发布](https://github.com/Hopesy/Rethos/actions/runs/42611670157)通过：NSIS 安装、安装后桌面启动、preload、鉴权、内置浏览器和更新元数据均完成验证。
+- Release 的 7 个文件已上传；构建信息中的 SHA256 与 GitHub 上传摘要一致。安装程序为 267,642,695 字节，便携 ZIP 为 371,523,136 字节；沿用当前未签名状态。
+- [Docker 构建与发布](https://github.com/Hopesy/Rethos/actions/runs/42611869265)通过：AMD64、ARM64 均经过启动、OSS、浏览器、HTTPS 配对和持久化验证。
+- 镜像 `ghcr.io/hopesy/rethos:v0.1.150` 与 `latest` 指向相同的多架构摘要：`sha256:24a30bc0690f1eddb8720d14434c90beedaffa3e794a0d4c83769995e3db693a`。
+
+### 0.1.149
+
 2026-11-09 已发布 [Rethos 0.1.149](https://github.com/Hopesy/Rethos/releases/tag/v0.1.149)，[GitHub Actions 42551723554](https://github.com/Hopesy/Rethos/actions/runs/42551723554) 的构建与发布作业均通过，来源提交为 `b9f8023c44e39ce75e68270e64a91520c57c5ff5`。
 
 - 116 项更新文件、鉴权、桌面会话与启动相关回归测试通过。
