@@ -27,4 +27,12 @@ Ego 与 Codex 内置浏览器实际验证了 Token 登录及设置二维码生�
 
 本次浏览器工具在后续截图和点击时发生超时，手机确认页的最终提交由组件交互测试和真实 HTTP 交换补验。手机相机真机扫码、软键盘与添加到主屏幕后的登录保持，仍需在部署后的 HTTPS 地址验证。
 
-源码构建完成；此次变更的发布与 VPS 更新单独执行。
+## 0.1.151 发布与部署证据
+
+2026-11-10 已发布版本 `0.1.151`，源码提交 `f959859ccdde1062de99bd316f59c4fa5a125892`。本地 225 项相关测试、类型检查、前端构建、lint、i18n 与 OSS 检查通过。
+
+- [Windows 工作流](https://github.com/Hopesy/Rethos/actions/runs/42657353977)完成实际安装和启动验证，7 项发布文件的摘要核对通过。证据：`.Rethos-temp/token-login/release-verification.json`。
+- [Docker 版本工作流](https://github.com/Hopesy/Rethos/actions/runs/42658410982)完成 AMD64 / ARM64 构建与容器验收，版本标签和 `latest` 摘要一致。证据：`.Rethos-temp/token-login/image-verification.json`。
+- VPS 已固定本次镜像摘要；备份与切换日志：`.Rethos-temp/token-login/deploy-151.log`。
+- 当前生产地址为 `https://rethos.hopesy.cc`。公网只读检查确认版本、登录页资源、交付 Token 的管理员权限与有效期；证据：`.Rethos-temp/token-login/production-verification.json`。Token 值保存在本机私有文件中。
+- Ego 实际打开生产登录页，确认临时配对入口、获取 Token 帮助与输入框上方标签均已移除。二维码兑换、重放、退出与撤销由上述隔离 HTTP 验证覆盖；手机相机真机扫码仍待用户设备验收。

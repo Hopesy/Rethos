@@ -156,7 +156,7 @@ Rethos 用 MCP 读取桌面当前可见界面。发送前确认聊天、输入�
 
 ## 当前部署记录
 
-2026-11-09 的部署位于 `/home/zhouhl/rethos`，入口暂用 `https://hermes.hopesy.cc`，产品显示 Rethos。GitHub 仓库地址继续使用 `Hopesy/Rethos`。
+2026-11-10 核对的部署位于 `/home/zhouhl/rethos`，当前入口为 `https://rethos.hopesy.cc`，产品显示 Rethos。主机 Caddy 与 Compose 已使用新域名，旧 `hermes.hopesy.cc` 的 DNS 记录已移除。GitHub 仓库地址继续使用 `Hopesy/Rethos`。
 
 - 服务为 `rethos-rethos-1` 与 `rethos-caddy-1`，主机入口 `127.0.0.1:8790`。
 - 持久化卷为 `rethos_data`，服务用户 UID/GID 1001。
@@ -167,15 +167,22 @@ Rethos 用 MCP 读取桌面当前可见界面。发送前确认聊天、输入�
 - VPS 桌面转发入口：`/home/zhouhl/rethos-desktop/cua-driver-desktop`。
 - SSH 配置启用了连接复用；新 MCP 会话可以复用已验证的桌面 SSH 连接。
 - 自定义 MCP 启动等待调整为 30 秒，适应跨 SSH 的初始化；内置工具维持 8 秒。
-- 已部署提交 `effd6a98280307eec9fe072a3b4f3ac4c57a318c`；镜像摘要 `sha256:88c6f1a013b060c33ad9dba9c036c681ec672942cd8de29fc42248ae2819e06b`。
-- 发布记录：[Actions 42567245050](https://github.com/Hopesy/Rethos/actions/runs/42567245050)。
+- 已部署版本 `0.1.151`，源码提交 `f959859ccdde1062de99bd316f59c4fa5a125892`；镜像摘要 `sha256:8c778da934e72f294abad7f260f225a01d678004423051a040f11b7eaa404229`。
+- 发布记录：[主分支镜像](https://github.com/Hopesy/Rethos/actions/runs/42656923482)、[版本标签镜像](https://github.com/Hopesy/Rethos/actions/runs/42658410982)。两个构建的多架构摘要一致。
 - 正式机器人说明与工具选择保存在 `/home/zhouhl/rethos/production-desktop-monitor.md`、`desktop-team.yaml`，已通过 `rethos team apply` 写入持久化配置。
 - Hermes 迁移备份：`/home/zhouhl/rethos-backups/hermes-before-rethos-20261108-115245/`。
 - 首次 Rethos 升级备份：`/home/zhouhl/rethos-backups/rethos-before-update-20261108-162452/`。
 - 设置说明更新前备份：`/home/zhouhl/rethos-backups/rethos-before-copy-cleanup-20261109-034324/`，含数据卷、Compose 与原镜像配置。
 - 帮助提示与 AI 配置修复前备份：`/home/zhouhl/rethos-backups/rethos-before-settings-refinement-20261109-053155/`。
+- Token 登录升级前备份：`/home/zhouhl/rethos-backups/rethos-before-0.1.151-20261109-164814/`，含数据卷、Compose、环境配置与上一版镜像记录。
 
 保留上述备份的受限权限。备份包含凭据和历史数据。已有 `wb.hopesy.cc` 模型服务继续独立运行。
+
+### 2026-11-10：Token 登录与手机扫码
+
+北京时间 00:48 完成 0.1.151 镜像切换。升级前确认机器人空闲，保存配置和旧镜像记录，停止服务后备份完整数据卷，再重建容器并等待健康检查通过。`.env` 固定本次镜像摘要。
+
+公网 HTTPS 返回版本 `0.1.151`，管理员 Token 鉴权、登录页和 JavaScript 资源读取通过。实际浏览器确认页面仅显示 Token 输入与登录操作，已移除临时配对入口、获取 Token 帮助和输入框上方标签。新浏览器使用同一 Token；手机在已登录网页的“设置 → 通用 → 手机扫码登录”获取二维码。多浏览器登录、二维码兑换及撤销在隔离服务验证，证据见 [Token 登录验收](verification/token-login.md)。
 
 ### 2026-11-09：设置说明与后台连接
 
