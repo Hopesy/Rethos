@@ -32,7 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.ref || github.ref }}
+          ref: ${{ inputs.ref || github.sha }}
           persist-credentials: false
       - name: Pin the source
         id: source
@@ -51,6 +51,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: node --test scripts/windows-release.test.mjs
+      - run: pnpm exec vitest run server/request-auth.test.ts server/live-access.test.ts
+      - run: node --test electron/server-session.node-test.mjs electron/desktop-server-auth.node-test.mjs electron/startup-tray.node-test.mjs electron/native-language.node-test.mjs
       - name: Clean build outputs
         run: pnpm clean
       - run: pnpm package:win
@@ -82,6 +84,7 @@ jobs:
           name: rethos-windows-${{ steps.source.outputs.version }}-x64
           path: release/windows-assets/*
           if-no-files-found: error
+          compression-level: 0
           retention-days: 30
 
   publish:

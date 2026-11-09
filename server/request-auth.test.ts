@@ -1,4 +1,5 @@
 import type { IncomingMessage } from "node:http";
+import { createRequire } from "node:module";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -804,6 +805,14 @@ describe("a browser on this machine is not the owner", () => {
     expect(check({ host: "127.0.0.1:8799" }, "/api/bots", "GET", desktop).auth?.kind).toBe("loopback");
     const relay = { host: "127.0.0.1:8799", "x-openmausbot-companion": "1", "x-openmausbot-companion-device": "phone-1", "x-openmausbot-companion-auth": "relay-secret" };
     expect(check(relay, "/api/bots/b/messages", "POST", desktop).auth?.kind).toBe("loopback");
+  });
+
+  it("accepts the actual packaged desktop helper's headers for a stream ticket", () => {
+    const { desktopServerHeaders } = createRequire(import.meta.url)("../electron/desktop-server-auth.cjs");
+    const token = "a".repeat(43);
+    const headers = Object.fromEntries(new Headers(desktopServerHeaders(ownUi, { packaged: true, token })));
+    expect(check(headers, "/api/auth/stream-ticket", "POST", { desktopToken: token }).auth?.kind).toBe("loopback");
+    expect(check(headers, "/api/auth/stream-ticket", "POST", { desktopToken: "b".repeat(43) }).status).toBe(401);
   });
 
   it("does not lend the owner header to another page in the desktop window's session", () => {

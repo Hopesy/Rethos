@@ -1,6 +1,7 @@
 "use strict";
 
-const DESKTOP_MUTATION_HEADER = "X-Rethos-Desktop-Owner";
+// The capability header is a stable wire identifier across product renames.
+const DESKTOP_MUTATION_HEADER = "X-OpenMausBot-Desktop-Owner";
 
 /** Chromium's webRequest hook cannot see Node fetch, so both paths add the owner capability here. */
 function desktopServerHeaders(headers, { packaged, token }) {
