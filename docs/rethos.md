@@ -48,4 +48,6 @@ pnpm package:npm
 
 2026-11-09 已通过 GitHub Actions 发布 AMD64/ARM64 镜像并部署到 VPS，完成 Hermes/Tailscale 卸载及备份。网页通过真实模型和独立 CUA 查询并向本机 Codex 桌面发送指令，定时观察在容器重建后继续运行。飞书接入已取消，详见 [部署、使用与验收记录](rethos-vps.md)。
 
-本地 npm 安装包仍保留。公共 npm 发布和各平台桌面安装包签名另行执行。
+Windows 独立打包和发布入口为 `package-win.yml`，包含安装、启动和更新元数据校验，使用方法见 [发布文档](releasing.md)。全平台 Release 改为手动入口，macOS 延后。
+
+本地 npm 安装包仍保留。公共 npm 发布和桌面代码签名另行配置。

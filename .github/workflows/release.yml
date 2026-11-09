@@ -20,7 +20,7 @@
 #                                 package.json saying "type": "commonjs" (#2770)
 #
 # One-time setup (repo secrets) is documented in docs/releasing.md.
-name: Release
+name: Release all platforms (manual)
 
 on:
   workflow_dispatch:
@@ -39,11 +39,6 @@ on:
         required: false
         type: boolean
         default: false
-  push:
-    branches:
-      - main
-    paths:
-      - package.json
 
 permissions:
   contents: read

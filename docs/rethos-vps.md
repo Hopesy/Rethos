@@ -197,3 +197,7 @@ Rethos 用 MCP 读取桌面当前可见界面。发送前确认聊天、输入�
 每次发送使用明确选定的验收会话，记录发送前后的状态。临时脚本与证据放 `.Rethos-temp/`。生产配置及密钥留在受限目录。
 
 本轮回归：类型检查、OSS 检查、修改文件 lint 通过；配对/环境/更新相关 30 项测试通过；MCP 工具测试 114 项通过。镜像两个架构的容器验收通过。验收数据位于独立 `rethos-acceptance` Docker 项目；正式 Rethos 保留用户配置和日常入口。
+
+## Windows 安装包与 VPS 镜像
+
+Windows 安装包通过 [Rethos Windows installer](https://github.com/Hopesy/ZelosBot/actions/workflows/package-win.yml) 构建、安装验收并发布。下载、更新、卸载和发布步骤见 [安装包发布文档](releasing.md)。桌面安装包与 VPS Docker 镜像分别发布；当前 VPS 的网页入口及 CUA 通道继续按本文维护。macOS 打包延后。

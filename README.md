@@ -83,7 +83,21 @@ rethos
 
 以上命令使用本地构建产物。公共 npm 发布需要单独配置包所有权和发布认证。
 
-桌面安装包使用 `pnpm package:win`、`pnpm package:mac` 或 `pnpm package:linux`，产物位于 `release/`。各平台依赖及签名要求见 `docs/`。
+## Windows 桌面安装包
+
+[下载 Windows 安装程序](https://github.com/Hopesy/ZelosBot/releases/latest/download/Rethos-setup.exe) · [Release 与便携 ZIP](https://github.com/Hopesy/ZelosBot/releases)
+
+Windows x64 使用 `Rethos-<版本>-setup.exe` 安装，也可解压 `Rethos-<版本>-x64.zip` 后运行 `Rethos.exe`。当前安装包未签名，首次打开可能出现 Windows SmartScreen 提示。Release 附带 SHA256 校验值及构建来源提交。
+
+[Rethos Windows installer](https://github.com/Hopesy/ZelosBot/actions/workflows/package-win.yml) 在 Windows runner 构建，验证内置浏览器、独立服务端、实际安装后的桌面渲染，以及更新文件的版本与哈希。勾选 `publish` 后发布到 GitHub Releases；默认只保留 Actions 产物。
+
+```sh
+gh workflow run package-win.yml --repo Hopesy/ZelosBot --ref main -f publish=true
+```
+
+版本更新时先提升 `package.json` 的版本，再运行该工作流。桌面更新使用同一仓库的 `latest.yml` 和安装程序。Linux 保留单独打包入口；macOS 放到后续。完整操作见 [安装包发布与维护](docs/releasing.md)。
+
+本地构建命令为 `pnpm package:win` 或 `pnpm package:linux`，产物位于 `release/`。
 
 ## VPS 与桌面任务
 
@@ -122,6 +136,6 @@ npm uninstall -g rethos
 
 - 产品显示名称为 Rethos；内部 `OMB_*`、`OPENMAUSBOT_*` 配置、历史文件名、数据目录和协议标识保留兼容。
 - `server/enterprise.ts` 是 Apache 开源核心的兼容接口；商业实现与授权签发代码已删除。
-- 安装包更新指向已有的 `Hopesy/ZelosBot` 仓库。发布前需准备本仓库的安装包、更新元数据及签名。
+- 安装包更新指向 `Hopesy/ZelosBot`；Windows 发布流程同时上传安装包、更新元数据、校验值与来源提交。代码签名后续配置。
 - 保留原作者及依赖的版权归属，详见 [LICENSE](LICENSE)、[NOTICE](NOTICE)、[LICENSING.md](LICENSING.md)。
 - 本次修改说明和验证步骤见 [docs/rethos.md](docs/rethos.md)。

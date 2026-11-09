@@ -1,146 +1,84 @@
-# Releasing
+# Rethos 安装包发布与维护
 
-For a normal release, run **Actions → Prepare next release → Run workflow** and
-choose a patch, minor, or custom version. It opens a tiny version-bump PR;
-merging that PR automatically starts **Release** and assembles a draft from the
-exact merge commit. Review and publish the draft when it is ready.
+当前桌面发布目标为 **Windows x64**。VPS 的 Docker 镜像由独立工作流发布；手机继续通过 HTTPS 网页访问。macOS 打包留到后续配置。
 
-The existing **Actions → Release → Run workflow** button remains available for
-reruns and recovery. It
-builds macOS (arm64 + x64, signed, notarized, stapled), Windows, and Ubuntu
-from a single pinned commit, verifies every artifact the way a user would
-receive it, and assembles the canonical draft in
-[OpenMausBot releases](https://github.com/milind-soni/OpenMausBot/releases).
-The exact same assets are also staged in the public legacy releases repo so
-installed builds from 0.1.46 and earlier can update across the repository
-migration.
+## 用户下载与安装
 
-Tick **publish** to publish and verify the canonical release first, then make
-the identical legacy updater bridge visible. Leave it unticked to review the
-canonical draft; when you publish that draft in GitHub's UI, the **Sync
-published release** workflow
-verifies and publishes its legacy mirror automatically. Never publish only the
-legacy draft.
+- [Windows 安装程序（固定下载地址）](https://github.com/Hopesy/ZelosBot/releases/latest/download/Rethos-setup.exe)
+- [全部版本与便携 ZIP](https://github.com/Hopesy/ZelosBot/releases)
 
-The release commit must have passed CI on every platform: the **CI passed on
-the release commit** job waits (while the platforms build) for a ci.yml run
-whose `CI` check passed with every Linux, Windows and macOS shard, on the
-pinned commit or a commit with the same tree, and stops the release before any
-draft if the commit's CI failed. A push to main runs the Linux shards only, so
-unless the release branch's own CI (started by **Prepare next release**) or a
-nightly run covered the same tree, the job runs the full CI on the commit
-itself on a temporary `release-ci/v<version>` branch, which takes about as
-long as the platform builds. After a flaky failure, re-run the failed CI jobs;
-a release still waiting picks up the new attempt, and a release that already
-stopped needs only `gh run rerun <id> --failed`. `ship_without_ci` skips the
-wait, for emergencies only. See [CI job selection](ci.md#main-and-releases).
+运行 `Rethos-<版本>-setup.exe` 后，从开始菜单打开 Rethos。也可解压 `Rethos-<版本>-x64.zip`，运行其中的 `Rethos.exe`。当前 Windows 版本未配置代码签名，Windows SmartScreen 可能显示未知发布者提示；下载来源和校验值均在 Release 页面公开。
 
-The workflow refuses to overwrite an already-published version. Manual Release
-runs still require `package.json`'s version to be bumped on the selected ref.
-A release is rejected if any installer, stable download
-name, updater feed, blockmap, size, or digest is absent or inconsistent.
+PowerShell 校验下载文件：
 
-GitHub generates the release body from pull requests since the previous
-canonical tag. The docs changelog combines published canonical releases with
-the legacy archive into one complete history and caches it for five minutes.
-Configure the optional Vercel hook below to rebuild the docs immediately after
-publication; otherwise the live cache or the next normal docs deployment
-refreshes it.
-
-## Updater migration invariant
-
-`app-update.yml` is baked into every packaged desktop app. Builds through
-0.1.46 point to `milind-soni/openmausbot-releases`; newer builds point to
-`milind-soni/OpenMausBot`. For that reason:
-
-1. Every new release is published byte-for-byte to both repositories during
-   the bridge period.
-2. `openmausbot-releases` must stay public. Do not delete its final bridge
-   release, feeds, or assets.
-3. README and docs downloads point at the canonical repo, while the legacy
-   mirror exists only for installed updater clients and historical releases.
-
-The npm package is published separately and its versioned `.tgz` is attached
-only to the canonical release. It is not a desktop updater artifact; the
-mirror checks permit that one extra file while still verifying the complete,
-byte-identical desktop asset set.
-
-## Why the gates exist
-
-Each verification step in `release.yml` maps to a real incident from the
-hand-cut releases (0.1.15–0.1.25): stale build output breaking the code
-signature, a bare import killing the packaged server on launch while every
-check stayed green, helper paths resolving outside the app after bundling,
-stapling silently invalidating every published hash, and a finished release
-sitting invisible as a draft. Don't remove a gate without reading the comment
-above it.
-
-## Bundled browser gates
-
-Desktop builds also stage a pinned engine and Chromium Headless Shell before
-packaging. Pre-signing checks validate complete resources and upstream hashes;
-native browser smoke tests and macOS signature checks run on the packaged
-output. See [browser packaging](browser-packaging.md) for update ownership,
-license provenance and Linux sandbox constraints. Missing browser resources
-must fail the build, not ship an installer that downloads them on first use.
-
-## One-time setup: release secrets
-
-Set these in **OpenMausBot → Settings → Secrets and variables → Actions**.
-
-The **Prepare next release** workflow also needs
-**Settings → Actions → General → Workflow permissions → Allow GitHub Actions
-to create and approve pull requests** enabled. The workflow only creates the
-version PR; it never approves or merges it.
-
-### 1. `MAC_CERT_P12_BASE64` + `MAC_CERT_PASSWORD`
-
-The Developer ID Application certificate, exported from the Mac that
-currently signs releases:
-
-```sh
-# Keychain Access → My Certificates → "Developer ID Application: Milind Soni
-# (993D98NH4J)" → right-click → Export… → .p12 with a strong password, then:
-base64 -i DeveloperID.p12 | pbcopy   # → MAC_CERT_P12_BASE64
-# the export password             → MAC_CERT_PASSWORD
+```powershell
+Get-FileHash .\Rethos-setup.exe -Algorithm SHA256
 ```
 
-### 2. `APPLE_API_KEY_P8_BASE64` + `APPLE_API_KEY_ID` + `APPLE_API_ISSUER_ID`
+将结果与该版本的 `SHA256SUMS-windows-x64.txt` 对照。`BUILD-INFO.json` 记录版本、源码提交、架构、签名状态以及各文件的 SHA256。
 
-An App Store Connect API key for notarization (better than an app-specific
-password for CI — revocable, scoped, no 2FA dance):
+桌面客户端包含本机服务和桌面集成，用户数据沿用 `~/.openmausbot`。已有 VPS 的日常使用入口继续见 [VPS 部署文档](rethos-vps.md)，本机独立 CUA 与反向 SSH 的维护方式见 [桌面接入](../deploy/desktop/README.md)。
 
-1. [App Store Connect → Users and Access → Integrations → App Store Connect API](https://appstoreconnect.apple.com/access/integrations/api)
-2. Generate a **Team Key** with the **Developer** role
-3. Download the `.p8` (one chance only), note the Key ID and Issuer ID
+## 一键 Windows 发布
+
+打开 [Actions → Rethos Windows installer](https://github.com/Hopesy/ZelosBot/actions/workflows/package-win.yml)，选择 **Run workflow**：
+
+1. 选择 `main`，或在 `ref` 填写要打包的提交、标签或分支。
+2. 默认仅构建并保留 Actions artifact，适合候选版本验证。
+3. 勾选 `publish`，通过所有验证后发布到本仓库 GitHub Releases。
+
+命令行等价入口：
 
 ```sh
-base64 -i AuthKey_XXXXXXXX.p8 | pbcopy   # → APPLE_API_KEY_P8_BASE64
+# 构建验证，保存 Actions artifact 30 天
+ gh workflow run package-win.yml --repo Hopesy/ZelosBot --ref main
+
+# 构建、验证并发布
+ gh workflow run package-win.yml --repo Hopesy/ZelosBot --ref main -f publish=true
+
+# 查看当前运行
+ gh run list --repo Hopesy/ZelosBot --workflow package-win.yml --limit 5
 ```
 
-### 3. `RELEASES_PAT`
+工作流在 Windows runner 完成以下步骤：
 
-A fine-grained personal access token that lets the workflow write to the
-legacy updater mirror: **GitHub → Settings → Developer settings →
-Fine-grained tokens** → repository access: only `openmausbot-releases` →
-permissions: **Contents: Read and write**. Set a long expiry and a calendar
-reminder. The canonical release uses the workflow's scoped `GITHUB_TOKEN` and
-does not need a PAT.
+- 按锁文件安装依赖并清理旧输出，编译前端、服务端、桌面资源和原生依赖。
+- 构建 NSIS 安装程序及 ZIP，验证内置浏览器和独立服务端运行。
+- 在临时用户数据目录实际安装，启动安装后的 `Rethos.exe`，检查桌面渲染、preload、服务健康和桌面访问权限。
+- 检查更新地址为 `Hopesy/ZelosBot`，验证 `latest.yml` 的版本、路径、文件大小和 SHA512。
+- 汇总安装包、ZIP、差分更新文件、固定下载名、SHA256 和构建来源。
+- 发布作业仅在构建成功且勾选 `publish` 时执行：先上传草稿、对照 GitHub 返回的文件摘要，随后公开 Release。
 
-### 4. Optional `DOCS_DEPLOY_HOOK_URL`
+构建作业使用只读权限，发布作业使用当前仓库的 `contents: write`。Windows 发布使用工作流内置的 `GITHUB_TOKEN`。测试数据和诊断位于 `.Rethos-temp/desktop-release/`，失败时上传日志。
 
-In Vercel, open the docs project and create a **Deploy Hook** for its production
-branch. Store that private URL as the `DOCS_DEPLOY_HOOK_URL` repository secret.
-Publishing a release then requests a fresh docs deployment so the generated
-changelog appears immediately. Do not put the hook URL in source control.
+## 更新版本
 
-### Local fallback
+1. 修改并提交 `package.json` 中的版本，例如从 `0.1.149` 提升到 `0.1.150`。也可通过 **Prepare next release** 创建版本 PR。
+2. 推送并运行 Windows 发布工作流。已公开的同版本 Release 会受到保护，发布修复应提升版本号。
+3. 确认 Release 中同时存在安装程序、`.exe.blockmap` 和 `latest.yml`。固定下载名 `Rethos-setup.exe` 是同一安装程序的副本。
+4. 已安装桌面端从同一仓库读取更新；也可下载新安装程序进行覆盖升级。
 
-The hand-cut path still works when Actions is down or a release needs
-surgery: `pnpm package:mac`, gate with `codesign --verify --deep --strict`,
-notarize with the local keychain profile (`xcrun notarytool submit …
---keychain-profile AC_PASSWORD`), staple, re-zip, regenerate blockmaps and
-`node scripts/regenerate-mac-feed.mjs`, upload the identical complete asset set
-to both repositories, publish and verify the canonical release before the
-legacy mirror, and always verify the published bytes against the published feed
-by downloading them back.
+卸载使用 Windows **设置 → 应用 → 已安装的应用 → Rethos**。便携 ZIP 的程序目录可在退出后删除。用户数据单独保留；涉及删除数据时先备份。
+
+首次发布的工作流验证覆盖安装与启动、更新文件完整性。两个正式版本之间的实际自动升级将在下一版本发布时验证。
+
+## 产物与工作流
+
+| 产物 | 入口 | 用途 |
+| --- | --- | --- |
+| Windows 安装程序、便携 ZIP、更新文件 | `package-win.yml` | Windows 桌面安装和升级；支持直接发布 Release |
+| Ubuntu DEB、AppImage | `package-linux.yml` | 保留独立构建入口，按该平台工作流单独验收 |
+| VPS Docker 镜像 | `docker.yml` | `ghcr.io/hopesy/rethos`，AMD64 / ARM64 |
+| npm `.tgz` | `npm-package.yml`、`pnpm package:npm` | 服务端与 CLI；公共 npm 发布需配置包所有权和发布认证 |
+| 全平台 Release | `release.yml` | 手动入口，需先具备 macOS 签名及 notarization 凭据，并完成各平台验收 |
+
+Windows 发布流程独立执行，版本修改通过手动发布入口推进。全平台 Release 的自动版本触发已关闭，避免版本提交立即启动 macOS 签名任务。Docker 和 npm 的发布命令分别按对应工作流执行。
+
+## 本地构建
+
+```sh
+pnpm install --frozen-lockfile
+pnpm package:win
+```
+
+`release/` 保存构建输出。安装后的桌面验收脚本仅在 GitHub Actions 的临时 Windows runner 执行。源代码中的 `after-pack.mjs` 继续检查浏览器、cloudflared、数据引擎及许可文件；第三方资源来源和固定版本保留在相应准备脚本中。
