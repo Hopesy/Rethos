@@ -201,3 +201,5 @@ Rethos 用 MCP 读取桌面当前可见界面。发送前确认聊天、输入�
 ## Windows 安装包与 VPS 镜像
 
 Windows 安装包通过 [Rethos Windows installer](https://github.com/Hopesy/Rethos/actions/workflows/package-win.yml) 构建、安装验收并发布。下载、更新、卸载和发布步骤见 [安装包发布文档](releasing.md)。桌面安装包与 VPS Docker 镜像分别发布；当前 VPS 的网页入口及 CUA 通道继续按本文维护。macOS 打包延后。
+
+2026-11-09 已发布 [Windows 0.1.149](https://github.com/Hopesy/Rethos/releases/tag/v0.1.149)，实际安装启动、桌面写操作鉴权、内置浏览器和服务端检查全部通过。固定入口：[下载 Windows 安装程序](https://github.com/Hopesy/Rethos/releases/latest/download/Rethos-setup.exe)。

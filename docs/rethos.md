@@ -50,4 +50,6 @@ pnpm package:npm
 
 Windows 独立打包和发布入口为 `package-win.yml`，包含安装、启动和更新元数据校验，使用方法见 [发布文档](releasing.md)。全平台 Release 改为手动入口，macOS 延后。
 
+2026-11-09 已完成 Windows `0.1.149` 的构建、实际安装启动与 Release 发布，产物包括安装程序、便携 ZIP、更新元数据、SHA256 和构建来源。116 项相关回归测试通过，安装后的桌面写操作鉴权已验证。记录见 [Actions 42551723554](https://github.com/Hopesy/Rethos/actions/runs/42551723554)。
+
 本地 npm 安装包仍保留。公共 npm 发布和桌面代码签名另行配置。

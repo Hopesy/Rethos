@@ -2,6 +2,17 @@
 
 当前桌面发布目标为 **Windows x64**。VPS 的 Docker 镜像由独立工作流发布；手机继续通过 HTTPS 网页访问。macOS 打包留到后续配置。
 
+## 已发布版本
+
+2026-11-09 已发布 [Rethos 0.1.149](https://github.com/Hopesy/Rethos/releases/tag/v0.1.149)，[GitHub Actions 42551723554](https://github.com/Hopesy/Rethos/actions/runs/42551723554) 的构建与发布作业均通过，来源提交为 `b9f8023c44e39ce75e68270e64a91520c57c5ff5`。
+
+- 116 项更新文件、鉴权、桌面会话与启动相关回归测试通过。
+- 内置浏览器、独立服务端、安装后桌面渲染、preload 和写操作鉴权通过实际运行验证。
+- 7 个 Release 文件的上传摘要与本地构建字节一致，固定安装包下载地址经匿名访问返回 HTTP 200。
+- Windows 安装程序为 267,606,661 字节，便携 ZIP 为 371,460,148 字节；当前签名状态为未签名。
+
+此次验收修复了桌面鉴权请求头在产品改名后的不一致；鉴权使用稳定的内部协议标识。测试用户目录包含 Windows 标准文件夹，桌面验收结果同时写入独立 JSON，方便诊断 GUI 进程的启动问题。
+
 ## 用户下载与安装
 
 - [Windows 安装程序（固定下载地址）](https://github.com/Hopesy/Rethos/releases/latest/download/Rethos-setup.exe)
@@ -31,13 +42,13 @@ Get-FileHash .\Rethos-setup.exe -Algorithm SHA256
 
 ```sh
 # 构建验证，保存 Actions artifact 30 天
- gh workflow run package-win.yml --repo Hopesy/Rethos --ref main
+gh workflow run package-win.yml --repo Hopesy/Rethos --ref main
 
 # 构建、验证并发布
- gh workflow run package-win.yml --repo Hopesy/Rethos --ref main -f publish=true
+gh workflow run package-win.yml --repo Hopesy/Rethos --ref main -f publish=true
 
 # 查看当前运行
- gh run list --repo Hopesy/Rethos --workflow package-win.yml --limit 5
+gh run list --repo Hopesy/Rethos --workflow package-win.yml --limit 5
 ```
 
 工作流在 Windows runner 完成以下步骤：
