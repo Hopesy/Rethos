@@ -14,6 +14,7 @@ import { installCommandFor, noteAppCopySwitch } from "@/state/engine-install";
 export { installCommandFor };
 import { keyEntry, keyForInstance, type KeyId } from "./keys/key-catalog";
 import { openKeySettings } from "./keys/key-focus";
+import { OpenAiEndpointSettings } from "./OpenAiEndpointSettings";
 import { KeyRow, SavedKeyLine } from "./keys/KeyRow";
 
 export function needsSignIn(instance: InstanceInfo | undefined): boolean {
@@ -462,6 +463,7 @@ function GrokKeyInstead({ className, unframed }: { className?: string; unframed:
 
 function ApiKeyEngineSetup({ instance, className, unframed, configured = false }: { instance: InstanceInfo; className?: string; unframed: boolean; configured?: boolean }) {
   const { dispatch } = useStore();
+  if (instance.openaiEndpoint && !instance.readOnly) return <OpenAiEndpointSettings key={instance.instanceId} instance={instance} className={className} />;
   const remote = window.ogb?.remoteClient?.active === true;
   const inline = remote ? undefined : inlineKey(instance);
   const copy = configured

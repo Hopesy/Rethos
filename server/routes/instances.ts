@@ -17,7 +17,7 @@ import {
 } from "../claude-endpoints.ts";
 import { updateClaudeCli } from "../claude-update.ts";
 import { persistableInstanceConfigs, saveConfig, withInstanceCli, type AppConfig } from "../config.ts";
-import { addEndpoint, addEndpointSchema, isAddedEndpoint, withEndpointUrls } from "../openai-compat-endpoints.ts";
+import { addEndpoint, addEndpointSchema, isAddedEndpoint, updateEndpoint, updateEndpointSchema, withEndpointUrls } from "../openai-compat-endpoints.ts";
 import type { InstanceConfigMap, ModelSelection, ProviderInstance } from "../contracts.ts";
 import { removeAntigravityProfile } from "../drivers/antigravity-acp.ts";
 import { BUILT_IN_DRIVERS } from "../drivers/builtIn.ts";
@@ -168,6 +168,31 @@ export function createInstanceRoutes(deps: InstanceRouteDeps): RouteHandler {
         await persistProviderInstance(added.instanceId, instances);
         return json(res, 201, { instanceId: added.instanceId, instances: await describeInstances() });
       } finally { providerConfigBusy.set(false); }
+    }
+
+    const openaiEndpointPatch = /^\/api\/instances\/([\w.-]+)\/openai-endpoint$/.exec(path);
+    if (method === "PATCH" && openaiEndpointPatch) {
+      if (!String(req.headers["content-type"] ?? "").toLowerCase().startsWith("application/json")) return json(res, 415, { error: "content-type must be application/json" });
+      const parsed = updateEndpointSchema.safeParse(await readBody(req, 16384));
+      if (!parsed.success) return json(res, 400, { error: "Check the service name, URL and model IDs." });
+      const instanceId = openaiEndpointPatch[1];
+      if (providerConfigBusy.get()) return json(res, 409, { error: "provider settings are already being updated" });
+      if (busyProviderSelections().some((selection) => selection.instanceId === instanceId)) {
+        return json(res, 409, { error: "Wait for bots using this service to finish before changing its settings." });
+      }
+      providerConfigBusy.set(true);
+      providerInstancesChanging.add(instanceId);
+      try {
+        const instances = persistableInstanceConfigs(cfg);
+        if (!Object.hasOwn(instances, instanceId)) return json(res, 404, { error: "unknown instance" });
+        const invalid = updateEndpoint(instances, instanceId, parsed.data);
+        if (invalid) return json(res, 400, invalid);
+        await persistProviderInstance(instanceId, instances);
+        return json(res, 200, { instances: await describeInstances() });
+      } finally {
+        providerInstancesChanging.delete(instanceId);
+        providerConfigBusy.set(false);
+      }
     }
 
     if (method === "POST" && path === "/api/instances/claude-endpoint") {

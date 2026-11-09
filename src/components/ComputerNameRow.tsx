@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { t } from "@/lib/i18n";
 import { cn } from "@/lib/cn";
 import { api, type ConfigStatus } from "@/state/store";
+import { SettingsHelp } from "./SettingsHelp";
 
 /** What a paired phone calls this computer; empty keeps the default. Saved when the field loses focus or on Enter. */
 export function ComputerNameRow({ saved, onSaved, className }: { saved: string; onSaved: (name: string) => void; className?: string }) {
@@ -28,12 +29,12 @@ export function ComputerNameRow({ saved, onSaved, className }: { saved: string; 
 
   return (
     <div data-computer-name className={cn("flex flex-col gap-1", className)}>
-      <label htmlFor="computer-name" className="text-[13px] font-medium text-ink">{t("remote.computerName.title")}</label>
+      <div className="flex items-center gap-1"><label htmlFor="computer-name" className="text-[13px] font-medium text-ink">{t("remote.computerName.title")}</label><SettingsHelp label={t("remote.computerName.title")}>{t("remote.computerName.help")}</SettingsHelp></div>
       <input id="computer-name" value={draft} disabled={saving} placeholder={t("remote.computerName.placeholder")}
         aria-describedby="computer-name-help" onChange={(event) => setDraft(event.target.value)} onBlur={() => void save()}
         onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); }}
         className="w-full max-w-xs rounded-lg border border-hairline/40 bg-inset px-3 py-2 text-[13px] text-ink placeholder:text-ink-secondary focus:outline-none" />
-      <p id="computer-name-help" className="text-[12px] leading-4 text-ink-secondary">{t("remote.computerName.help")}</p>
+      <p id="computer-name-help" className="sr-only">{t("remote.computerName.help")}</p>
       {error ? <p role="alert" className="text-[12px] leading-4 text-danger">{error}</p> : null}
     </div>
   );

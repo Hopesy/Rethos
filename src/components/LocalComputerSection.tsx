@@ -15,6 +15,7 @@ import {
   Square,
   Trash2,
 } from "lucide-react";
+import { SettingsHelp } from "./SettingsHelp";
 import { Card, CommandLine } from "./SettingsPrimitives";
 import { MacLocalControl } from "./MacLocalControl";
 import { Select } from "./Select";
@@ -350,7 +351,7 @@ export function CloudComputersCard({
   return (
     <Card
       title={t("vm.cloud.title")}
-      subtitle={t("vm.cloud.subtitle")}
+      help={t("vm.cloud.subtitle")}
     >
       <div className="flex items-center justify-between gap-3">
         <div className="text-[12px] text-ink-secondary">
@@ -611,7 +612,7 @@ export function LocalVmInventoryCard({
   );
 }
 
-function Step({ n, title, done, children }: { n: number; title: string; done: boolean; children?: React.ReactNode }) {
+function Step({ n, title, done, help, children }: { n: number; title: string; done: boolean; help?: string; children?: React.ReactNode }) {
   return (
     <div className="flex gap-3">
       <div
@@ -623,7 +624,7 @@ function Step({ n, title, done, children }: { n: number; title: string; done: bo
         {done ? <Check size={12} /> : n}
       </div>
       <div className="min-w-0 flex-1">
-        <div className={cn("text-[14px]", done ? "text-ink-secondary line-through" : "text-ink")}>{title}</div>
+        <div className="flex items-center gap-1"><span className={cn("text-[14px]", done ? "text-ink-secondary line-through" : "text-ink")}>{title}</span>{help && <SettingsHelp label={title}>{help}</SettingsHelp>}</div>
         {!done && children && <div className="mt-2 flex flex-col items-start gap-2 [&>*]:max-w-full">{children}</div>}
       </div>
     </div>
@@ -714,7 +715,8 @@ export function LocalVmIdleTimeoutSetting({
       <div className="flex items-center justify-between gap-3">
         <div>
           <label htmlFor="local-vm-idle-timeout" className="text-[13px] text-ink">{t("vm.idle.label")}</label>
-          <div id="local-vm-idle-timeout-help" className="text-[12px] text-ink-secondary">{t("vm.idle.detail")}</div>
+          <SettingsHelp label={t("vm.idle.label")}>{t("vm.idle.detail")}</SettingsHelp>
+          <span id="local-vm-idle-timeout-help" className="sr-only">{t("vm.idle.detail")}</span>
         </div>
         <div
           className={cn(
@@ -1213,7 +1215,7 @@ export function LocalComputerSection() {
       {!cloudHome && <>
       <Card
         title={t("vm.main.title")}
-        subtitle={perBot
+        help={perBot
           ? t("vm.main.perBotSubtitle", { host })
           : t("vm.main.sharedSubtitle", { host })}
       >
@@ -1265,7 +1267,7 @@ export function LocalComputerSection() {
 
       <Card
         title={t("vm.isolation.title")}
-        subtitle={t("vm.isolation.subtitle")}
+        help={t("vm.isolation.subtitle")}
       >
         <div className="flex overflow-hidden rounded-lg border border-hairline/40">
           {(["shared", "per-bot"] as const).map((mode, index) => (
@@ -1288,7 +1290,7 @@ export function LocalComputerSection() {
           <div className="mt-3 flex items-center justify-between gap-3">
             <div>
               <div className="text-[13px] text-ink">{t("vm.isolation.max")}</div>
-              <div className="text-[12px] text-ink-secondary">{t("vm.isolation.maxDetail")}</div>
+              <SettingsHelp label={t("vm.isolation.max")}>{t("vm.isolation.maxDetail")}</SettingsHelp>
             </div>
             <Select size="sm"
               aria-label={t("vm.isolation.maxAria")}
@@ -1308,12 +1310,9 @@ export function LocalComputerSection() {
         {policyPending && <div className="mt-2 flex items-center gap-1.5 text-[12px] text-ink-secondary"><Loader2 size={12} className="animate-spin" /> {t("vm.saving")}</div>}
       </Card>
 
-      <Card title={t("vm.setup.title")} subtitle={t("vm.setup.subtitle")}>
+      <Card title={t("vm.setup.title")} help={t("vm.setup.subtitle")}>
         <div className="flex flex-col gap-4">
-          <Step n={1} title={t("vm.setup.step1")} done={Boolean(status?.runtime)}>
-            <div className="text-[13px] leading-relaxed text-ink-secondary">
-              {t("vm.setup.step1Detail")}
-            </div>
+          <Step n={1} title={t("vm.setup.step1")} help={t("vm.setup.step1Detail")} done={Boolean(status?.runtime)}>
             {c?.install ? (
               <CommandLine command={c.install} />
             ) : (
@@ -1387,7 +1386,7 @@ export function LocalComputerSection() {
             ) : status?.image ? (
               <>
                 <ActionButton action="run" pending={pending} onClick={() => void act("run")}>{t("vm.setup.start")}</ActionButton>
-                <p className="text-[13px] leading-relaxed text-ink-secondary">{t("vm.setup.idleHint")}</p>
+                <SettingsHelp label={t("vm.setup.start")}>{t("vm.setup.idleHint")}</SettingsHelp>
               </>
             ) : null}
             {c?.run && <details className="text-[12px] text-ink-secondary"><summary className="cursor-pointer">{t("vm.setup.showCommand")}</summary><div className="mt-2"><CommandLine command={c.run} /></div></details>}
@@ -1419,7 +1418,7 @@ export function LocalComputerSection() {
 
       <Card
         title={t("vm.safety.title")}
-        subtitle={
+        help={
           perBot
             ? t("vm.safety.perBot", { path: status?.workspace_guest_path ?? "/home/cua/workspace" })
             : t("vm.safety.shared", { path: status?.workspace_guest_path ?? "/home/cua/workspace" })
@@ -1437,14 +1436,14 @@ export function LocalComputerSection() {
             </ActionButton>
           </div>
         )}
-        <div className="mt-3 break-all text-[11px] text-ink-secondary">
+        <details className="mt-3 text-[12px] text-ink-secondary"><summary className="cursor-pointer hover:text-ink">{t("settings.technicalDetails")}</summary><div className="mt-2 break-all text-[11px] leading-5">
           {t("vm.safety.workspace", {
             path: status?.workspace_path ?? t("vm.safety.notCreated"),
             driver: status?.driver_version ?? "0.37.0",
             image: status?.image_ref ?? t("vm.safety.notPrepared"),
           })}
-          {status?.base_image_ref ? <> · {t("vm.safety.baseImage", { image: status.base_image_ref })}</> : null}
-        </div>
+          {status?.base_image_ref ? <div>{t("vm.safety.baseImage", { image: status.base_image_ref })}</div> : null}
+        </div></details>
       </Card>
       </>}
     </>

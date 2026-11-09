@@ -410,7 +410,7 @@ export function BrowserProfilesRow() {
   const profiles = state.config?.browserProfiles ?? [];
   if (!builtInBrowserEnabled(state.config) && profiles.length === 0) return null;
   return (
-    <Card title={t("settings.profiles.title")} subtitle={t("settings.profiles.sharedSubtitle")}>
+    <Card title={t("settings.profiles.title")} help={t("settings.profiles.sharedSubtitle")}>
       <BrowserProfilesManager />
     </Card>
   );

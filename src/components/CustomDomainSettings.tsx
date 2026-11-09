@@ -31,7 +31,7 @@ export function customDomainDnsName(raw: string): string | null {
 
 export function CustomDomainDnsRecord({ domain, serverIpv4 }: { domain: string; serverIpv4?: string | null }) {
   const name = customDomainDnsName(domain);
-  if (!name) return <p className="text-[12px] text-ink-secondary">{t("settings.domain.enterDomain")}</p>;
+  if (!name) return null;
   const rows = [
     [t("settings.domain.recordType"), "A"],
     [t("settings.domain.recordName"), name],
@@ -133,7 +133,7 @@ export function CustomDomainSettings() {
   };
 
   return (
-    <Card title={t("settings.domain.title")} subtitle={t("settings.domain.subtitle")}>
+    <Card title={t("settings.domain.title")} help={<>{t("settings.domain.subtitle")}<br />{t("settings.domain.httpsNeeded")}</>}>
       <div className="space-y-3" data-custom-domain-settings>
         {busy === "loading" && <p role="status" className="flex items-center gap-2 text-[13px] text-ink-secondary"><Loader2 size={14} className="animate-spin" />{t("settings.domain.loading")}</p>}
         {status && !status.supported && <p className="text-[13px] leading-relaxed text-ink-secondary">{t("settings.domain.serverOnly")}</p>}
@@ -143,7 +143,6 @@ export function CustomDomainSettings() {
               <label htmlFor="custom-domain" className="block text-[13px] font-medium text-ink">{t("settings.domain.label")}</label>
               <input id="custom-domain" type="text" value={domain} disabled={busy !== null} onChange={(event) => { setDomain(event.target.value); setNotice(null); setError(null); }} placeholder="bots.yourcompany.com" autoCapitalize="none" autoCorrect="off" spellCheck={false} className="w-full rounded-lg border border-hairline/50 bg-inset px-3 py-2 text-[13px] text-ink placeholder:text-ink-secondary focus:border-accent focus:outline-none disabled:opacity-50" />
               <CustomDomainDnsRecord domain={domain} serverIpv4={status.serverIpv4} />
-              <p className="text-[12px] leading-relaxed text-ink-secondary">{t("settings.domain.httpsNeeded")}</p>
               <div className="flex flex-wrap gap-2 pt-1">
                 <button type="submit" disabled={!domain.trim() || busy !== null} className="ui-button ui-button-primary">
                   {busy === "saving" ? <Loader2 size={14} className="animate-spin" /> : <Globe size={14} />}

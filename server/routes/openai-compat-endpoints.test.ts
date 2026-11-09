@@ -17,12 +17,12 @@ afterEach(async () => {
 
 const SECRET = "sk-test-0123456789";
 
-async function serve(options: { hosted?: boolean; botInstance?: string } = {}) {
+async function serve(options: { hosted?: boolean; botInstance?: string; botBusy?: boolean } = {}) {
   const cfg = { instances: { openaiCompat: { driver: "openai-compat" }, claude: { driver: "claudeAgent" } } } as unknown as AppConfig;
   const persisted: InstanceConfigMap[] = [];
   let busy = false;
   const bots = options.botInstance
-    ? [{ id: "b1", busy: false, modelSelection: { instanceId: options.botInstance, model: "m" } }]
+    ? [{ id: "b1", busy: options.botBusy ?? false, modelSelection: { instanceId: options.botInstance, model: "m" } }]
     : [];
   const deps = {
     store: { bots, tasks: () => [] },
@@ -69,6 +69,7 @@ describe("added OpenAI-compatible servers", () => {
   it("are admin-only", () => {
     expect(requiredScope("POST", "/api/instances/openai-compat")).toBe("admin");
     expect(requiredScope("DELETE", "/api/instances/openai-compat-1")).toBe("admin");
+    expect(requiredScope("PATCH", "/api/instances/wb/openai-endpoint")).toBe("admin");
   });
 
   it("saves a new instance with its own key, base URL and models, and never sends the key back", async () => {
@@ -119,6 +120,48 @@ describe("added OpenAI-compatible servers", () => {
     const { cfg, call } = await serve({ hosted: true });
     expect((await call("POST", "/api/instances/openai-compat", add)).status).toBe(403);
     expect(Object.keys(cfg.instances ?? {})).toEqual(["openaiCompat", "claude"]);
+  });
+
+  it("lists and edits a migrated service in place, preserving its secret, model references and runtime options", async () => {
+    const { cfg, call } = await serve({ botInstance: "wb" });
+    cfg.defaultModelSelection = { instanceId: "wb", model: "gpt-test" };
+    cfg.instances!.wb = { driver: "openai-compat", displayName: "Existing", config: {
+      key: SECRET, url: "http://127.0.0.1:12345/v1", model: "gpt-test", provider: "", replyWaitMinutes: 10, tools: true,
+    } };
+    const listed = await call("GET", "/api/instances");
+    expect(listed.text).not.toContain(SECRET);
+    expect(listed.body.instances.find((row: any) => row.instanceId === "wb").openaiEndpoint).toEqual({
+      url: "http://127.0.0.1:12345/v1", keySaved: true, model: "gpt-test", managedModels: [],
+    });
+    const updated = await call("PATCH", "/api/instances/wb/openai-endpoint", {
+      displayName: "Updated", url: "http://127.0.0.1:12345/v2/", model: "gpt-test", models: ["gpt-test", "gpt-second"],
+    });
+    expect(updated.status, updated.text).toBe(200);
+    expect(updated.text).not.toContain(SECRET);
+    expect(cfg.instances!.wb).toMatchObject({ displayName: "Updated", config: {
+      key: SECRET, url: "http://127.0.0.1:12345/v2", provider: "", replyWaitMinutes: 10, tools: true, managedModels: ["gpt-test", "gpt-second"],
+    } });
+    expect(cfg.defaultModelSelection).toEqual({ instanceId: "wb", model: "gpt-test" });
+    const replaced = await call("PATCH", "/api/instances/wb/openai-endpoint", { displayName: "Updated", url: "http://127.0.0.1:12345/v2", key: "replacement-secret", models: [] });
+    expect(replaced.status).toBe(200);
+    expect(replaced.text).not.toContain("replacement-secret");
+    expect(cfg.instances!.wb.config).toMatchObject({ key: "replacement-secret", model: "gpt-test" });
+    expect(cfg.instances!.wb.config).not.toHaveProperty("managedModels");
+  });
+
+  it("protects active services and rejects invalid or built-in endpoint edits without changing data", async () => {
+    const { cfg, persisted, call } = await serve({ botInstance: "wb", botBusy: true });
+    cfg.instances!.wb = { driver: "openai-compat", config: { key: SECRET, url: add.url } };
+    expect((await call("PATCH", "/api/instances/wb/openai-endpoint", add)).status).toBe(409);
+    expect(persisted).toHaveLength(0);
+    const idle = await serve();
+    idle.cfg.instances!.wb = structuredClone(cfg.instances!.wb);
+    expect((await idle.call("PATCH", "/api/instances/openaiCompat/openai-endpoint", add)).status).toBe(400);
+    expect((await idle.call("PATCH", "/api/instances/missing/openai-endpoint", add)).status).toBe(404);
+    for (const patch of [{ url: "https://user:secret@example.com" }, { key: "https://example.com/key" }, { key: "" }, { url: "ftp://example.com" }]) {
+      expect((await idle.call("PATCH", "/api/instances/wb/openai-endpoint", { ...add, ...patch })).status).toBe(400);
+    }
+    expect(idle.persisted).toHaveLength(0);
   });
 });
 

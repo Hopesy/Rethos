@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { KeyRound, Loader2, LockKeyhole, Plus, RefreshCw, ShieldCheck, Trash2 } from "lucide-react";
+import { KeyRound, Loader2, Plus, RefreshCw, ShieldCheck, Trash2 } from "lucide-react";
 
 import { loginHeldBackFor, type LoginBots, type LoginSummary, type OnePasswordStatus, type OnePasswordVault } from "../../shared/logins";
 import { t } from "@/lib/i18n";
@@ -8,6 +8,7 @@ import { relativeTime } from "@/lib/memory";
 import { useOwnerOrAdmin } from "@/lib/use-owner-or-admin";
 import { useStore } from "@/state/store";
 import { LoginBotPicker, LoginForm } from "./LoginForm";
+import { SettingsHelp } from "./SettingsHelp";
 import { Card } from "./SettingsPrimitives";
 
 // Security: a row never shows the password, which no route returns.
@@ -75,7 +76,7 @@ export function LoginsSettings() {
   };
 
   return (
-    <Card title={t("settings.logins.title")} subtitle={t("settings.logins.subtitle")}>
+    <Card title={t("settings.logins.title")} help={<>{t("settings.logins.subtitle")}<br />{t("settings.logins.limits")}</>}>
       <div className="flex flex-col gap-3" aria-busy={logins === null || busy}>
         {state.config?.cloudHome === true && <p className="text-[12px] leading-relaxed text-ink-secondary" data-logins-cloud-own>{t("settings.logins.cloudOwn")}</p>}
         {logins === null && !error && <p className="text-[12px] text-ink-secondary">{t("settings.logins.loading")}</p>}
@@ -165,7 +166,6 @@ export function LoginsSettings() {
             <Plus size={14} />{t("settings.logins.add")}
           </button>
         )}
-        <p className="text-[12px] leading-relaxed text-ink-tertiary">{t("settings.logins.limits")}</p>
         {error && <p role="alert" className="text-[12px] text-danger">{error}</p>}
         <OnePasswordConnection status={onePassword} disabled={logins === null} bots={bots} botNames={botNames}
           onChange={async (next) => { setOnePassword(next); await load(); }} />
@@ -258,7 +258,7 @@ function OnePasswordConnection({ status, disabled, bots, botNames, onChange }: {
   };
   return (
     <section className="mt-1 flex flex-col gap-2 border-t border-hairline/30 pt-3" aria-label={t("settings.logins.onePassword.title")} data-onepassword>
-      <div className="text-[13px] font-medium text-ink">{t("settings.logins.onePassword.title")}</div>
+      <div className="flex items-center gap-1 text-[13px] font-medium text-ink">{t("settings.logins.onePassword.title")}<SettingsHelp label={t("settings.logins.onePassword.title")}>{t("settings.logins.onePassword.guide")}<br />{t("settings.logins.onePassword.note")}</SettingsHelp></div>
       {status.connected ? (
         <>
           <p className="text-[13px] leading-snug text-ink-secondary">
@@ -281,7 +281,6 @@ function OnePasswordConnection({ status, disabled, bots, botNames, onChange }: {
         </>
       ) : (
         <form className="flex flex-col gap-2" onSubmit={connect}>
-          <p className="text-[12px] leading-relaxed text-ink-secondary">{t("settings.logins.onePassword.guide")}</p>
           <div className="flex flex-wrap gap-2">
             <input name="onePasswordToken" type="password" autoComplete="off" spellCheck={false} maxLength={8192} value={token}
               onChange={(event) => setToken(event.target.value)} disabled={disabled || busy !== null}
@@ -293,9 +292,6 @@ function OnePasswordConnection({ status, disabled, bots, botNames, onChange }: {
           </div>
         </form>
       )}
-      <p className="flex items-start gap-1 text-[12px] leading-snug text-ink-tertiary">
-        <LockKeyhole size={11} aria-hidden="true" className="mt-[3px] shrink-0" /> {t("settings.logins.onePassword.note")}
-      </p>
       {error && <p role="alert" className="text-[12px] text-danger">{error}</p>}
     </section>
   );

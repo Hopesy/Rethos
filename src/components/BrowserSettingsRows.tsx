@@ -41,7 +41,7 @@ export function BuiltInBrowserRow() {
   return (
     <SettingRow
     title={t("settings.experimental.browserAria")}
-    subtitle={desktopBrowser
+    help={desktopBrowser
         ? browser
         ? t("settings.experimental.browserOn")
         : t("settings.experimental.browserOff")
@@ -73,7 +73,7 @@ export function ServerSitesRow() {
   return (
     <SettingRow
       title={t("settings.browser.serverSites")}
-      subtitle={t("settings.browser.serverSitesDetail")}
+      help={t("settings.browser.serverSitesDetail")}
       message={error ? <p role="alert" className="text-danger">{error}</p> : null}
     >
       <Switch

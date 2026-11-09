@@ -12,5 +12,6 @@ export interface ClaudeEndpointInfo {
 /** The instance fields only a custom endpoint has. */
 export interface InstanceEndpointInfo {
   claudeEndpoint?: ClaudeEndpointInfo;
+  openaiEndpoint?: import("./openai-endpoint.ts").OpenAiEndpointInfo;
   url?: string;
 }

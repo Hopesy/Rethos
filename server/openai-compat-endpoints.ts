@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { InstanceConfig, InstanceConfigMap } from "./contracts.ts";
+import { isCustomOpenAiEndpoint } from "../shared/openai-endpoint.ts";
 
 export const ADDED_ENDPOINT_PREFIX = "openai-compat-";
 
@@ -36,7 +37,32 @@ export const addEndpointSchema = z.object({
 export type AddEndpoint = z.infer<typeof addEndpointSchema>;
 
 export function isAddedEndpoint(instanceId: string, entry: InstanceConfig | undefined): boolean {
-  return entry?.driver === "openai-compat" && instanceId.startsWith(ADDED_ENDPOINT_PREFIX);
+  return Boolean(entry && isCustomOpenAiEndpoint(instanceId, entry.driver));
+}
+
+export const updateEndpointSchema = addEndpointSchema.omit({ catalog: true }).extend({
+  key: addEndpointSchema.shape.key.optional(),
+  model: z.string().trim().max(200).optional(),
+});
+
+export function updateEndpoint(instances: InstanceConfigMap, instanceId: string, body: z.infer<typeof updateEndpointSchema>): { error: string } | null {
+  const entry = instances[instanceId];
+  if (!isAddedEndpoint(instanceId, entry)) return { error: "This service is managed in its own provider settings." };
+  const url = endpointBaseUrl(body.url);
+  if (!url) return { error: "Enter an http or https base URL without a user name, password or query string." };
+  if (body.key && /^https?:\/\//i.test(body.key)) return { error: "Enter the API key itself." };
+  const config: Record<string, unknown> = { ...entry.config as Record<string, unknown>, url };
+  if (body.key !== undefined) config.key = body.key;
+  if (body.model !== undefined) {
+    if (body.model) config.model = body.model;
+    else delete config.model;
+  }
+  if (body.models !== undefined) {
+    if (body.models.length) config.managedModels = [...new Set(body.models)];
+    else delete config.managedModels;
+  }
+  instances[instanceId] = { ...entry, displayName: body.displayName, config };
+  return null;
 }
 
 export function addEndpoint(instances: InstanceConfigMap, body: AddEndpoint): { instanceId: string } | { error: string } {
@@ -57,6 +83,13 @@ export function withEndpointUrls(described: unknown, configs: InstanceConfigMap)
   return described.map((instance: { instanceId?: string }) => {
     const entry = instance.instanceId ? configs[instance.instanceId] : undefined;
     const url = entry && isAddedEndpoint(instance.instanceId!, entry) ? endpointDisplayUrl(entry.config) : undefined;
-    return url ? { ...instance, url } : instance;
+    if (!entry || !isAddedEndpoint(instance.instanceId!, entry)) return instance;
+    const config = (entry.config ?? {}) as Record<string, unknown>;
+    return { ...instance, ...(url ? { url } : {}), openaiEndpoint: {
+      url: url ?? "",
+      keySaved: Boolean(typeof config.key === "string" && config.key.trim()),
+      model: typeof config.model === "string" ? config.model : "",
+      managedModels: Array.isArray(config.managedModels) ? config.managedModels.filter((model): model is string => typeof model === "string") : [],
+    } };
   });
 }

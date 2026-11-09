@@ -35,7 +35,7 @@ export function VpsComputersCard({
   return (
     <Card
       title={t("vm.vps.title")}
-      subtitle={t("vm.vps.subtitle")}
+      help={t("vm.vps.subtitle")}
     >
       <div className="flex items-center justify-between gap-3">
         <div className="text-[12px] text-ink-secondary">
