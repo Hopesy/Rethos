@@ -154,7 +154,7 @@ Rethos 用 MCP 读取桌面当前可见界面。发送前确认聊天、输入�
 
 手机通过同一 HTTPS 地址使用网页，可将站点添加到主屏幕。网页内消息、收件箱和定时报告沿用 Rethos 自带机制。
 
-Android 8.0+ 可安装 [Rethos Android 0.1.0](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.0)，默认访问当前 VPS，使用现有 Token 登录。客户端复用网页、保存登录状态并支持系统文件选择；应用内扫码与原生后台推送列为后续能力。[Android 使用与更新](../android/README.md) 说明了 APK 安装、服务器切换和覆盖升级。
+Android 8.0+ 可安装 [Rethos Android 0.1.1](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.1)，默认访问当前 VPS，使用现有 Token 或应用内扫码登录。客户端复用网页、保存登录状态并支持系统文件选择；点击登录页或顶部菜单的“扫码登录”打开相机。原生后台推送列为后续能力。[Android 使用与更新](../android/README.md) 说明了 APK 安装、服务器切换和覆盖升级。
 
 当前源码的系统通知通过在线页面的 `Notification` API 发出，尚未实现独立的 Service Worker / Web Push 投递。手机浏览器关闭、系统挂起页面后的锁屏通知需要后续补齐该能力并做真机测试。浏览器的 390px 模拟验收用于检查布局和网页操作；手机安装、软键盘、后台恢复还需真机核对。
 
@@ -190,6 +190,8 @@ Android 8.0+ 可安装 [Rethos Android 0.1.0](https://github.com/Hopesy/Rethos/r
 保留上述备份的受限权限。备份包含凭据和历史数据。已有 `wb.hopesy.cc` 模型服务继续独立运行。
 
 ### 2026-11-10：独立 CUA 更新
+
+同日重启后的黑色终端经窗口截图和控制台进程列表确认属于 `Rethos-Desktop-Tunnel` 的 PowerShell（原 PID 10580），其子进程为 SSH 隧道（原 PID 16408）。登录任务已改用 `C:\Users\zhouh\agent\rethos-desktop\BackgroundLauncher.exe`；源文件和编译方式见 `deploy/desktop/`。启动器使用 Windows GUI 子系统、`CreateNoWindow` 及 Job Object，保持登录触发和原有连接参数。停止旧任务后对应终端退出；新任务重启验证通过，所属进程完整回收，新 SSH 连接建立，VPS 通过新连接读取到 CUA 0.46.1 及运行状态。CUA 原进程 PID 20808 保持运行。此次验证使用手动启动同一登录任务；整机重启尚未执行。原任务 XML、截图和过程记录保存在 `C:\Users\zhouh\Desktop\bushu1\.Rethos-temp\black-window-20261110\`。
 
 从官方 `cua-driver-rs-v0.46.1` 发布下载 Windows x64 归档，核对归档 SHA256 和 Cua AI, Inc. 可执行文件签名后，保留旧版目录并安装到新版本目录。管理员脚本更新 `cua-driver-serve`、停止旧守护进程并启动新版；运行状态与任务路径已读取确认，VPS MCP 转发脚本同步更新。按照用户要求，后续额外兼容性与桌面交互回归跳过。
 

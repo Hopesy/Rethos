@@ -2,6 +2,8 @@
 
 适用：一台 Linux VPS + 一台 Windows 10/11 x64 电脑，用网页或 Android 查看 Codex 桌面任务、讨论方案、发送“继续”。多台电脑重复桌面接入步骤即可。
 
+**新 Windows 电脑推荐使用一键安装包。** VPS 按第 2 节准备好后，解压安装包、双击 `Install.cmd`，填写 VPS 地址、SSH 用户和电脑名称，即可配置独立 CUA、隧道与后台登录任务，并注册 MCP。具体操作及维护入口见 [一键安装说明](../deploy/desktop/README.md#新电脑一键安装)。采用一键安装时，第 3、4 节可留作手工维护参考。
+
 这里的 **CUA Driver** 由 [Cua / trycua](https://github.com/trycua/cua) 提供，负责读取窗口、截图和键鼠输入。模型推理使用配置的 API；这套桌面连接对本机 GPU 没有额外要求。
 
 ## 1. 系统怎样工作
@@ -131,13 +133,16 @@ printf '%s\n' 'restrict,port-forwarding,permitlisten="127.0.0.1:22222" ssh-ed255
 chmod 600 "$HOME/.ssh/authorized_keys"
 ```
 
-**Windows：**复制本仓库的 [`Start-RethosTunnel.ps1`](../deploy/desktop/Start-RethosTunnel.ps1) 到 `$env:USERPROFILE\RethosDesktop`。在当前用户的管理员 PowerShell 注册登录任务：
+**Windows：**复制本仓库的 [`Start-RethosTunnel.ps1`](../deploy/desktop/Start-RethosTunnel.ps1) 和 [`BackgroundLauncher.cs`](../deploy/desktop/BackgroundLauncher.cs) 到 `$env:USERPROFILE\RethosDesktop`。在当前用户的管理员 PowerShell 编译后台启动器并注册登录任务：
 
 ```powershell
 $localDir = Join-Path $env:USERPROFILE 'RethosDesktop'
-# 将 Start-RethosTunnel.ps1 保存到上述目录后执行
-$taskArgs = '-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "{0}\Start-RethosTunnel.ps1" -VpsHost "{1}" -VpsUser "{2}"' -f $localDir,$vpsHost,$vpsUser
-$action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $taskArgs -WorkingDirectory $localDir
+# 将 Start-RethosTunnel.ps1 和 BackgroundLauncher.cs 保存到上述目录后执行
+& "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:winexe /platform:x64 /optimize+ "/out:$localDir\BackgroundLauncher.exe" "$localDir\BackgroundLauncher.cs"
+if ($LASTEXITCODE -ne 0) { throw '后台启动器编译失败' }
+$powershellExe = "$env:WINDIR\System32\WindowsPowerShell\v1.0\powershell.exe"
+$taskArgs = '"{0}" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{1}\Start-RethosTunnel.ps1" -VpsHost "{2}" -VpsUser "{3}"' -f $powershellExe,$localDir,$vpsHost,$vpsUser
+$action = New-ScheduledTaskAction -Execute "$localDir\BackgroundLauncher.exe" -Argument $taskArgs -WorkingDirectory $localDir
 $user = [Security.Principal.WindowsIdentity]::GetCurrent().Name
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User $user
 $principal = New-ScheduledTaskPrincipal -UserId $user -LogonType Interactive -RunLevel Limited
@@ -146,7 +151,7 @@ Register-ScheduledTask -TaskName 'Rethos-Desktop-Tunnel' -Action $action -Trigge
 Start-ScheduledTask -TaskName 'Rethos-Desktop-Tunnel'
 ```
 
-隧道断线后自动重连，日志位于 `%LOCALAPPDATA%\Rethos\logs\desktop-tunnel.log`。VPS 的 SSH 服务需允许该用户做 TCP 远程转发；监听地址保持 `127.0.0.1`。
+启动器以无控制台方式创建 PowerShell，避免 Windows Terminal 在登录时弹出黑窗口；停止任务会同时结束所属 SSH 子进程。隧道断线后自动重连，日志位于 `%LOCALAPPDATA%\Rethos\logs\desktop-tunnel.log`。VPS 的 SSH 服务需允许该用户做 TCP 远程转发；监听地址保持 `127.0.0.1`。
 
 </details>
 

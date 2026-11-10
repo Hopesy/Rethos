@@ -330,7 +330,7 @@ describe("choosing where the phone connects", () => {
 describe("Get the phone app", () => {
   it("offers only the published Rethos Android APK", () => {
     expect(PHONE_APPS.map((app) => [app.id, app.url])).toEqual([["android", ANDROID_APK_URL]]);
-    expect(ANDROID_APK_URL).toBe("https://github.com/Hopesy/Rethos/releases/download/android-v0.1.0/Rethos-Android-0.1.0.apk");
+    expect(ANDROID_APK_URL).toBe("https://github.com/Hopesy/Rethos/releases/download/android-v0.1.1/Rethos-Android-0.1.1.apk");
   });
 
   const render = () => {

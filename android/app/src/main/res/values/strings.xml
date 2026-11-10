@@ -5,6 +5,11 @@
     <string name="reload">刷新</string>
     <string name="server">服务器地址</string>
     <string name="open_browser">在浏览器中打开</string>
+    <string name="scan_login">扫码登录</string>
+    <string name="scan_prompt">扫描电脑上 Rethos 设置中生成的登录二维码</string>
+    <string name="scan_permission">请允许相机权限后再次点击“扫码登录”。也可以继续使用 Token 登录。</string>
+    <string name="scan_invalid">请扫描当前服务器的 Rethos 登录二维码；二维码可在已登录电脑的设置中生成。</string>
+    <string name="scan_expired_context">服务器地址已变化，请重新扫码。</string>
     <string name="connect">连接</string>
     <string name="cancel">取消</string>
     <string name="server_hint" translatable="false">https://rethos.example.com</string>

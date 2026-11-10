@@ -4,16 +4,16 @@ Kotlin + 系统 WebView 客户端，默认访问 `https://rethos.hopesy.cc`。�
 
 ## 使用
 
-[下载签名 APK](https://github.com/Hopesy/Rethos/releases/download/android-v0.1.0/Rethos-Android-0.1.0.apk) · [发布页与校验文件](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.0)
+[下载签名 APK](https://github.com/Hopesy/Rethos/releases/download/android-v0.1.1/Rethos-Android-0.1.1.apk) · [发布页与校验文件](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.1)
 
-安装签名 APK，打开 Rethos，输入已有访问 Token 登录。登录 Cookie 保存在应用内；关掉应用再打开会恢复会话。顶部菜单提供刷新、服务器地址和在浏览器中打开。更换服务器时清除旧站点 Cookie 与网页存储，随后在新地址登录。
+安装签名 APK，打开 Rethos，输入已有访问 Token 登录。0.1.1 增加应用内扫码：点击登录页“扫码登录”，或顶部菜单“扫码登录”，允许相机权限后扫描电脑端设置中生成的登录二维码，返回应用确认登录。登录 Cookie 保存在应用内；关掉应用再打开会恢复会话。顶部菜单还提供刷新、服务器地址和在浏览器中打开。更换服务器时清除旧站点 Cookie 与网页存储，随后在新地址登录。
 
 - 支持 Android 8.0 及以上；系统 WebView 保持更新。
 - 返回键先返回网页上一页，再退出当前应用窗口。
 - 文件上传使用系统文件选择器；同服务器 HTTPS 文件下载使用系统“保存文件”窗口。
 - 主页面连接失败显示重试入口，TLS 证书由系统验证。
 - 外部网页链接交给系统浏览器。网页生成的 `blob:` 导出文件可通过“在浏览器中打开”保存。
-- 手机浏览器与 APK 各自保持登录。当前 APK 使用 Token 登录；应用内相机扫码、App Links 与后台系统推送列为后续能力。现有网页二维码仍可由手机相机扫描，在手机浏览器完成登录。
+- 手机浏览器与 APK 各自保持登录。应用内扫描当前服务器的登录二维码，登录保留在 APK 内。相机扫码使用内置 ZXing，支持缺少 Google Play 服务的设备；首次使用申请相机权限。App Links 与后台系统推送列为后续能力。
 - 手机回到前台会请求重连现有事件流。任务执行和桌面监控继续运行于 VPS。
 
 ## 本地构建
@@ -52,3 +52,5 @@ Windows 使用 `gradlew.bat`。调试包使用独立应用 ID `cc.hopesy.rethos.
 本机有真实设备连接时，使用指定模拟器序列号执行安装与测试，避免对其他设备安装调试包。过程记录放在 `.Rethos-temp/android/`。
 
 已发布版本的实际证据见 [Android 0.1.0 验证记录](../docs/releases/android-v0.1.0-verification.md)。
+
+0.1.1 使用与 0.1.0 相同的应用 ID 和正式签名，支持覆盖升级。新增测试覆盖登录入口真实触摸启动相机、取消扫码、同源二维码返回、连续扫码重载、其他站点二维码与程序合成点击的校验。网页 0.1.154 的登录卡片在应用内自动接上扫码入口，可直接配合现有 VPS 使用。

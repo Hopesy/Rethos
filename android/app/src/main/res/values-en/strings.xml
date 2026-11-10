@@ -1,4 +1,9 @@
 <resources>
+    <string name="scan_login">Scan to sign in</string>
+    <string name="scan_prompt">Scan the sign-in QR code from Rethos settings on your computer</string>
+    <string name="scan_permission">Allow camera access to scan the sign-in QR code</string>
+    <string name="scan_invalid">Scan a sign-in QR code for the current server</string>
+    <string name="scan_expired_context">The server has changed. Please scan again.</string>
     <string name="menu">More</string>
     <string name="reload">Reload</string>
     <string name="server">Server address</string>

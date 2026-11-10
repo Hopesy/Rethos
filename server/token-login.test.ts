@@ -107,6 +107,7 @@ it("QR grants inherit the login token, expire after five minutes and redeem once
   const response = await fetch(url + "/api/auth/browser-qr", { method: "POST", headers: { cookie: cookieOf(signed), origin: url } });
   expect(response.status).toBe(200); const offer = await response.json() as { url: string; expiresAt: number };
   expect(offer.url).not.toContain(root.token); expect(offer.expiresAt - now).toBe(5 * 60_000);
+  expect(new URL(offer.url).pathname).toBe("/pair");
   const credential = new URLSearchParams(new URL(offer.url).hash.slice(1)).get("signin")!;
   expect(registry.previewBrowserSignIn(credential)).toBeTruthy();
   const phone = registry.exchange({ code: credential, label: "Phone", source: "phone", browser: true });

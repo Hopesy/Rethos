@@ -16,6 +16,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.Rule
+import androidx.test.rule.GrantPermissionRule
 import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -25,6 +27,7 @@ import org.json.JSONArray
 
 @RunWith(AndroidJUnit4::class)
 class WebViewSmokeTest {
+    @get:Rule val cameraPermission: GrantPermissionRule = GrantPermissionRule.grant(android.Manifest.permission.CAMERA)
     private fun launch(): ActivityScenario<MainActivity> {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val intent = Intent().setClassName(context, "cc.hopesy.rethos.FixtureActivity")
@@ -152,5 +155,63 @@ class WebViewSmokeTest {
                 views(activity.window.decorView).filterIsInstance<TextView>().none { it.isShown && it.text == activity.getString(R.string.network_detail) }
             }
         }
+    }
+
+    @Test fun phoneEntryLaunchesNativeCameraAndCancelReturnsToLogin() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val monitor = instrumentation.addMonitor(QrCaptureActivity::class.java.name, null, false)
+        try {
+            launch().use { scenario ->
+                waitFor(scenario, "document.getElementById('scan').getAttribute('role')", "\"button\"")
+                var scanTitle = ""
+                scenario.onActivity { scanTitle = org.json.JSONObject.quote(it.getString(R.string.scan_login)) }
+                assertEquals(scanTitle, js(scenario, "document.querySelector('#scan h2').textContent"))
+                js(scenario, "document.getElementById('scan').click()")
+                assertNull("Synthetic click should not launch camera", monitor.waitForActivityWithTimeout(400))
+                tap(scenario, "scan")
+                val camera = monitor.waitForActivityWithTimeout(10_000)
+                assertNotNull("Trusted tap launches native QR scanner", camera)
+                instrumentation.runOnMainSync { camera.finish() }
+                waitFor(scenario, "window.fixtureReady===true", "true")
+                assertEquals("\"\"", js(scenario, "window.signInAtLoad"))
+            }
+        } finally { instrumentation.removeMonitor(monitor) }
+    }
+
+    @Test fun scanningReloadsSignInBootstrapAndRejectsOtherServers() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val grant = "signin=omb_pair_" + "a".repeat(43)
+        var scanResult = "https://other.example/pair#$grant"
+        var launches = 0
+        val launched = CountDownLatch(1)
+        val monitor = object : Instrumentation.ActivityMonitor() {
+            override fun onStartActivity(intent: Intent): Instrumentation.ActivityResult? {
+                if (intent.component?.className != QrCaptureActivity::class.java.name) return null
+                launches++
+                launched.countDown()
+                return Instrumentation.ActivityResult(Activity.RESULT_OK, Intent()
+                    .putExtra("SCAN_RESULT", scanResult).putExtra("SCAN_RESULT_FORMAT", "QR_CODE"))
+            }
+        }
+        instrumentation.addMonitor(monitor)
+        try {
+            launch().use { scenario ->
+                waitFor(scenario, "document.getElementById('scan').getAttribute('role')", "\"button\"")
+                tap(scenario, "scan")
+                assertTrue("Scan intent dispatched", launched.await(10, TimeUnit.SECONDS))
+                instrumentation.waitForIdleSync()
+                assertEquals(1, launches)
+                assertEquals("\"https://fixture.rethos.test\"", js(scenario, "location.origin"))
+                assertEquals("\"\"", js(scenario, "window.signInAtLoad"))
+                scanResult = "https://fixture.rethos.test/pair#$grant"
+                repeat(2) {
+                    tap(scenario, "scan")
+                    waitFor(scenario, "window.signInAtLoad", "\"#$grant\"")
+                    assertEquals("\"/pair\"", js(scenario, "location.pathname"))
+                    js(scenario, "window.signInAtLoad='consumed';history.replaceState({},'','/pair')")
+                }
+                assertEquals(3, launches)
+            }
+        } finally { instrumentation.removeMonitor(monitor) }
     }
 }

@@ -1,6 +1,8 @@
 package cc.hopesy.rethos
 
 import android.annotation.SuppressLint
+import android.Manifest
+import android.content.pm.PackageManager
 import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
@@ -36,6 +38,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.edit
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -43,6 +46,10 @@ import androidx.core.view.WindowInsetsCompat
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.Executors
+import java.util.UUID
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
+import org.json.JSONObject
 
 open class MainActivity : ComponentActivity() {
     internal lateinit var browser: WebView
@@ -60,6 +67,25 @@ open class MainActivity : ComponentActivity() {
     private var download: Download? = null
     private val downloads = Executors.newSingleThreadExecutor()
     private val preferences by lazy { getSharedPreferences("connection", MODE_PRIVATE) }
+    private var scanningOrigin: String? = null
+    private val scanner = registerForActivityResult(ScanContract()) { result ->
+        val source = scanningOrigin
+        scanningOrigin = null
+        val contents = result.contents ?: return@registerForActivityResult
+        if (source != origin.value) { toast(R.string.scan_expired_context); return@registerForActivityResult }
+        val target = QrLogin.parse(contents, origin)
+        if (target == null) toast(R.string.scan_invalid)
+        else {
+            failed = false
+            failedNavigationUrl = null
+            // The web sign-in bootstrap reads the fragment on document load, including repeated scans from the root URL.
+            browser.loadUrl(target.toUri().buildUpon().appendQueryParameter("scan", UUID.randomUUID().toString()).build().toString())
+        }
+    }
+    private val cameraPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted && scanningOrigin == origin.value) launchScanner()
+        else { scanningOrigin = null; toast(R.string.scan_permission) }
+    }
 
     private val chooseFiles = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val files = if (pickerOrigin == origin.value && origin.contains(browser.url.orEmpty()))
@@ -88,6 +114,7 @@ open class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         origin = initialOrigin()
+        scanningOrigin = savedInstanceState?.getString("scanning-origin")
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val lightTheme = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK != Configuration.UI_MODE_NIGHT_YES
         WindowCompat.getInsetsController(window, window.decorView).apply {
@@ -143,6 +170,7 @@ open class MainActivity : ComponentActivity() {
             allowContentAccess = false
             mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
             safeBrowsingEnabled = true
+            userAgentString += " RethosAndroid/${BuildConfig.VERSION_NAME}"
             mediaPlaybackRequiresUserGesture = true
             setSupportMultipleWindows(false)
         }
@@ -151,6 +179,10 @@ open class MainActivity : ComponentActivity() {
         browser.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? = intercept(request)
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                if (request.url.toString() == QrLogin.ACTION_URL) {
+                    if (request.isForMainFrame && request.hasGesture() && origin.contains(view.url.orEmpty())) scanLogin()
+                    return true
+                }
                 if (!request.isForMainFrame || origin.contains(request.url.toString())) return false
                 if (request.hasGesture()) openExternal(request.url)
                 return true
@@ -168,6 +200,7 @@ open class MainActivity : ComponentActivity() {
                 if (clearHistoryAfterLoad && origin.contains(url.orEmpty())) { browser.clearHistory(); clearHistoryAfterLoad = false }
                 if (!failed) failure.visibility = View.GONE
                 if (failedNavigationUrl == url) failedNavigationUrl = null
+                if (!failed && origin.contains(url.orEmpty())) installScanEntry()
             }
             override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
                 if (request.isForMainFrame) showFailure(R.string.network_detail, request.url.toString())
@@ -238,15 +271,45 @@ open class MainActivity : ComponentActivity() {
 
     private fun menu(anchor: View) {
         PopupMenu(this, anchor).apply {
+            menu.add(0, 4, 0, R.string.scan_login)
             menu.add(0, 1, 0, R.string.reload)
             menu.add(0, 2, 1, R.string.server)
             menu.add(0, 3, 2, R.string.open_browser)
             setOnMenuItemClickListener { item ->
-                when (item.itemId) { 1 -> browser.reload(); 2 -> editServer(); 3 -> openExternal((browser.url?.takeIf { origin.contains(it) } ?: origin.value).toUri()) }
+                when (item.itemId) { 1 -> browser.reload(); 2 -> editServer(); 3 -> openExternal((browser.url?.takeIf { origin.contains(it) } ?: origin.value).toUri()); 4 -> scanLogin() }
                 true
             }
             show()
         }
+    }
+
+    private fun scanLogin() {
+        if (scanningOrigin != null) return
+        scanningOrigin = origin.value
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) launchScanner()
+        else cameraPermission.launch(Manifest.permission.CAMERA)
+    }
+
+    private fun launchScanner() {
+        scanner.launch(ScanOptions().setCaptureActivity(QrCaptureActivity::class.java).setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+            .setPrompt(getString(R.string.scan_prompt)).setBeepEnabled(false).setOrientationLocked(false))
+    }
+
+    private fun installScanEntry() {
+        // Rethos Web 0.1.154 renders .login-phone as explanatory text; retain compatibility with deployed servers.
+        val title = JSONObject.quote(getString(R.string.scan_login))
+        val hint = JSONObject.quote(getString(R.string.scan_prompt))
+        browser.evaluateJavascript("""(()=>{
+            if(window.rethosScanEntryInstalled)return;window.rethosScanEntryInstalled=true;
+            const update=()=>{for(const entry of document.querySelectorAll('.login-phone')){
+                if(entry.dataset.rethosScanReady)continue;entry.dataset.rethosScanReady='true';
+                entry.setAttribute('role','button');entry.setAttribute('tabindex','0');entry.setAttribute('aria-label',$title);
+                entry.style.cursor='pointer';const h=entry.querySelector('h2');if(h)h.textContent=$title;
+                const p=entry.querySelector('p');if(p)p.textContent=$hint;
+                const scan=e=>{if(!e.isTrusted)return;e.preventDefault();location.href='${QrLogin.ACTION_URL}';};
+                entry.addEventListener('click',scan);entry.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')scan(e);});
+            }};update();new MutationObserver(update).observe(document.documentElement,{subtree:true,childList:true});
+        })()""", null)
     }
 
     private fun editServer() {
@@ -284,7 +347,7 @@ open class MainActivity : ComponentActivity() {
     private fun loadHome() { failed = false; failedNavigationUrl = null; failure.visibility = View.GONE; browser.loadUrl(origin.value + "/") }
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
     private fun toast(message: Int) = Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-    override fun onSaveInstanceState(outState: Bundle) { browser.saveState(outState); super.onSaveInstanceState(outState) }
+    override fun onSaveInstanceState(outState: Bundle) { outState.putString("scanning-origin", scanningOrigin); browser.saveState(outState); super.onSaveInstanceState(outState) }
     override fun onPause() { browser.onPause(); CookieManager.getInstance().flush(); super.onPause() }
     override fun onResume() {
         super.onResume()

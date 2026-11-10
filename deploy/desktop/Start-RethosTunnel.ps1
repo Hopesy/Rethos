@@ -3,11 +3,14 @@ param(
     [Parameter(Mandatory = $true)][string]$VpsUser,
     [int]$VpsPort = 22,
     [int]$ReversePort = 22222,
+    [int]$LocalSshPort = 22,
     [string]$IdentityFile = "$env:USERPROFILE\.ssh\rethos_vps_tunnel",
+    [string]$KnownHostsFile,
+    [string]$InstanceName = 'RethosDesktopTunnel',
     [string]$LogDirectory = "$env:LOCALAPPDATA\Rethos\logs"
 )
 $ErrorActionPreference = 'Stop'
-$mutex = [System.Threading.Mutex]::new($false, 'Local\RethosDesktopTunnel')
+$mutex = [System.Threading.Mutex]::new($false, ('Local\' + $InstanceName))
 $acquired = $false
 $connection = $null
 function Write-TunnelLog([string]$Message) {
@@ -30,10 +33,12 @@ try {
     $retrySeconds = 10
     while ($true) {
         $sshArguments = @('-NT', '-p', "$VpsPort", '-i', $IdentityFile,
-            '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes',
+            '-o', 'BatchMode=yes', '-o', 'IdentitiesOnly=yes', '-o', 'StrictHostKeyChecking=yes',
             '-o', 'ExitOnForwardFailure=yes', '-o', 'ConnectTimeout=10',
             '-o', 'ServerAliveInterval=20', '-o', 'ServerAliveCountMax=3',
-            '-R', "127.0.0.1:${ReversePort}:127.0.0.1:22", "${VpsUser}@${VpsHost}")
+            '-R', "127.0.0.1:${ReversePort}:127.0.0.1:${LocalSshPort}")
+        if ($KnownHostsFile) { $sshArguments += @('-o', "UserKnownHostsFile=$KnownHostsFile") }
+        $sshArguments += "${VpsUser}@${VpsHost}"
         $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
         $startInfo.FileName = $sshExe
         $startInfo.Arguments = ($sshArguments | ForEach-Object { Quote-ProcessArgument $_ }) -join ' '
