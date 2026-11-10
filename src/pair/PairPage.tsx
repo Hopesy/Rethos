@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, Eye, EyeOff, KeyRound, Loader2, LockKeyhole, Smartphone } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, KeyRound, Loader2, LockKeyhole, Smartphone, ScanLine } from "lucide-react";
 import { defaultDeviceLabel, isConnected, newAttemptId, pairWithCode, readSessionState, reasonWorthShowing, signInWithToken, type SessionState } from "../lib/session";
 import { pairedDestination } from "../lib/phone-pairing";
 import { t } from "../lib/i18n";
@@ -43,8 +43,11 @@ export function PairPage({ initialCode, reason }: { initialCode: string | null; 
     if (result.ok) { setToken(""); location.replace(pairedDestination(location.search)); return; }
     setError(result.error);
   }
-  return <LoginShell>
-    <h1>{t(connected ? "pair.compact.ready" : "login.title")}</h1>
+  return <LoginShell secondary={!connected && !opening ? <div className="login-phone">
+    <div className="login-phone-icon" aria-hidden="true"><Smartphone size={25} strokeWidth={1.4} /><ScanLine size={12} strokeWidth={1.4} /></div>
+    <div><h2>{t("login.qr.title")}</h2><p>{t("login.phoneHint")}</p></div>
+  </div> : undefined}>
+    <div className="login-heading"><div className="login-mark" aria-hidden="true"><img src="/app-icon.svg" width={40} height={40} alt="" /></div><div><p className="login-kicker">{t("login.private")}</p><h1>{t(connected ? "pair.compact.ready" : "login.title")}</h1></div></div>
     {connected && <p className="mt-2 text-[13px] leading-6 text-ink-secondary">{t("pair.alreadyConnected")}</p>}
     {where && unencryptedPublic(where) && <p role="alert" className="mt-5 rounded-lg bg-warning/10 px-3 py-2 text-[12px] leading-5 text-warning">{t("pair.notEncrypted")}</p>}
     {notice && !connected && <p className="mt-3 text-[12px] leading-5 text-ink-secondary">{notice}</p>}
@@ -56,10 +59,9 @@ export function PairPage({ initialCode, reason }: { initialCode: string | null; 
             <button type="button" className="ui-icon-button absolute right-1.5 top-1.5 size-8" aria-label={t(visible ? "login.hide" : "login.show")} onClick={() => setVisible(!visible)}>{visible ? <EyeOff size={15} /> : <Eye size={15} />}</button>
           </div>
           {error && <p id="login-error" role="alert" className="mt-2 text-[12px] leading-5 text-danger">{error}</p>}
-          <button type="submit" className="login-submit mt-5" disabled={busy || !token.trim()}>{busy ? <Loader2 size={14} className="animate-spin motion-reduce:animate-none" /> : <ArrowRight size={14} />}{t(busy ? "pair.connecting" : "login.submit")}</button>
+          <button type="submit" className="login-submit mt-5" disabled={busy || !token.trim()}>{t(busy ? "pair.connecting" : "login.submit")}{busy ? <Loader2 size={14} className="login-submit-icon animate-spin motion-reduce:animate-none" /> : <ArrowRight size={14} className="login-submit-icon" />}</button>
           <p className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-ink-tertiary"><LockKeyhole size={11} />{t("login.remember")}</p>
         </form>
-        <p className="mt-6 flex items-start justify-center gap-2 text-[11px] leading-5 text-ink-tertiary"><Smartphone size={13} className="mt-0.5 shrink-0" /><span>{t("login.phoneHint")}</span></p>
       </>}
   </LoginShell>;
 }

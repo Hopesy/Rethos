@@ -9880,7 +9880,7 @@
   "login.useToken": "使用 Token 登录",
   "login.help": "如何获取 Token？",
   "login.helpText": "在已登录的浏览器中，打开「设置 → 通用 → 访问 Token」创建。首次接入时，可先使用临时配对码。",
-  "login.phoneHint": "手机访问？扫描已登录浏览器中的登录二维码。",
+  "login.phoneHint": "用手机扫描已登录浏览器中的二维码。",
   "login.qr.title": "在手机上继续",
   "login.qr.subtitle": "确认下方服务器，即可登录当前设备。",
   "access.title": "登录与设备",

@@ -9880,7 +9880,7 @@
   "login.useToken": "Sign in with a token",
   "login.help": "Where do I get a token?",
   "login.helpText": "On a signed-in browser, open Settings → General → Access Tokens. For your first connection, use a temporary pairing code.",
-  "login.phoneHint": "On your phone? Scan the QR code shown in a signed-in browser.",
+  "login.phoneHint": "Scan the QR code from a signed-in browser with your phone.",
   "login.qr.title": "Connect this phone",
   "login.qr.subtitle": "Confirm the server below to sign in on this device.",
   "access.title": "Sign-in and devices",
