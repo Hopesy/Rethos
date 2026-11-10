@@ -9,7 +9,8 @@ import "./login.css";
 export function LoginShell({ children, secondary }: { children: ReactNode; secondary?: ReactNode }) {
   const skin = useSyncExternalStore(subscribeSkin, readSkin, () => THEME_SKINS.light);
   const dark = skin === THEME_SKINS.dark;
-  return <main className="rethos-login bg-app text-ink" data-pair-page>
+  const embedded = typeof navigator !== "undefined" && /Android.*; wv\)/.test(navigator.userAgent);
+  return <main className="rethos-login bg-app text-ink" data-pair-page data-embedded={embedded || undefined}>
     <aside className="login-scene" aria-label={productName()}>
       <svg className="login-landscape" viewBox="0 0 800 1100" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <defs>
@@ -33,7 +34,7 @@ export function LoginShell({ children, secondary }: { children: ReactNode; secon
       <div className="login-scene-copy"><p className="login-eyebrow">YOUR PRIVATE AI SPACE</p><h2>{t("login.hero.title")}</h2><p>{t("login.hero.subtitle")}</p><div className="login-scene-foot"><span>{t("login.hero.tasks")}</span><span>{t("login.hero.chats")}</span><span>{t("login.hero.computers")}</span></div></div>
     </aside>
     <section className="login-main">
-      <header className="login-header"><div className="flex items-center gap-2"><img src="/app-icon.svg" width={26} height={26} alt="" /><span className="text-[14px] font-semibold">{productName()}</span></div><div className="flex items-center gap-2">{typeof window !== "undefined" && window.ogb?.workspaces && <DesktopWorkspaceSwitcher />}<button type="button" className="ui-icon-button size-8" aria-label={t(dark ? "settings.theme.light" : "settings.theme.dark")} title={t(dark ? "settings.theme.light" : "settings.theme.dark")} onClick={() => applySkinChoice(dark ? THEME_SKINS.light : THEME_SKINS.dark)}>{dark ? <Sun size={16} /> : <Moon size={16} />}</button></div></header>
+      <header className="login-header"><div className="login-header-brand"><img src="/app-icon.svg" width={26} height={26} alt="" /><span className="text-[14px] font-semibold">{productName()}</span></div><div className="login-header-actions">{typeof window !== "undefined" && window.ogb?.workspaces && <DesktopWorkspaceSwitcher />}<button type="button" className="ui-icon-button size-8" aria-label={t(dark ? "settings.theme.light" : "settings.theme.dark")} title={t(dark ? "settings.theme.light" : "settings.theme.dark")} onClick={() => applySkinChoice(dark ? THEME_SKINS.light : THEME_SKINS.dark)}>{dark ? <Sun size={16} /> : <Moon size={16} />}</button></div></header>
       <div className="login-body"><div className="login-stack"><div className="login-form">{children}</div>{secondary}</div></div>
       <footer className="login-footer text-ink-tertiary"><ShieldCheck size={12} /><span>{typeof location === "undefined" ? productName() : location.host}</span></footer>
     </section>

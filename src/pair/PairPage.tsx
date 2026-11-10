@@ -47,7 +47,7 @@ export function PairPage({ initialCode, reason }: { initialCode: string | null; 
     <div className="login-phone-icon" aria-hidden="true"><Smartphone size={25} strokeWidth={1.4} /><ScanLine size={12} strokeWidth={1.4} /></div>
     <div><h2>{t("login.qr.title")}</h2><p>{t("login.phoneHint")}</p></div>
   </div> : undefined}>
-    <div className="login-heading"><div className="login-mark" aria-hidden="true"><img src="/app-icon.svg" width={40} height={40} alt="" /></div><div><p className="login-kicker">{t("login.private")}</p><h1>{t(connected ? "pair.compact.ready" : "login.title")}</h1></div></div>
+    <div className="login-heading"><p className="login-kicker">{t("login.private")}</p><h1>{t(connected ? "pair.compact.ready" : "login.title")}</h1></div>
     {connected && <p className="mt-2 text-[13px] leading-6 text-ink-secondary">{t("pair.alreadyConnected")}</p>}
     {where && unencryptedPublic(where) && <p role="alert" className="mt-5 rounded-lg bg-warning/10 px-3 py-2 text-[12px] leading-5 text-warning">{t("pair.notEncrypted")}</p>}
     {notice && !connected && <p className="mt-3 text-[12px] leading-5 text-ink-secondary">{notice}</p>}
