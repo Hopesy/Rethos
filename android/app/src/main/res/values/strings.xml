@@ -1,0 +1,25 @@
+<resources>
+    <string name="app_name" translatable="false">Rethos</string>
+    <string name="default_server" translatable="false">https://rethos.hopesy.cc</string>
+    <string name="menu">更多</string>
+    <string name="reload">刷新</string>
+    <string name="server">服务器地址</string>
+    <string name="open_browser">在浏览器中打开</string>
+    <string name="connect">连接</string>
+    <string name="cancel">取消</string>
+    <string name="server_hint" translatable="false">https://rethos.example.com</string>
+    <string name="server_error">请输入完整的 HTTPS 地址，不含路径、账号或参数。</string>
+    <string name="server_change_note">更换服务器后，需要在新服务器重新登录。</string>
+    <string name="network_title">暂时无法连接</string>
+    <string name="network_detail">请检查网络或服务器地址，然后重试。</string>
+    <string name="certificate_detail">服务器证书验证失败，请检查服务器的 HTTPS 配置。</string>
+    <string name="retry">重试</string>
+    <string name="loading">正在连接…</string>
+    <string name="external_missing">没有可打开此链接的应用。</string>
+    <string name="upload_missing">无法打开文件选择器。</string>
+    <string name="save_file">保存文件</string>
+    <string name="download_started">正在保存文件…</string>
+    <string name="download_done">文件已保存。</string>
+    <string name="download_failed">下载失败，请重试。</string>
+    <string name="download_browser">此文件请通过“在浏览器中打开”保存。</string>
+</resources>

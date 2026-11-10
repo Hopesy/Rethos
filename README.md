@@ -11,6 +11,7 @@ Rethos 基于 [OpenMausBot](https://github.com/milind-soni/OpenMausBot)，用于
 | `server/` | 会话、模型、MCP、调度、访问控制和 HTTP 服务 |
 | `src/`、`public/` | Web 界面及手机浏览器安装入口 |
 | `electron/` | 桌面客户端和本机集成 |
+| `android/` | Kotlin + WebView 安卓客户端，构建与使用见 [Android 文档](android/README.md) |
 | `scripts/` | 构建、验证和 npm 打包 |
 | `companion/`、`connector/` | 上游设备连接与转发能力 |
 | `skills/` | 内置技能 |
