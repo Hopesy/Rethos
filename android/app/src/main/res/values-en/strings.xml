@@ -14,7 +14,6 @@
     <string name="loading">Connecting…</string>
     <string name="external_missing">No app is available to open this link.</string>
     <string name="upload_missing">The file picker could not be opened.</string>
-    <string name="save_file">Save file</string>
     <string name="download_started">Saving file…</string>
     <string name="download_done">File saved.</string>
     <string name="download_failed">Download failed. Please try again.</string>

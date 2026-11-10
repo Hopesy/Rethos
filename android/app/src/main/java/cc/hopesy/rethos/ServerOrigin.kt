@@ -3,7 +3,10 @@ package cc.hopesy.rethos
 import java.net.URI
 import java.util.Locale
 
-data class ServerOrigin private constructor(val value: String) {
+class ServerOrigin private constructor(val value: String) {
+    override fun equals(other: Any?): Boolean = other is ServerOrigin && value == other.value
+    override fun hashCode(): Int = value.hashCode()
+
     fun contains(url: String): Boolean = runCatching {
         val candidate = URI(url)
         candidate.rawUserInfo == null && fromUri(candidate)?.value == value

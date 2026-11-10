@@ -17,7 +17,6 @@
     <string name="loading">正在连接…</string>
     <string name="external_missing">没有可打开此链接的应用。</string>
     <string name="upload_missing">无法打开文件选择器。</string>
-    <string name="save_file">保存文件</string>
     <string name="download_started">正在保存文件…</string>
     <string name="download_done">文件已保存。</string>
     <string name="download_failed">下载失败，请重试。</string>

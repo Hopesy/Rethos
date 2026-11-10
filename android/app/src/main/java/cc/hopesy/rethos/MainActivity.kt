@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.net.Uri
 import android.net.http.SslError
@@ -34,6 +35,8 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -49,6 +52,7 @@ open class MainActivity : ComponentActivity() {
     private lateinit var failure: LinearLayout
     private lateinit var detail: TextView
     private var failed = false
+    private var failedNavigationUrl: String? = null
     private var clearHistoryAfterLoad = false
     private var picker: ValueCallback<Array<Uri>>? = null
     private var pickerOrigin: String? = null
@@ -85,6 +89,11 @@ open class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         origin = initialOrigin()
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        val lightTheme = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK != Configuration.UI_MODE_NIGHT_YES
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = lightTheme
+            isAppearanceLightNavigationBars = lightTheme
+        }
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(getColor(R.color.surface)) }
         ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
             val edges = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.ime())
@@ -147,25 +156,28 @@ open class MainActivity : ComponentActivity() {
                 return true
             }
             override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
-                failed = false
-                if (::failure.isInitialized) failure.visibility = View.GONE
-                progress.visibility = View.VISIBLE
+                // WebView can deliver HTTP errors before onPageStarted for the same navigation.
+                failed = url != null && url == failedNavigationUrl
+                failedNavigationUrl = null
+                if (::failure.isInitialized) failure.visibility = if (failed) View.VISIBLE else View.GONE
+                progress.visibility = if (failed) View.GONE else View.VISIBLE
             }
             override fun onPageFinished(view: WebView, url: String?) {
                 progress.visibility = View.GONE
                 CookieManager.getInstance().flush()
                 if (clearHistoryAfterLoad && origin.contains(url.orEmpty())) { browser.clearHistory(); clearHistoryAfterLoad = false }
                 if (!failed) failure.visibility = View.GONE
+                if (failedNavigationUrl == url) failedNavigationUrl = null
             }
             override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
-                if (request.isForMainFrame) showFailure(R.string.network_detail)
+                if (request.isForMainFrame) showFailure(R.string.network_detail, request.url.toString())
             }
             override fun onReceivedHttpError(view: WebView, request: WebResourceRequest, errorResponse: WebResourceResponse) {
-                if (request.isForMainFrame && errorResponse.statusCode >= 500) showFailure(R.string.network_detail)
+                if (request.isForMainFrame && errorResponse.statusCode >= 500) showFailure(R.string.network_detail, request.url.toString())
             }
             override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: SslError) {
                 handler.cancel()
-                showFailure(R.string.certificate_detail)
+                showFailure(R.string.certificate_detail, view.url)
             }
         }
         browser.webChromeClient = object : WebChromeClient() {
@@ -195,7 +207,7 @@ open class MainActivity : ComponentActivity() {
                     putExtra(Intent.EXTRA_TITLE, ServerOrigin.safeFileName(URLUtil.guessFileName(url, disposition, mime)))
                 }
                 try { saveFile.launch(intent) } catch (_: ActivityNotFoundException) { download = null; toast(R.string.download_failed) }
-            } else if (url.startsWith("https://")) openExternal(Uri.parse(url))
+            } else if (url.startsWith("https://")) openExternal(url.toUri())
             else toast(R.string.download_browser)
         }
     }
@@ -230,7 +242,7 @@ open class MainActivity : ComponentActivity() {
             menu.add(0, 2, 1, R.string.server)
             menu.add(0, 3, 2, R.string.open_browser)
             setOnMenuItemClickListener { item ->
-                when (item.itemId) { 1 -> browser.reload(); 2 -> editServer(); 3 -> openExternal(Uri.parse(browser.url?.takeIf { origin.contains(it) } ?: origin.value)) }
+                when (item.itemId) { 1 -> browser.reload(); 2 -> editServer(); 3 -> openExternal((browser.url?.takeIf { origin.contains(it) } ?: origin.value).toUri()) }
                 true
             }
             show()
@@ -255,7 +267,7 @@ open class MainActivity : ComponentActivity() {
                     clearHistoryAfterLoad = true
                     browser.clearCache(true)
                     origin = next
-                    preferences.edit().putString("server", next.value).apply()
+                    preferences.edit { putString("server", next.value) }
                     loadHome()
                 }
             }
@@ -268,8 +280,8 @@ open class MainActivity : ComponentActivity() {
         try { startActivity(Intent(if (uri.scheme == "tel") Intent.ACTION_DIAL else Intent.ACTION_VIEW, uri).addCategory(Intent.CATEGORY_BROWSABLE)) }
         catch (_: ActivityNotFoundException) { toast(R.string.external_missing) }
     }
-    private fun showFailure(message: Int) { failed = true; progress.visibility = View.GONE; detail.setText(message); failure.visibility = View.VISIBLE }
-    private fun loadHome() { failed = false; failure.visibility = View.GONE; browser.loadUrl(origin.value + "/") }
+    private fun showFailure(message: Int, url: String?) { failed = true; failedNavigationUrl = url; progress.visibility = View.GONE; detail.setText(message); failure.visibility = View.VISIBLE }
+    private fun loadHome() { failed = false; failedNavigationUrl = null; failure.visibility = View.GONE; browser.loadUrl(origin.value + "/") }
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
     private fun toast(message: Int) = Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     override fun onSaveInstanceState(outState: Bundle) { browser.saveState(outState); super.onSaveInstanceState(outState) }

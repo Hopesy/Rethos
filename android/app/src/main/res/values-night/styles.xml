@@ -3,7 +3,6 @@
         <item name="android:fontFamily">sans</item>
         <item name="android:colorAccent">#8BA0FA</item>
         <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:windowBackground">@color/surface</item>
     </style>

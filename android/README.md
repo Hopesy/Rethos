@@ -43,6 +43,6 @@ Windows 使用 `gradlew.bat`。调试包使用独立应用 ID `cc.hopesy.rethos.
 
 ## 验证
 
-单元测试覆盖 HTTPS 地址校验、同源凭据约束、下载文件名。Android 仪器测试在专用 `FixtureActivity` 中拦截全部请求，覆盖 WebView 渲染、网页存储与 HttpOnly Cookie 保持、页面返回和文件访问配置。
+单元测试覆盖 HTTPS 地址校验、同源凭据约束、下载文件名。Android 仪器测试在专用 `FixtureActivity` 中拦截全部请求，通过触摸事件操作隔离页面，覆盖 WebView 渲染、网页存储与 HttpOnly Cookie 保持、页面返回、系统文件选择结果回传、HTTP 503 错误提示及重试。测试文件由 debug 专用 FileProvider 提供；测试入口与文件 Provider 仅存在于调试包。
 
 本机有真实设备连接时，使用指定模拟器序列号执行安装与测试，避免对其他设备安装调试包。过程记录放在 `.Rethos-temp/android/`。

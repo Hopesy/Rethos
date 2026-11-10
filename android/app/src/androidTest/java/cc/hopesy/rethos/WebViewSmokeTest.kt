@@ -1,8 +1,16 @@
 package cc.hopesy.rethos
 
 import android.content.Intent
+import android.app.Activity
+import android.app.Instrumentation
 import android.os.SystemClock
+import android.view.View
+import android.view.ViewGroup
+import android.view.MotionEvent
 import android.webkit.CookieManager
+import android.widget.Button
+import android.widget.TextView
+import androidx.core.content.FileProvider
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -12,6 +20,8 @@ import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
+import java.io.File
+import org.json.JSONArray
 
 @RunWith(AndroidJUnit4::class)
 class WebViewSmokeTest {
@@ -32,17 +42,53 @@ class WebViewSmokeTest {
         while (SystemClock.uptimeMillis() < deadline) { if (js(scenario, script) == expected) return; SystemClock.sleep(100) }
         assertEquals(expected, js(scenario, script))
     }
+    private fun waitForNative(scenario: ActivityScenario<MainActivity>, predicate: (MainActivity) -> Boolean) {
+        val deadline = SystemClock.uptimeMillis() + 15_000
+        while (SystemClock.uptimeMillis() < deadline) {
+            var ready = false
+            scenario.onActivity { ready = predicate(it) }
+            if (ready) return
+            SystemClock.sleep(100)
+        }
+        var state = ""
+        scenario.onActivity { activity -> state = "url=${activity.browser.url}, progress=${activity.browser.progress}, history=${activity.browser.copyBackForwardList().size}, views=" + views(activity.window.decorView).filterIsInstance<TextView>().filter { it.isShown }.joinToString { it.text.toString() } }
+        fail("Native state did not become ready: $state")
+    }
+    private fun views(view: View): Sequence<View> = sequence {
+        yield(view)
+        if (view is ViewGroup) for (index in 0 until view.childCount) yieldAll(views(view.getChildAt(index)))
+    }
+    private fun tap(scenario: ActivityScenario<MainActivity>, id: String) {
+        waitForNative(scenario) { it.browser.progress == 100 }
+        js(scenario, "document.getElementById('$id').scrollIntoView({block:'center'})")
+        val bounds = JSONArray(js(scenario, "(()=>{const r=document.getElementById('$id').getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2,innerWidth]})()"))
+        var x = 0f
+        var y = 0f
+        scenario.onActivity {
+            val location = IntArray(2)
+            it.browser.getLocationOnScreen(location)
+            val scale = it.browser.width / bounds.getDouble(2)
+            x = (location[0] + bounds.getDouble(0) * scale).toFloat()
+            y = (location[1] + bounds.getDouble(1) * scale).toFloat()
+        }
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val time = SystemClock.uptimeMillis()
+        MotionEvent.obtain(time, time, MotionEvent.ACTION_DOWN, x, y, 0).also { instrumentation.sendPointerSync(it); it.recycle() }
+        MotionEvent.obtain(time, time + 60, MotionEvent.ACTION_UP, x, y, 0).also { instrumentation.sendPointerSync(it); it.recycle() }
+        instrumentation.waitForIdleSync()
+    }
     @Test fun loadsIsolatedPagePreservesStorageAndNavigatesBack() {
         launch().use { scenario ->
             waitFor(scenario, "window.fixtureReady===true", "true")
             assertEquals("\"password\"", js(scenario, "document.getElementById('token').type"))
-            js(scenario, "document.getElementById('login').click()")
+            tap(scenario, "login")
             waitFor(scenario, "document.getElementById('state').textContent", "\"signed-in\"")
             scenario.recreate()
             waitFor(scenario, "window.fixtureReady===true", "true")
             waitFor(scenario, "document.getElementById('state').textContent", "\"signed-in\"")
-            js(scenario, "document.getElementById('next').click()")
+            tap(scenario, "next")
             waitFor(scenario, "location.pathname", "\"/next\"")
+            waitForNative(scenario) { it.browser.canGoBack() }
             scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
             waitFor(scenario, "location.pathname", "\"/\"")
         }
@@ -61,6 +107,49 @@ class WebViewSmokeTest {
                 assertFalse(it.browser.settings.allowFileAccess)
                 assertFalse(it.browser.settings.allowContentAccess)
                 assertEquals(android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW, it.browser.settings.mixedContentMode)
+            }
+        }
+    }
+    @Test fun fileChooserReturnsSelectedContentToPage() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val context = instrumentation.targetContext
+        val directory = File(context.cacheDir, "fixture-uploads").apply { mkdirs() }
+        val file = File(directory, "sample.txt").apply { writeText("rethos-upload-verified") }
+        val uri = FileProvider.getUriForFile(context, context.packageName + ".fixtures", file)
+        val launched = CountDownLatch(1)
+        val monitor = object : Instrumentation.ActivityMonitor() {
+            override fun onStartActivity(intent: Intent): Instrumentation.ActivityResult? {
+                if (intent.action != Intent.ACTION_OPEN_DOCUMENT) return null
+                assertEquals("text/plain", intent.type)
+                assertTrue(intent.hasCategory(Intent.CATEGORY_OPENABLE))
+                launched.countDown()
+                return Instrumentation.ActivityResult(Activity.RESULT_OK, Intent().setData(uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
+            }
+        }
+        instrumentation.addMonitor(monitor)
+        try {
+            launch().use { scenario ->
+                waitFor(scenario, "window.fixtureReady===true", "true")
+                tap(scenario, "file")
+                assertTrue("System document picker launched", launched.await(10, TimeUnit.SECONDS))
+                waitFor(scenario, "document.getElementById('upload').textContent", "\"rethos-upload-verified\"")
+            }
+        } finally { instrumentation.removeMonitor(monitor); file.delete() }
+    }
+    @Test fun showsConnectionFailureAndRetriesHome() {
+        launch().use { scenario ->
+            waitFor(scenario, "window.fixtureReady===true", "true")
+            tap(scenario, "unavailable")
+            waitForNative(scenario) { activity ->
+                views(activity.window.decorView).filterIsInstance<TextView>().any { it.isShown && it.text == activity.getString(R.string.network_detail) }
+            }
+            scenario.onActivity { activity ->
+                views(activity.window.decorView).filterIsInstance<Button>().single { it.isShown && it.text == activity.getString(R.string.retry) }.performClick()
+            }
+            waitFor(scenario, "location.pathname", "\"/\"")
+            waitFor(scenario, "window.fixtureReady===true", "true")
+            waitForNative(scenario) { activity ->
+                views(activity.window.decorView).filterIsInstance<TextView>().none { it.isShown && it.text == activity.getString(R.string.network_detail) }
             }
         }
     }
