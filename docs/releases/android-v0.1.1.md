@@ -32,3 +32,11 @@
 签名证书 SHA-256：`30f188219812d83ee815ebab1ea3a01610526e268c80e02e93ab54223b3a6781`
 
 构建日志、仪器测试输出、签名结果与界面证据保存在 `.Rethos-temp/android/`。
+
+## 公开发行核对
+
+2026-11-10 北京时间 19:12 公开发布。[GitHub Actions](https://github.com/Hopesy/Rethos/actions/runs/42804470560) 的验证、签名及发布三个任务全部通过，来源提交 `ec445afe74c0249fa497d8ed7f504404f4f9726d`。
+
+4 个公开附件逐一匿名下载，字节数和 SHA-256 与 GitHub 附件摘要及 BUILD-INFO 相符。下载后的 APK 再次经 apksigner 校验，原签名、`cc.hopesy.rethos`、versionCode 2 和 versionName 0.1.1 均相符。
+
+公开 APK：1,964,498 字节，SHA-256 `04d6bd3caabc4916aaa60352f1be0429daddd776aff0b70f42e9b2cb7c8cff6c`。公网网页 0.1.155 的下载入口已经同步。发行证据位于 `.Rethos-temp/release-0.1.155/`。

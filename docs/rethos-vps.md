@@ -172,8 +172,8 @@ Android 8.0+ 可安装 [Rethos Android 0.1.1](https://github.com/Hopesy/Rethos/r
 - VPS 桌面转发入口：`/home/zhouhl/rethos-desktop/cua-driver-desktop`。
 - SSH 配置启用了连接复用；新 MCP 会话可以复用已验证的桌面 SSH 连接。
 - 自定义 MCP 启动等待调整为 30 秒，适应跨 SSH 的初始化；内置工具维持 8 秒。
-- 已部署版本 `0.1.154`，源码提交 `7e08e5f5fb932626872a1600d11613cd289de6b6`；镜像摘要 `sha256:e0a8aa41a3c9f96a442840f00f30f70deaaeb7f8357c9ba2d9e2470356a00439`。
-- 发布记录：[0.1.154 镜像构建与验收](https://github.com/Hopesy/Rethos/actions/runs/42781685617)。`v0.1.154`、源码标签与 `latest` 的多架构摘要一致。
+- 已部署版本 `0.1.155`，源码提交 `ec445afe74c0249fa497d8ed7f504404f4f9726d`；镜像摘要 `sha256:fa0b5c74748d097cf3f95e80fde2b2d7937ea0e527523691cce039994efe6cff`。
+- 发布记录：[0.1.155 镜像构建与验收](https://github.com/Hopesy/Rethos/actions/runs/42804448567)。源码标签与 `latest` 的多架构摘要一致。
 - 正式机器人说明与工具选择保存在 `/home/zhouhl/rethos/production-desktop-monitor.md`、`desktop-team.yaml`，已通过 `rethos team apply` 写入持久化配置。
 - Hermes 迁移备份：`/home/zhouhl/rethos-backups/hermes-before-rethos-20261108-115245/`。
 - 首次 Rethos 升级备份：`/home/zhouhl/rethos-backups/rethos-before-update-20261108-162452/`。
@@ -182,6 +182,9 @@ Android 8.0+ 可安装 [Rethos Android 0.1.1](https://github.com/Hopesy/Rethos/r
 - Token 登录升级前备份：`/home/zhouhl/rethos-backups/rethos-before-0.1.151-20261109-164814/`，含数据卷、Compose、环境配置与上一版镜像记录。
 - 0.1.152 升级前备份：`/home/zhouhl/rethos-backups/rethos-before-0.1.152-20261110-072309/`，含数据卷、Compose、环境配置与上一版镜像记录。
 - 0.1.154 升级前备份：`/home/zhouhl/rethos-backups/rethos-before-0.1.154-20261110-083035/`，含数据卷、Compose、环境配置与上一版镜像记录，压缩包完整性已验证。
+- 0.1.155 升级前备份：`/home/zhouhl/rethos-backups/rethos-before-0.1.155-20261110-111759/`，完整性在备份容器内验证，文件保留受限权限。
+
+2026-11-10 北京时间 19:18 完成 0.1.155 部署，网页下载按钮和二维码同步指向已公开发布的 Android 0.1.1。Android 与双架构镜像发布工作流均通过；公网版本、静态模块中的下载链接、原管理员 Token、两台机器人的模型与电脑选择、模型端点及桌面 MCP 配置均已核对，反向端口 22222 在线。首次备份的宿主机校验遇到 root 所有文件的读取权限问题，保护流程恢复原镜像；改为备份容器内校验后重试成功。证据位于 `.Rethos-temp/release-0.1.155/`。
 
 2026-11-10 北京时间 16:31 完成 0.1.154 部署。首次检查发现 Nimbus 忙碌，等待任务结束后才停止服务、备份并切换镜像。公网版本、Token 鉴权、模型与桌面 MCP 配置保留、反向 SSH 端口均已核对。登录页使用黑色按钮，移除重复图标与浮动阴影；简体中文下新建机器人的问候、引导选项和配置提示使用中文，默认名称保持原样。配置语言为中文及跟随浏览器中文两条流程均通过隔离 HTTP 服务验证。过程证据位于 `.Rethos-temp/login-flat/`。
 

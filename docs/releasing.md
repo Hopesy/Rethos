@@ -4,6 +4,15 @@
 
 ## 已发布版本
 
+### Android 0.1.1 与 VPS 0.1.155
+
+2026-11-10 已发布 [Rethos Android 0.1.1](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.1)，源码提交 `ec445afe74c0249fa497d8ed7f504404f4f9726d`。[Android 构建与发布](https://github.com/Hopesy/Rethos/actions/runs/42804470560) 的模拟器验证、签名和公开发布全部通过。公开 APK 已匿名下载并重新验证签名、应用 ID、版本号和摘要，支持使用原签名覆盖安装。
+
+- APK 为 1,964,498 字节，SHA-256：`04d6bd3caabc4916aaa60352f1be0429daddd776aff0b70f42e9b2cb7c8cff6c`。
+- 登录页和顶部菜单提供原生相机扫码。电脑网页在“设置 → 通用 → 手机扫码登录”生成登录二维码。
+- VPS 已部署 0.1.155，网页下载按钮与二维码均指向公开 0.1.1 APK。[双架构镜像构建与验收](https://github.com/Hopesy/Rethos/actions/runs/42804448567) 全部通过。
+- Windows 的 Latest 发布入口继续指向 0.1.154；桌面连接安装器源码见 `deploy/desktop`。
+
 ### Android 0.1.0
 
 2026-11-10 已发布 [Rethos Android 0.1.0](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.0)，源码提交为 `cae09ac35f00c281ef11f4eb31c59b47ef657ac7`。[构建与发布](https://github.com/Hopesy/Rethos/actions/runs/42752753773) 的验证、签名与发布任务全部通过，APK 大小约 1.61 MiB，详见 [验证记录](releases/android-v0.1.0-verification.md)。
