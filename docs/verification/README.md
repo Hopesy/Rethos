@@ -334,6 +334,10 @@ desktop routing, cancellation, and computer authority cleanup.
 
 ## Evidence
 
+The [Windows desktop installer record](desktop-installer.md) covers isolated
+installation, update and removal, CUA package verification, and MCP registration.
+It also lists the fresh-machine checks to perform on the deployment target.
+
 The [Gemini speech fixture](gemini-speech.md) checks write-only credentials,
 voice selection and WAV synthesis against an offline provider in an isolated
 server, with manual steps for real Google access and playback.
