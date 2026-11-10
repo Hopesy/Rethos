@@ -173,7 +173,8 @@ it("queues reports that find the Chief's incidents thread busy, answers them tog
     expect(JSON.stringify(first.prompt)).toContain("Ada's run in its thread #Reconcile the September invoices. failed");
     expect(Object.keys(first.mcpConfig.mcpServers)).toContain("agents");
     expect(Object.keys(first.mcpConfig.mcpServers)).not.toContain("computer");
-    expect(first.systemPrompt).toContain("This turn answers a Team incidents report and your computer could not be prepared for it (Bots here can get their own cloud desktops from Boat, a paid service.");
+    expect(first.systemPrompt).toContain("This turn answers a Team incidents report and the managed computer could not be prepared for it (Bots here can get their own cloud desktops from Boat, a paid service.");
+    expect(first.systemPrompt).toContain("independently mounted MCP tools keep their own targets and permissions");
 
     const failsWhileBusy = async (bot: { id: string; activeTaskId: string }, name: string, request: string) => {
       await control(["send", "--bot", bot.id, "--text", request]);
@@ -191,7 +192,7 @@ it("queues reports that find the Chief's incidents thread busy, answers them tog
     const second = await dump(incidents);
     expect(JSON.stringify(second.prompt)).toContain("Cara's run in its thread #File the expense report. failed");
     expect(Object.keys(second.mcpConfig.mcpServers)).not.toContain("computer");
-    expect(second.systemPrompt).toContain("This turn answers a Team incidents report and your computer could not be prepared for it");
+    expect(second.systemPrompt).toContain("This turn answers a Team incidents report and the managed computer could not be prepared for it");
     expect((await control(["wait", "--bot", chief.id, "--task", incidents, "--timeout", "30"])).status).toBe("settled");
 
     const lines = await messages(incidents);
@@ -236,7 +237,7 @@ it("reviews the work it handed on from a report without the Chief's computer, ev
     await expect.poll(async () => JSON.stringify((await dump(incidents)).prompt), { timeout: 20_000 }).toContain("Your downstream room requests have settled");
     const review = await dump(incidents);
     expect(Object.keys(review.mcpConfig.mcpServers)).not.toContain("computer");
-    expect(review.systemPrompt).toContain("This turn answers a Team incidents report and your computer could not be prepared for it");
+    expect(review.systemPrompt).toContain("This turn answers a Team incidents report and the managed computer could not be prepared for it");
     expect((await control(["wait", "--bot", chief.id, "--task", incidents, "--timeout", "30"])).status).toBe("settled");
     const lines = await messages(incidents);
     expect(lines.filter((m) => m.kind === "activity" && /Connect your Boat account/.test(m.tool?.name ?? "")).length).toBe(refusals);
@@ -317,7 +318,7 @@ it("keeps the team computer for a report turn, and reports a run that reaches fo
     await reportRan("Ben's run in its thread #Draft the vendor letter. failed");
     const duringChange = await dump(incidents);
     expect(Object.keys(duringChange.mcpConfig.mcpServers)).not.toContain("computer");
-    expect(duringChange.systemPrompt).toContain("your computer could not be prepared for it (Boat account settings are being updated");
+    expect(duringChange.systemPrompt).toContain("the managed computer could not be prepared for it (Boat account settings are being updated");
     expect((await control(["wait", "--bot", chief.id, "--task", incidents, "--timeout", "30"])).status).toBe("settled");
     releaseListing();
     await changing;
