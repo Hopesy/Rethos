@@ -4,6 +4,8 @@ Rethos 基于 [OpenMausBot](https://github.com/milind-soni/OpenMausBot)，用于
 
 本版本已移除上游 `enterprise/` 商业目录，产品名称统一为 **Rethos**，npm 包名和命令为 `rethos`。源码沿用已有仓库 [Hopesy/Rethos](https://github.com/Hopesy/Rethos)。
 
+**在其他机器复用：**[安装、CUA 桌面接入与更新简明指南](docs/desktop-quickstart.md)，包括系统原理、Windows 后台连接、手机使用和升级回退。
+
 ## 模块
 
 | 路径 | 用途 |

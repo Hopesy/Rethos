@@ -1,5 +1,7 @@
 # Rethos VPS 部署与维护
 
+新机器安装的精简入口：[安装、CUA 桌面接入与更新指南](desktop-quickstart.md)。本文保留详细维护与实际部署记录。
+
 当前使用方式是：电脑或手机浏览器、Android 客户端访问 Rethos，讨论任务、查看 Codex 桌面进度，随后由 Rethos 经本机 CUA 向选定聊天发送指令。飞书接入已经取消。
 
 ```mermaid
@@ -166,6 +168,7 @@ Android 8.0+ 可安装 [Rethos Android 0.1.0](https://github.com/Hopesy/Rethos/r
 - 唯一自定义 MCP 为 `zhouh-desktop-cua`；飞书配置和环境变量均为空。
 - Windows 正式隧道脚本：`C:\Users\zhouh\agent\rethos-desktop\Start-RethosTunnel.ps1`。
 - Windows 正式计划任务：`Rethos-Desktop-Tunnel`；CUA 已有任务为 `cua-driver-serve`。
+- Windows 独立 CUA 已于 2026-11-10 升至 `0.46.1`，路径 `C:\Users\zhouh\agent\cua-driver-0.46.1\cua-driver.exe`。登录任务与 VPS 转发脚本同步使用该路径；旧 `0.21.0` 目录保留。
 - VPS 桌面转发入口：`/home/zhouhl/rethos-desktop/cua-driver-desktop`。
 - SSH 配置启用了连接复用；新 MCP 会话可以复用已验证的桌面 SSH 连接。
 - 自定义 MCP 启动等待调整为 30 秒，适应跨 SSH 的初始化；内置工具维持 8 秒。
@@ -185,6 +188,12 @@ Android 8.0+ 可安装 [Rethos Android 0.1.0](https://github.com/Hopesy/Rethos/r
 2026-11-10 北京时间 15:23 完成 0.1.152 部署。容器健康检查与公网 HTTPS 验证通过；原管理员 Token、模型配置与自定义桌面 MCP 保留。线上资源包含 Anthropic 协议、模型连接测试、指向本仓库 APK 的 Android 下载入口；机器人提示词已按独立 MCP 获取桌面实时观察。部署与只读验收证据位于 `.Rethos-temp/release-0.1.152/`。
 
 保留上述备份的受限权限。备份包含凭据和历史数据。已有 `wb.hopesy.cc` 模型服务继续独立运行。
+
+### 2026-11-10：独立 CUA 更新
+
+从官方 `cua-driver-rs-v0.46.1` 发布下载 Windows x64 归档，核对归档 SHA256 和 Cua AI, Inc. 可执行文件签名后，保留旧版目录并安装到新版本目录。管理员脚本更新 `cua-driver-serve`、停止旧守护进程并启动新版；运行状态与任务路径已读取确认，VPS MCP 转发脚本同步更新。按照用户要求，后续额外兼容性与桌面交互回归跳过。
+
+本机任务备份及操作记录：`.Rethos-temp/cua-update-20261110/`；VPS 原转发脚本：`/home/zhouhl/.Rethos-temp/cua-update-20261110/production-proxy.before.sh`。更新后在任务空闲时重新启动 Rethos 与 Caddy，刷新已有 MCP 会话。独立 CUA 的更新与 Rethos Windows 包内置 CUA 的依赖版本分别维护。
 
 ### 2026-11-10：Token 登录与手机扫码
 
