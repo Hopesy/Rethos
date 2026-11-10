@@ -169,8 +169,8 @@ Android 8.0+ 可安装 [Rethos Android 0.1.0](https://github.com/Hopesy/Rethos/r
 - VPS 桌面转发入口：`/home/zhouhl/rethos-desktop/cua-driver-desktop`。
 - SSH 配置启用了连接复用；新 MCP 会话可以复用已验证的桌面 SSH 连接。
 - 自定义 MCP 启动等待调整为 30 秒，适应跨 SSH 的初始化；内置工具维持 8 秒。
-- 已部署版本 `0.1.152`，源码提交 `9c1f953f4eaf1191a35d9fb4b8c019831f364007`；镜像摘要 `sha256:d11f788017c95857f868a80f08ce690f7f271063eabfef251a79ca72d5346ab9`。
-- 发布记录：[0.1.152 镜像构建与验收](https://github.com/Hopesy/Rethos/actions/runs/42773706012)。`v0.1.152`、源码标签与 `latest` 的多架构摘要一致。
+- 已部署版本 `0.1.154`，源码提交 `7e08e5f5fb932626872a1600d11613cd289de6b6`；镜像摘要 `sha256:e0a8aa41a3c9f96a442840f00f30f70deaaeb7f8357c9ba2d9e2470356a00439`。
+- 发布记录：[0.1.154 镜像构建与验收](https://github.com/Hopesy/Rethos/actions/runs/42781685617)。`v0.1.154`、源码标签与 `latest` 的多架构摘要一致。
 - 正式机器人说明与工具选择保存在 `/home/zhouhl/rethos/production-desktop-monitor.md`、`desktop-team.yaml`，已通过 `rethos team apply` 写入持久化配置。
 - Hermes 迁移备份：`/home/zhouhl/rethos-backups/hermes-before-rethos-20261108-115245/`。
 - 首次 Rethos 升级备份：`/home/zhouhl/rethos-backups/rethos-before-update-20261108-162452/`。
@@ -178,6 +178,9 @@ Android 8.0+ 可安装 [Rethos Android 0.1.0](https://github.com/Hopesy/Rethos/r
 - 帮助提示与 AI 配置修复前备份：`/home/zhouhl/rethos-backups/rethos-before-settings-refinement-20261109-053155/`。
 - Token 登录升级前备份：`/home/zhouhl/rethos-backups/rethos-before-0.1.151-20261109-164814/`，含数据卷、Compose、环境配置与上一版镜像记录。
 - 0.1.152 升级前备份：`/home/zhouhl/rethos-backups/rethos-before-0.1.152-20261110-072309/`，含数据卷、Compose、环境配置与上一版镜像记录。
+- 0.1.154 升级前备份：`/home/zhouhl/rethos-backups/rethos-before-0.1.154-20261110-083035/`，含数据卷、Compose、环境配置与上一版镜像记录，压缩包完整性已验证。
+
+2026-11-10 北京时间 16:31 完成 0.1.154 部署。首次检查发现 Nimbus 忙碌，等待任务结束后才停止服务、备份并切换镜像。公网版本、Token 鉴权、模型与桌面 MCP 配置保留、反向 SSH 端口均已核对。登录页使用黑色按钮，移除重复图标与浮动阴影；简体中文下新建机器人的问候、引导选项和配置提示使用中文，默认名称保持原样。配置语言为中文及跟随浏览器中文两条流程均通过隔离 HTTP 服务验证。过程证据位于 `.Rethos-temp/login-flat/`。
 
 2026-11-10 北京时间 15:23 完成 0.1.152 部署。容器健康检查与公网 HTTPS 验证通过；原管理员 Token、模型配置与自定义桌面 MCP 保留。线上资源包含 Anthropic 协议、模型连接测试、指向本仓库 APK 的 Android 下载入口；机器人提示词已按独立 MCP 获取桌面实时观察。部署与只读验收证据位于 `.Rethos-temp/release-0.1.152/`。
 
@@ -239,6 +242,8 @@ Windows 隧道改用无窗口 SSH 子进程，连接输出保存在 `%LOCALAPPDA
 
 Windows 安装包通过 [Rethos Windows installer](https://github.com/Hopesy/Rethos/actions/workflows/package-win.yml) 构建、安装验收并发布。下载、更新、卸载和发布步骤见 [安装包发布文档](releasing.md)。桌面安装包与 VPS Docker 镜像分别发布；当前 VPS 的网页入口及 CUA 通道继续按本文维护。macOS 打包延后。
 
-2026-11-10 已发布 [Windows 0.1.152](https://github.com/Hopesy/Rethos/releases/tag/v0.1.152)，[安装包工作流](https://github.com/Hopesy/Rethos/actions/runs/42773588165)的实际安装启动、桌面写操作鉴权、内置浏览器和服务端检查通过，7 个发布文件摘要已核对。固定入口：[下载 Windows 安装程序](https://github.com/Hopesy/Rethos/releases/latest/download/Rethos-setup.exe)。
+2026-11-10 已发布 [Windows 0.1.154](https://github.com/Hopesy/Rethos/releases/tag/v0.1.154)，[安装包工作流](https://github.com/Hopesy/Rethos/actions/runs/42781733384)的实际安装启动、桌面写操作鉴权、内置浏览器和服务端检查通过，7 个发布文件摘要已核对。固定入口：[下载 Windows 安装程序](https://github.com/Hopesy/Rethos/releases/latest/download/Rethos-setup.exe)。
 
 仓库全量 CI 仍有旧品牌断言、已移除的云端入口及 `enterprise/` 引用等测试失败。0.1.152 的专用镜像与 Windows 发布流程通过；与本轮模型、提示词、下载入口相关的本地回归、类型检查、构建、lint、中文文案与 OSS 检查通过。报告中的三处电脑提示词断言已在后续测试提交中同步；CI 排查日志和发布验证保存在 `.Rethos-temp/release-0.1.152/`。
+
+0.1.154 的专用镜像与 Windows 发布流程通过；本地类型检查、前端构建、修改文件 lint、登录与中文问候相关测试通过。既存全量 CI 问题继续按上一段记录跟踪。
