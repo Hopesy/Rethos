@@ -1,8 +1,14 @@
 # Rethos 安装包发布与维护
 
-当前桌面发布目标为 **Windows x64**。VPS 的 Docker 镜像由独立工作流发布；手机继续通过 HTTPS 网页访问。macOS 打包留到后续配置。
+当前客户端发布目标为 **Windows x64** 与 **Android 8.0+**。VPS 的 Docker 镜像、Windows 安装包和 Android APK 分别使用独立工作流。手机同时支持 HTTPS 网页访问。macOS 打包留到后续配置。
 
 ## 已发布版本
+
+### Android 0.1.0
+
+2026-11-10 已发布 [Rethos Android 0.1.0](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.0)，源码提交为 `cae09ac35f00c281ef11f4eb31c59b47ef657ac7`。[构建与发布](https://github.com/Hopesy/Rethos/actions/runs/42752753773) 的验证、签名与发布任务全部通过，APK 大小约 1.61 MiB，详见 [验证记录](releases/android-v0.1.0-verification.md)。
+
+Android 使用 Kotlin + WebView，默认连接 `https://rethos.hopesy.cc`。安装后输入现有 Token 登录。后续使用相同签名和递增版本号覆盖安装。运行 `package-android.yml` 并勾选 `publish` 可自动发布；签名配置、版本号修改与使用步骤见 [Android 文档](../android/README.md)。Android 标签独立使用 `android-v<版本>`，发布时保留 Windows 的 Latest 入口。
 
 ### 0.1.151
 
@@ -37,6 +43,7 @@
 ## 用户下载与安装
 
 - [Windows 安装程序（固定下载地址）](https://github.com/Hopesy/Rethos/releases/latest/download/Rethos-setup.exe)
+- [Android 0.1.0 APK](https://github.com/Hopesy/Rethos/releases/download/android-v0.1.0/Rethos-Android-0.1.0.apk)
 - [全部版本与便携 ZIP](https://github.com/Hopesy/Rethos/releases)
 
 运行 `Rethos-<版本>-setup.exe` 后，从开始菜单打开 Rethos。也可解压 `Rethos-<版本>-x64.zip`，运行其中的 `Rethos.exe`。当前 Windows 版本未配置代码签名，Windows SmartScreen 可能显示未知发布者提示；下载来源和校验值均在 Release 页面公开。

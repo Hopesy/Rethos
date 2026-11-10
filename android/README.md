@@ -4,6 +4,8 @@ Kotlin + 系统 WebView 客户端，默认访问 `https://rethos.hopesy.cc`。�
 
 ## 使用
 
+[下载签名 APK](https://github.com/Hopesy/Rethos/releases/download/android-v0.1.0/Rethos-Android-0.1.0.apk) · [发布页与校验文件](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.0)
+
 安装签名 APK，打开 Rethos，输入已有访问 Token 登录。登录 Cookie 保存在应用内；关掉应用再打开会恢复会话。顶部菜单提供刷新、服务器地址和在浏览器中打开。更换服务器时清除旧站点 Cookie 与网页存储，随后在新地址登录。
 
 - 支持 Android 8.0 及以上；系统 WebView 保持更新。
@@ -46,3 +48,5 @@ Windows 使用 `gradlew.bat`。调试包使用独立应用 ID `cc.hopesy.rethos.
 单元测试覆盖 HTTPS 地址校验、同源凭据约束、下载文件名。Android 仪器测试在专用 `FixtureActivity` 中拦截全部请求，通过触摸事件操作隔离页面，覆盖 WebView 渲染、网页存储与 HttpOnly Cookie 保持、页面返回、系统文件选择结果回传、HTTP 503 错误提示及重试。测试文件由 debug 专用 FileProvider 提供；测试入口与文件 Provider 仅存在于调试包。
 
 本机有真实设备连接时，使用指定模拟器序列号执行安装与测试，避免对其他设备安装调试包。过程记录放在 `.Rethos-temp/android/`。
+
+已发布版本的实际证据见 [Android 0.1.0 验证记录](../docs/releases/android-v0.1.0-verification.md)。

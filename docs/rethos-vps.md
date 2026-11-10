@@ -1,10 +1,10 @@
 # Rethos VPS 部署与维护
 
-当前使用方式是：电脑或手机浏览器访问 Rethos，讨论任务、查看 Codex 桌面进度，随后由 Rethos 经本机 CUA 向选定聊天发送指令。飞书接入已经取消。
+当前使用方式是：电脑或手机浏览器、Android 客户端访问 Rethos，讨论任务、查看 Codex 桌面进度，随后由 Rethos 经本机 CUA 向选定聊天发送指令。飞书接入已经取消。
 
 ```mermaid
 flowchart LR
-    A[电脑 / 手机网页] -->|HTTPS| B[VPS Rethos]
+    A[电脑 / 手机网页 / Android 客户端] -->|HTTPS| B[VPS Rethos]
     B -->|MCP · SSH| C[本机独立 cua-driver]
     C -->|观察 / 输入 / 核对| D[Codex 桌面原聊天]
     D --> C --> B --> A
@@ -152,6 +152,8 @@ Rethos 用 MCP 读取桌面当前可见界面。发送前确认聊天、输入�
 
 手机通过同一 HTTPS 地址使用网页，可将站点添加到主屏幕。网页内消息、收件箱和定时报告沿用 Rethos 自带机制。
 
+Android 8.0+ 可安装 [Rethos Android 0.1.0](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.0)，默认访问当前 VPS，使用现有 Token 登录。客户端复用网页、保存登录状态并支持系统文件选择；应用内扫码与原生后台推送列为后续能力。[Android 使用与更新](../android/README.md) 说明了 APK 安装、服务器切换和覆盖升级。
+
 当前源码的系统通知通过在线页面的 `Notification` API 发出，尚未实现独立的 Service Worker / Web Push 投递。手机浏览器关闭、系统挂起页面后的锁屏通知需要后续补齐该能力并做真机测试。浏览器的 390px 模拟验收用于检查布局和网页操作；手机安装、软键盘、后台恢复还需真机核对。
 
 ## 当前部署记录
@@ -221,6 +223,8 @@ Windows 隧道改用无窗口 SSH 子进程，连接输出保存在 `%LOCALAPPDA
 - [x] 390px 手机布局模拟、输入发送和结果回显。
 - [x] Codex 原生提问 → Rethos 选择题 → 手机尺寸网页选择“仅观察本次” → CUA 提交原问题卡片；Codex 回复 `RETHOS_ANSWER_OK 仅观察本次`。
 - [ ] 原生权限审批、执行失败、断网/锁屏状态的完整交互验收。
+- [x] Android Kotlin + WebView 客户端、签名 APK 和 GitHub Actions 发布。
+- [x] Android 15 模拟器验证状态保留、返回、文件选择回传、连接错误与重试；正式包中文登录页与软键盘布局检查。
 - [ ] 手机真机安装、软键盘、后台恢复。
 - [ ] 独立 Web Push 与手机后台锁屏通知。
 

@@ -105,6 +105,16 @@ gh workflow run package-win.yml --repo Hopesy/Rethos --ref main -f publish=true
 
 本地构建命令为 `pnpm package:win` 或 `pnpm package:linux`，产物位于 `release/`。
 
+## Android 安装包
+
+[下载 Rethos Android 0.1.0](https://github.com/Hopesy/Rethos/releases/download/android-v0.1.0/Rethos-Android-0.1.0.apk) · [安卓发布页与校验文件](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.0) · [构建与维护](android/README.md)
+
+支持 Android 8.0 及以上。安装 APK 后打开 Rethos，默认连接 `https://rethos.hopesy.cc`，输入已有访问 Token 登录。右上角菜单可刷新页面、更换 HTTPS 服务器或在系统浏览器中打开。
+
+安卓端使用 Kotlin 与系统 WebView，复用 VPS 的网页、聊天与任务进度，保存登录状态，并接入系统文件选择与下载保存窗口。网页随 VPS 更新；原生客户端通过相同签名的新版 APK 覆盖安装。应用内扫码、App Links 和后台系统推送列为后续能力。
+
+[Rethos Android APK](https://github.com/Hopesy/Rethos/actions/workflows/package-android.yml) 先执行单元测试、Lint 和隔离模拟器交互验收，再签名打包、核对文件摘要并发布。安卓使用独立版本与 `android-v<版本>` 标签；Windows 的 Latest 更新入口继续保持独立。
+
 ## VPS 与桌面任务
 
 已部署并验收：VPS 运行 Rethos 服务端和 Web；本机运行独立 `cua-driver`，通过本机主动建立的反向 SSH 通道提供 MCP 访问。网页或手机网页发送请求后，由 Rethos 查看并操作本机 Codex 桌面原会话。当前入口采用网页，飞书接入已取消。
