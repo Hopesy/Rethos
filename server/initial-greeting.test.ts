@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { initialGreeting, setupRequestLine } from "./initial-greeting.ts";
+import { hasSetupChoices, initialGreeting, initialGreetingMessage, setupChoices, setupRequestLine } from "./initial-greeting.ts";
 
 describe("the line after Set me up", () => {
   it("is written in the app's language, by region, with English for any other", () => {
@@ -19,6 +19,14 @@ describe("the line after Set me up", () => {
 });
 
 describe("a new bot's greeting", () => {
+  it.each(["zh", "zh-CN", "zh-Hans", "zh-SG"])("writes the whole initial setup in Simplified Chinese for %s while preserving the bot name", (language) => {
+    expect(initialGreeting("Scout", language)).toBe("你好，我是 Scout。有什么需要我帮忙的？");
+    expect(initialGreeting("Scout", language, "王小明")).toBe("你好，王小明，我是 Scout。有什么需要我帮忙的？");
+    expect(hasSetupChoices(language)).toBe(true);
+    expect(setupChoices(language)).toEqual(["资料研究与深入分析", "持续关注任务进展", "邮件、日历与消息", "预订、购物与日常事务", "数据、表格与报告"]);
+    expect(setupRequestLine(language)).toMatch(/^好的，告诉我你希望我帮你做什么/);
+    expect(initialGreetingMessage("Scout", () => language, true)).toMatchObject({ text: initialGreeting("Scout", language), setupOffer: true, setupChoices: setupChoices(language) });
+  });
   it("names the person by their first name, in the app's language", () => {
     expect(initialGreeting("Scout", "en", "Milind Soni")).toBe("Hi Milind, I'm Scout. What would you like me to do?");
     expect(initialGreeting("Scout", "es-MX", "  Ana  María ")).toBe("Hola Ana, soy Scout. ¿Qué te gustaría que hiciera?");

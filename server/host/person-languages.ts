@@ -56,7 +56,7 @@ export function createPersonLanguages(deps: PersonLanguagesDeps) {
     return heard.size === 1 ? [...heard][0] : undefined;
   };
 
-  const forLine: LineLanguage = (person) => (person ? people.get(person)?.language : undefined) ?? deps.configured() ?? everyones();
+  const forLine: LineLanguage = (person) => (person ? people.get(person)?.language : undefined) ?? (deps.configured()?.trim() || everyones());
 
   return {
     /** A presence ping from this person's app: the language it shows. Written down only when it changes. */

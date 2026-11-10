@@ -16,6 +16,15 @@ function fixture(configured?: string, dataDir = mkdtempSync(join(tmpdir(), "omb-
 }
 
 describe("the language a line for a person is written in", () => {
+  it("follows the app's language when the server is set to follow the system", () => {
+    const { languages } = fixture("");
+    languages.heard("owner", "zh-CN");
+    expect(languages.forLine()).toBe("zh-cn");
+    expect(languages.forThread("new-bot")).toBe("zh-cn");
+    languages.heard("another-person", "en");
+    expect(languages.forLine()).toBeUndefined();
+    expect(languages.forLine("owner")).toBe("zh-cn");
+  });
   it("is the one their app shows, else the place's: the one set here, else the one every app here shows", () => {
     const { languages, tick } = fixture();
     expect(languages.forLine()).toBeUndefined();
