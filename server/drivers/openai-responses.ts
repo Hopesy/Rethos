@@ -9,7 +9,7 @@ import { ChatProtocolError, ChatToolCalls, object } from "./openai-chat-protocol
 export type ResponseItem = Record<string, unknown>;
 
 /** `chat-reasoning-off` is Chat Completions with `reasoning_effort: "none"`, which the refusal itself offers. */
-export type ModelRoute = "chat" | "responses" | "chat-reasoning-off";
+export type ModelRoute = "chat" | "responses" | "anthropic" | "chat-reasoning-off";
 export type RouteRefusal = "tools-need-responses" | "responses-unavailable" | "summaries-refused";
 
 export class ModelRouteRefused extends Error {
@@ -33,7 +33,7 @@ export function isOpenAIAddress(apiUrl: string): boolean {
 
 /** Each model only moves forward (chat, responses, chat-reasoning-off), so a resend can never loop. A call without tools
  * never meets the refusal and stays on Chat Completions. */
-export function createModelRoutes(apiUrl: string, protocol?: "chat" | "responses") {
+export function createModelRoutes(apiUrl: string, protocol?: import("../../shared/openai-endpoint.ts").OpenAiProtocol) {
   const servesResponses = isOpenAIAddress(apiUrl);
   const routes = new Map<string, ModelRoute>();
   const noSummaries = new Set<string>();
@@ -68,6 +68,7 @@ function errorIn(body: string): Record<string, unknown> | undefined {
 
 /** The answer that moves a model to another route, read from what the provider said rather than from a list of models. */
 export function routeRefusal(route: ModelRoute, status: number, body: string): RouteRefusal | null {
+  if (route === "anthropic") return null;
   if (route !== "responses") {
     // "Function tools with reasoning_effort are not supported for gpt-6.1-sol in /v1/chat/completions. To use function
     // tools, use /v1/responses or set reasoning_effort to 'none'." A relay may wrap it, so the whole body is read.

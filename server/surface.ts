@@ -38,14 +38,14 @@ export function surfaceOfComputerKind(kind: "box" | "vps" | "vm" | "local" | nul
 }
 
 const NO_BROWSER_NOTE =
-  " This bot is set to work in the built-in browser, but the built-in browser is switched off in App Settings, so you have no browser and no computer this turn — say so instead of guessing.";
+  " This bot is set to work in the built-in browser, but the built-in browser is switched off in App Settings. Its managed browser and computer tools are unavailable this turn. Independently mounted MCP tools keep their own targets and permissions.";
 
 const OFF_NOTE =
-  " This bot's \"Works on\" setting is Off, so no computer and no built-in browser are mounted this turn: you cannot open a page, click, or type on any screen. If the user asks for something that needs one, tell them Works on is Off in this bot's settings — never claim you are opening a browser you do not have.";
+  " This bot's \"Works on\" setting is Off, so no computer and no built-in browser are mounted through Rethos's managed surface selector this turn. Independently mounted MCP servers keep their own targets and permissions. Check the available tools for the requested target before reporting a desktop-access blocker; report the actual tool result or missing connection. Current task progress needs a fresh observation.";
 
 export function computerSkippedNote(cause: string): string {
   const why = cause.trim().replace(/[\s.]+$/, "");
-  return ` This turn answers a Team incidents report and your computer could not be prepared for it (${why}), so no computer is mounted: you cannot open, click or check anything on it this turn. Act through your teammates, or tell the person what only they can fix — never claim to have checked that computer yourself.`;
+  return ` This turn answers a Team incidents report and the managed computer could not be prepared for it (${why}). Its tools are unavailable this turn; independently mounted MCP tools keep their own targets and permissions. Report observations only from tools that actually ran.`;
 }
 
 /** One place per turn, plus the browser beside it in a thread a bot opened. A person's pin beats the bot's default (only Off overrides it), an Auto pin yields to a Works on change, and a pin the turn cannot honour is reported, never swapped. */
@@ -166,7 +166,7 @@ const YOUR_COMPUTER_LAST =
 const YOUR_COMPUTER_BESIDE_BROWSER =
   ` This computer is the person's own: their screen, their apps and the browsers they are signed in to. ${WEB_WORK_ORDER} a connected app that does it, your built-in browser, a cloud computer if select_computer offers one.${YOUR_COMPUTER_LAST}`;
 const YOUR_COMPUTER_ALONE =
-  ` Everything you do on screen happens on this computer, which is the person's own: their screen, their apps and the browsers they are signed in to; there is no built-in browser of yours this turn. ${WEB_WORK_ORDER} a connected app that does it, web search and fetching pages, a cloud computer if select_computer offers one.${YOUR_COMPUTER_LAST} If you need the user to sign in, tell them it is on this computer.`;
+  ` The managed screen tools work on this computer, which is the person's own: their screen, their apps and the browsers they are signed in to; there is no built-in browser of yours this turn. ${WEB_WORK_ORDER} a connected app that does it, web search and fetching pages, a cloud computer if select_computer offers one.${YOUR_COMPUTER_LAST} If you need the user to sign in, tell them it is on this computer.`;
 
 /** A connected app does a task more cheaply and surely than any screen, and one that is refused or broken is the person's
  * to fix: worked around on a screen, it stays broken and they never hear why. */
@@ -182,17 +182,9 @@ const ASK_TO_SWITCH = `explain the mismatch and ask the user to change where thi
 const REPORT_BACK = "tell the bot that gave you this job which place you need and end your turn, because no person watches this conversation";
 
 const SURFACE_AUTHORITY =
-  ` For browser and computer tasks, use Rethos's mounted browser/computer tools first: inspect the target, perform the action, and verify its result before claiming success. Discover deferred tools by their server/name when needed. Do not substitute the provider's own desktop, a shell-launched browser, or another automation path for the selected Rethos surface. Ordinary code and file tasks may still use their normal tools. Announcing an action is not performing it. A request naming another place does not move these tools: this computer is the user's host, Local VM is an isolated desktop, the cloud computer is remote, and the built-in browser is a separate browser. If the requested place differs from the mounted one, ${ASK_TO_SWITCH}; never act on a different computer or describe a host window as a VM.`;
+  ` For tasks on these managed surfaces, use Rethos's mounted browser/computer tools first: inspect the target, perform the action, and verify its result before claiming success. Discover deferred tools by their server/name when needed. Do not substitute the provider's own desktop, a shell-launched browser, or another automation path for the selected Rethos surface. Ordinary code and file tasks may still use their normal tools. Announcing an action is not performing it. A request naming another place does not move these tools: this computer is the user's host, Local VM is an isolated desktop, the cloud computer is remote, and the built-in browser is a separate browser. If the requested place is a managed surface and differs from the mounted one, ${ASK_TO_SWITCH}; never act on a different computer or describe a host window as a VM.`;
 
-/** A Cloud home without the shared-computer tools cannot reach the person's own computer at all. */
-const UNREACHABLE_OWN = "the user's own computer cannot be reached from here";
-
-/** With the shared-computer tools, what the wording above says of every screen holds only for this turn's places. */
-const OWN_COMPUTER_WORDING: ReadonlyArray<readonly [RegExp | string, string]> = [
-  [/ Everything you do on screen happens (on|in) /, " The screen tools mounted this turn work $1 "],
-  ["there is no desktop computer this turn", "no desktop computer is mounted this turn"],
-  ["You cannot open apps, click, or inspect a screen through Rethos.", "No place's tools can open apps, click, or inspect a screen this turn."],
-];
+const UNREACHABLE_OWN = "the user's own computer is outside these managed surfaces";
 
 /** A Cloud home has neither this computer nor a Local VM; each pair rewrites one phrase of the wording above. */
 const CLOUD_HOME_WORDING: ReadonlyArray<readonly [string, string]> = [
@@ -229,16 +221,16 @@ export function surfacePrompt(
       ` Two surfaces are mounted this turn: the built-in browser (the browser server's browser_navigate, browser_snapshot, browser_click, browser_fill and friends) and ${computer} (the computer server's tools). Web tasks → the built-in browser. Desktop apps, files and shell → ${computer} tools. Pick one surface for a task and stay on it; if you need the user to sign in, say which surface — the Browser tab or ${computer}.`;
   } else if (computer) {
     text =
-      ` Everything you do on screen happens on ${computer}, web pages included, through its own browser; there is no separate built-in browser this turn. If you need the user to sign in, tell them it is on ${computer}.`;
+      ` The managed screen tools work on ${computer}, web pages included, through its own browser; there is no separate built-in browser this turn. If you need the user to sign in, tell them it is on ${computer}.`;
   } else if (mounted.browser) {
     text =
-      " Everything you do on screen happens in the built-in browser tab; there is no desktop computer this turn, but your own shell and file tools still work for ordinary code and file tasks, if you have them. If you need the user to sign in, tell them it is in the Browser tab of the Screen panel.";
+      " The managed screen tools work in the built-in browser tab; no managed desktop computer is mounted this turn, but your own shell and file tools still work for ordinary code and file tasks, if you have them. If you need the user to sign in, tell them it is in the Browser tab of the Screen panel.";
   }
   if (text) text += RESTATE_SENTENCE + (opts.canSelect
     ? SURFACE_AUTHORITY.replace(ASK_TO_SWITCH, "inspect connected choices with select_computer and select the requested available place; on a pending result end this turn so Rethos can reconnect the correct tools and continue the original request")
     : reportBack ? SURFACE_AUTHORITY.replace(ASK_TO_SWITCH, REPORT_BACK) : SURFACE_AUTHORITY);
   else if (!opts.note && !opts.canSelect) {
-    text = ` No computer or built-in browser tools are mounted this turn. You cannot open apps, click, or inspect a screen through Rethos. If asked for screen work, ${reportBack ? REPORT_BACK : "explain this and ask the user to choose where this conversation works in the Screen panel"}; do not claim to have opened or checked it.`;
+    text = ` No managed computer or built-in browser tools are mounted this turn. Check independently mounted MCP tools for the requested target. If no matching tools are available, ${reportBack ? REPORT_BACK : "explain the missing connection and ask the user to choose where this conversation works in the Screen panel"}; report screen observations only from tools that actually ran.`;
   }
   if (opts.pinned) {
     text += ` This conversation is pinned to ${surfaceLabel(opts.pinned)}; changing places requires ${opts.canSelect ? "select_computer or " : ""}the user's choice in ${PLACE_CONTROL}, not a different tool name.`;
@@ -250,9 +242,7 @@ export function surfacePrompt(
   if (computer || mounted.browser) text += " For online research, use the selected Rethos browser when a search service is unavailable. A failed tool proves only that this attempt failed, not that every browser is unavailable. Inspect the current page after navigation; report a sign-in page, redirect or error as such. A completed model turn is not proof that the user's task succeeded.";
   if (opts.cloudHome) for (const [desktop, cloudHome] of CLOUD_HOME_WORDING) text = text.replace(desktop, cloudHome);
   if (opts.cloudHome && opts.ownComputer) {
-    // What this turn's places reach, never every screen: their own computer is reachable too, through shared_computer.
-    for (const [nowhere, places] of OWN_COMPUTER_WORDING) text = text.replace(nowhere, places);
     text = text.replace(UNREACHABLE_OWN, `${theirComputer(opts.ownComputer).theirs} is not one of these places`) + ownComputerSentence(opts.ownComputer, computer);
   }
-  return text + (opts.note ?? "");
+  return (text ? " The following surface settings govern Rethos's managed browser and computers. Independently mounted MCP servers have their own targets and permissions; use their matching tools directly for an explicitly requested target." + text : "") + (opts.note ?? "");
 }

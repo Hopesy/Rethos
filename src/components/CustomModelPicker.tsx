@@ -1,6 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { CloudDownload, Loader2, Plus, X } from "lucide-react";
+import { CloudDownload, Loader2, Plus, X, Zap } from "lucide-react";
 import { usePopoverDismiss } from "@/hooks/use-popover-dismiss";
 import { pickerPlacement, type PickerPlacement } from "@/lib/picker-placement";
 import { cn } from "@/lib/cn";
@@ -11,10 +11,11 @@ import { ModelSearch } from "./ModelPickerFull";
 import { useMenuMotion } from "./MenuMotion";
 import { isModelId } from "../../shared/openai-endpoint";
 
-export function CustomModelPicker({ selected, defaultModel, available, loading, disabled, problem, autoSave, canFetch, onFetch, onChange }: {
+export function CustomModelPicker({ selected, defaultModel, available, loading, disabled, problem, autoSave, canFetch, onFetch, onChange, testing, canTest, onTest }: {
   selected: string[]; defaultModel: string; available: string[] | null;
   loading: boolean; disabled: boolean; problem: string | null; autoSave: boolean; canFetch: boolean;
   onFetch: () => void; onChange: (models: string[], defaultModel: string) => void;
+  testing: boolean; canTest: boolean; onTest: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -67,6 +68,9 @@ export function CustomModelPicker({ selected, defaultModel, available, loading, 
           {selected.length === 0 && <span>{t("customModels.choose")}</span>}
         </button>
       </div>
+      <button type="button" className="ui-icon-button size-7 shrink-0" aria-label={t("customModels.test")} title={t("customModels.test")} aria-busy={testing} disabled={disabled || testing || !canTest} onClick={onTest}>
+        {testing ? <Loader2 size={15} className="animate-spin" aria-hidden="true" /> : <Zap size={15} aria-hidden="true" />}
+      </button>
       <button type="button" className="ui-icon-button size-7 shrink-0" aria-label={t("customModels.fetch")} title={t("customModels.fetch")} disabled={disabled || loading || !canFetch} onClick={() => { setOpen(true); onFetch(); }}>
         {loading ? <Loader2 size={15} className="animate-spin" aria-hidden="true" /> : <CloudDownload size={15} aria-hidden="true" />}
       </button>

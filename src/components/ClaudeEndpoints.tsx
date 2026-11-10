@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 
 import { api, useStore, type InstanceInfo } from "@/state/store";
 import { t } from "@/lib/i18n";
@@ -165,26 +165,19 @@ function EndpointRow({ instance, onEdit }: { instance: InstanceInfo; onEdit: () 
 }
 
 /** Custom Claude endpoints: their own engines, so this computer's Claude Code and its sign-in stay as they are. */
-export function ClaudeEndpoints() {
+export function SavedClaudeConnections() {
   const { state } = useStore();
-  const endpoints = state.instances.filter((instance) => instance.claudeEndpoint);
+  const endpoints = state.instances.filter((instance) => instance.claudeEndpoint && !instance.readOnly);
   const [open, setOpen] = useState<string | null>(null);
+  if (!endpoints.length) return null;
   return (
     <div data-claude-endpoints className="mt-3 space-y-2">
-      <div className="text-[13px] leading-[18px] text-ink">{t("claudeEndpoints.title")}</div>
-      <p className="text-[12px] leading-4 text-ink-secondary">{t("claudeEndpoints.hint")}</p>
-      {endpoints.length === 0
-        ? <p className="text-[12px] leading-4 text-ink-secondary">{t("claudeEndpoints.empty")}</p>
-        : <ul className="divide-y divide-hairline/40 rounded-xl border border-hairline/50 bg-panel/40">
+      <div className="text-[12px] text-ink-secondary">{t("customModels.savedClaude")}</div>
+      <ul className="divide-y divide-hairline/40 rounded-xl border border-hairline/50 bg-panel/40">
           {endpoints.map((instance) => open === instance.instanceId
             ? <li key={instance.instanceId} className="p-3"><EndpointForm instance={instance} onDone={() => setOpen(null)} /></li>
             : <EndpointRow key={instance.instanceId} instance={instance} onEdit={() => setOpen(instance.instanceId)} />)}
-        </ul>}
-      {open === "new"
-        ? <EndpointForm onDone={() => setOpen(null)} />
-        : <button type="button" onClick={() => setOpen("new")} className="flex min-h-8 w-fit items-center gap-1.5 rounded-lg px-2 py-1.5 text-[13px] font-medium text-ink-secondary outline-none hover:bg-control hover:text-ink focus-visible:ring-2 focus-visible:ring-accent">
-          <Plus size={14} />{t("claudeEndpoints.add")}
-        </button>}
+        </ul>
     </div>
   );
 }

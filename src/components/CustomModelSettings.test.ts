@@ -135,3 +135,36 @@ it("creates a connection using the API host as its name without a name field", a
   expect(path).toBe("/api/instances/openai-compat");
   expect(JSON.parse(init.body)).toMatchObject({ displayName: "models.example", url: "https://models.example/v1", key: "new-key", models: ["model-b"], defaultModel: "model-b" });
 });
+
+it("tests the unsaved Anthropic protocol with the default model and puts test before discovery", async () => {
+  await act(async () => root.render(createElement(Harness)));
+  await click(findButton("API protocol"));
+  await click(findButton("Anthropic"));
+  const buttons = [...host.querySelectorAll("button")];
+  expect(buttons.indexOf(findButton("Test connection"))).toBeLessThan(buttons.indexOf(findButton("Fetch models")));
+  fixture.api.mockResolvedValueOnce({ ok: true, latencyMs: 326 });
+  await click(findButton("Test connection"));
+  const [path, init] = fixture.api.mock.calls.at(-1)!;
+  expect(path).toBe("/api/instances/openai-compat/test");
+  expect(JSON.parse(init.body)).toEqual({ instanceId: "wb", url: "https://example.test/v1", protocol: "anthropic", model: "model-a" });
+  expect(host.textContent).toContain("Connected · 326 ms");
+  expect(fixture.api.mock.calls.some(([, request]) => request.method === "PATCH")).toBe(false);
+});
+
+it("aborts stale tests when connection fields change and requires a key for a new address", async () => {
+  await act(async () => root.render(createElement(Harness)));
+  let resolve!: (result: unknown) => void;
+  let signal: AbortSignal;
+  fixture.api.mockImplementationOnce((_path, init) => { signal = init.signal; return new Promise(done => { resolve = done; }); });
+  await click(findButton("Test connection"));
+  expect(findButton("Test connection").disabled).toBe(true);
+  await fill(host.querySelector<HTMLInputElement>('input[aria-label="API address"]')!, "https://changed.example/v1");
+  expect(signal!.aborted).toBe(true);
+  await act(async () => resolve({ ok: true, latencyMs: 1 }));
+  expect(host.textContent).not.toContain("Connected");
+  expect(findButton("Test connection").disabled).toBe(true);
+  await fill(host.querySelector<HTMLInputElement>('input[type="password"]')!, "new-key");
+  fixture.api.mockResolvedValueOnce({ ok: false, error: "unauthorized", latencyMs: 5 });
+  await click(findButton("Test connection"));
+  expect(host.textContent).toContain("Authentication failed");
+});

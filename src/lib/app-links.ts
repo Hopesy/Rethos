@@ -14,8 +14,7 @@ export function withSource(url: string, source: string): string {
   return target.href;
 }
 export const LICENSE_URL = `${APP_REPOSITORY}/blob/main/LICENSE`;
-export const IOS_APP_STORE_URL = "https://apps.apple.com/in/app/mausbot/id6803387923";
-export const ANDROID_APK_URL = `${APP_REPOSITORY}/releases/download/android-v1.5.0/Rethos.apk`;
+export const ANDROID_APK_URL = "https://github.com/Hopesy/Rethos/releases/download/android-v0.1.0/Rethos-Android-0.1.0.apk";
 
 export function appVersion(): string {
   return typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "dev";

@@ -1,6 +1,7 @@
 // Transcript-replay driver for OpenRouter, Groq, Together, llama.cpp, and
 // other endpoints that speak the OpenAI chat-completions contract.
 import type { ModelCatalog, ProviderDriver } from "../contracts.ts";
+import { modelApiHeaders, modelApiUrl } from "../model-api.ts";
 import { isLoopback } from "../provider-key-check.ts";
 import { lmStudioV1Catalog } from "./local-inject.ts";
 import { isContextName, isOllama, serveWithWindow } from "./ollama-context.ts";
@@ -126,7 +127,7 @@ function loopbackLmStudioV1Url(baseUrl: string): string | null {
 
 function decodeConfig(raw: unknown): OpenAICompatConfig {
   const config = (raw ?? {}) as Record<string, unknown>;
-  if (config.protocol !== undefined && config.protocol !== "chat" && config.protocol !== "responses") throw new Error("Invalid OpenAI protocol.");
+  if (config.protocol !== undefined && config.protocol !== "chat" && config.protocol !== "responses" && config.protocol !== "anthropic") throw new Error("Invalid model API protocol.");
   if (config.tools !== undefined && typeof config.tools !== "boolean") throw new Error("tools must be a boolean");
   if (config.managedModels !== undefined && (!Array.isArray(config.managedModels) || !config.managedModels.length || config.managedModels.some(model => typeof model !== "string" || !model.trim()))) throw new Error("Invalid managed models.");
   const ownKey = typeof config.apiKeyEnv === "string" && OWN_KEY_ENVS.has(config.apiKeyEnv);
@@ -134,7 +135,7 @@ function decodeConfig(raw: unknown): OpenAICompatConfig {
   if (config.replyWaitMinutes !== undefined && !isReplyWait(config.replyWaitMinutes)) throw new Error(`replyWaitMinutes must be a whole number from 1 to ${MAX_REPLY_WAIT_MINUTES}`);
   const envUrl = ownKey ? undefined : process.env.OPENAI_COMPAT_URL;
   return {
-    ...(config.protocol ? { protocol: config.protocol as "chat" | "responses" } : {}),
+    ...(config.protocol ? { protocol: config.protocol as OpenAICompatConfig["protocol"] } : {}),
     ...(config.tools !== undefined ? { tools: config.tools as boolean } : {}),
     ...(config.managedModels ? { managedModels: config.managedModels as string[] } : {}),
     ...(isReplyWait(config.replyWaitMinutes) ? { replyWaitMinutes: config.replyWaitMinutes } : {}),
@@ -235,8 +236,8 @@ export const OpenAICompatDriver: ProviderDriver<OpenAICompatConfig> = {
             // Native LM Studio catalog unavailable; try OpenAI-compatible /models below.
           }
         }
-        const response = await fetch(`${config.url}/models`, {
-          headers: { authorization: `Bearer ${apiKey}` },
+        const response = await fetch(modelApiUrl(config.url, config.protocol ?? "chat", "models"), {
+          headers: modelApiHeaders(apiKey, config.protocol ?? "chat"), redirect: "error",
           signal: AbortSignal.timeout(8_000),
         });
         if (!response.ok) return;
@@ -330,12 +331,12 @@ export const OpenAICompatDriver: ProviderDriver<OpenAICompatConfig> = {
       missingKeyError: missingKey,
       unavailableReason: missingKey,
       timeoutMs: config.replyWaitMinutes ? config.replyWaitMinutes * 60_000 : idleTimeoutMs(),
-      ...(onThisNetwork(config.url) ? { livenessEveryMs: livenessEveryMs(), localModel: true } : {}),
+      ...(onThisNetwork(config.url) && config.protocol !== "anthropic" ? { livenessEveryMs: livenessEveryMs(), localModel: true } : {}),
       reasoning: true,
       billing: "metered",
       includeUsageInCompleted: true,
       nativeLog: {
-        source: "openai-compat.chat.completions",
+        source: config.protocol === "anthropic" ? "anthropic.messages" : config.protocol === "responses" ? "openai-compat.responses" : "openai-compat.chat.completions",
         outgoing: (_turn, messages, model, tools) => ({
           model,
           messageCount: messages.length,

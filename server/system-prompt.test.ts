@@ -283,6 +283,9 @@ describe("shared sentences", () => {
     const one = customMcpPrompt(["notes"]);
     expect(one.startsWith(" The user also added an MCP server for you: \"notes\".")).toBe(true);
     expect(one).toContain("engine's normal approval rules");
+    expect(one).toContain("These connections are independent of Works on");
+    expect(one).toContain("obtain a fresh observation");
+    expect(one).toContain("report the specific connection and error");
     expect(one).not.toContain("each call asks");
     expect(customMcpPrompt(["notes", "linear"])).toContain('MCP servers for you: "notes", "linear".');
   });
@@ -364,7 +367,7 @@ describe("cloudHomePrompt", () => {
   it("says the bot runs in the cloud, offers what works there, and never asks for a place that cannot exist", () => {
     for (const tools of [true, false]) {
       const text = cloudHomePrompt(tools);
-      expect(text).toMatch(/^ You run on the user's My Cloud, their always-on OpenMausBot in the cloud, not on their own computer\./);
+      expect(text).toMatch(/^ You run on the user's My Cloud, their always-on Rethos in the cloud, not on their own computer\./);
       expect(text.startsWith(` You run on ${CLOUD_HOME_PLACE}.`)).toBe(true);
       expect(text).toContain("Offer what works here: the built-in browser and their cloud computer, a desktop in the cloud. Call it their cloud computer, as the app does.");
       expect(text).not.toMatch(/\bOMB\b|\bBoat\b|\bbox\b/);

@@ -4,7 +4,7 @@ import { QRCodeSVG } from "qrcode.react";
 
 import { t } from "@/lib/i18n";
 import { copyText } from "@/lib/copy-text";
-import { ANDROID_APK_URL, IOS_APP_STORE_URL } from "@/lib/app-links";
+import { ANDROID_APK_URL } from "@/lib/app-links";
 import { productName } from "@/lib/brand";
 import type { PhoneSetupController } from "./PhoneSetupFlow";
 
@@ -77,12 +77,10 @@ export function PhonePairingQr({ c, signedIn }: { c: PhoneSetupController; signe
         {storeOpen && (
           <div className="absolute bottom-8 right-0 z-10 rounded-xl border border-hairline/40 bg-card p-4 shadow-lg">
             <div className="flex gap-4">
-              {[["App Store", IOS_APP_STORE_URL], ["Android", ANDROID_APK_URL]].map(([label, url]) => (
-                <div key={label} className="flex flex-col items-center gap-2">
-                  <div className="rounded-lg bg-white p-2"><QRCodeSVG value={url} size={128} level="M" bgColor="#ffffff" fgColor="#111111" /></div>
-                  <span className="text-[12px] text-ink">{label}</span>
+                <div className="flex flex-col items-center gap-2">
+                  <div className="rounded-lg bg-white p-2"><QRCodeSVG value={ANDROID_APK_URL} size={128} level="M" bgColor="#ffffff" fgColor="#111111" /></div>
+                  <span className="text-[12px] text-ink">{t("phoneApp.android")}</span>
                 </div>
-              ))}
             </div>
             <p className="mt-3 text-center text-[12px] text-ink-secondary">{t("phone.code.e2e.getAppDetail")}</p>
           </div>

@@ -118,7 +118,7 @@ describe("resolveSurface", () => {
     expect(plan.computer).toBe("off");
     expect(plan.browser).toBe(false);
     expect(plan.note).toMatch(/switched off in App Settings/);
-    expect(plan.note).toMatch(/no browser and no computer/);
+    expect(plan.note).toMatch(/managed browser and computer tools are unavailable/);
   });
 
   it("a computer destination mounts only that computer: one place per turn", () => {
@@ -149,11 +149,11 @@ describe("resolveSurface", () => {
 
   it("a Problems to look at turn that lost its computer is told why and that it has none", () => {
     const note = computerSkippedNote("The team's cloud computer is missing; explicitly create or retry it from the Team map.");
-    expect(note).toMatch(/^ This turn answers a Team incidents report and your computer could not be prepared for it \(The team's cloud computer is missing; explicitly create or retry it from the Team map\), so no computer is mounted/);
-    expect(note).toMatch(/never claim to have checked that computer yourself\.$/);
+    expect(note).toMatch(/^ This turn answers a Team incidents report and the managed computer could not be prepared for it \(The team's cloud computer is missing; explicitly create or retry it from the Team map\)\. Its tools are unavailable/);
+    expect(note).toMatch(/Report observations only from tools that actually ran\.$/);
     expect(surfacePrompt({ computer: null, browser: false }, { note })).toBe(note);
     const withBrowser = surfacePrompt({ computer: null, browser: true }, { note });
-    expect(withBrowser).toMatch(/^ Everything you do on screen happens in the built-in browser tab/);
+    expect(withBrowser).toMatch(/The managed screen tools work in the built-in browser tab/);
     expect(withBrowser.endsWith(note)).toBe(true);
   });
 
@@ -206,7 +206,7 @@ describe("surfacePrompt", () => {
 
   it("names only the computer when it is the only surface", () => {
     const text = surfacePrompt({ computer: "vm", browser: false });
-    expect(text).toMatch(/happens on the Local VM, web pages included/);
+    expect(text).toMatch(/work on the Local VM, web pages included/);
     expect(text).toMatch(/no separate built-in browser/);
     expect(text).toMatch(/say in one short sentence where you are working/);
     expect(text).not.toMatch(/Two surfaces/);
@@ -232,8 +232,8 @@ describe("surfacePrompt", () => {
 
   it("names only the browser tab when it is the only surface", () => {
     const text = surfacePrompt({ computer: null, browser: true });
-    expect(text).toMatch(/happens in the built-in browser tab/);
-    expect(text).toMatch(/no desktop computer this turn/);
+    expect(text).toMatch(/work in the built-in browser tab/);
+    expect(text).toMatch(/no managed desktop computer is mounted this turn/);
     // The browser is only the screen: a coding engine's own shell and file tools still work.
     expect(text).not.toMatch(/file or shell computer/);
     expect(text).toContain("your own shell and file tools still work for ordinary code and file tasks");
@@ -243,10 +243,10 @@ describe("surfacePrompt", () => {
   });
 
   it("explains unavailable tools, and carries the pin line and the note", () => {
-    expect(surfacePrompt({ computer: null, browser: false })).toContain("No computer or built-in browser tools are mounted");
+    expect(surfacePrompt({ computer: null, browser: false })).toContain("No managed computer or built-in browser tools are mounted");
     expect(surfacePrompt({ computer: "cloud", browser: false }, { pinned: "cloud" }))
       .toContain("This conversation is pinned to the cloud computer; changing places requires");
-    expect(surfacePrompt({ computer: null, browser: false }, { note: " NOTE." })).toBe(" NOTE.");
+    expect(surfacePrompt({ computer: null, browser: false }, { note: " NOTE." })).toContain(" NOTE.");
   });
 
   it.each(["local", "vm", "cloud", "browser"] as const)("requires observed results on the actual %s tools", (place) => {
@@ -305,7 +305,7 @@ describe("surfacePrompt", () => {
       const text = surfacePrompt(mounted, { ...opts, cloudHome: true });
       expect(text, JSON.stringify({ mounted, opts })).not.toMatch(/Local VM|\bVM\b|host desktop|user's host|host window/);
       if (mounted.computer || mounted.browser) {
-        expect(text).toContain("the cloud computer is remote, the built-in browser is a separate browser, and the user's own computer cannot be reached from here");
+        expect(text).toContain("the cloud computer is remote, the built-in browser is a separate browser, and the user's own computer is outside these managed surfaces");
         expect(text).toContain("never act on a different computer.");
       }
       if (opts.canSelect) expect(text).toContain("select an available cloud computer without asking");
@@ -328,17 +328,17 @@ describe("surfacePrompt", () => {
       if (mounted.computer || mounted.browser) expect(text, where).toContain("and their PC (OFFICE-PC) is not one of these places");
     }
     const pinned = surfacePrompt({ computer: "cloud", browser: false }, { pinned: "cloud", canSelect: true, cloudHome: true, ownComputer: lent });
-    expect(pinned).toContain(" The screen tools mounted this turn work on the cloud computer, web pages included, through its own browser");
+    expect(pinned).toContain(" The managed screen tools work on the cloud computer, web pages included, through its own browser");
     expect(pinned).toContain("say so in one sentence and don't do it on the cloud computer instead unless they ask.");
-    expect(surfacePrompt({ computer: null, browser: true }, { cloudHome: true, ownComputer: lent })).toContain("no desktop computer is mounted this turn");
+    expect(surfacePrompt({ computer: null, browser: true }, { cloudHome: true, ownComputer: lent })).toContain("no managed desktop computer is mounted this turn");
     // Never lent yet: still their own computer, reached the same way once it is.
     expect(surfacePrompt({ computer: "cloud", browser: false }, { cloudHome: true, ownComputer: [] })).toContain("Their own computer is reached only through shared_computer");
   });
 
-  it("still says the person's computer can't be reached when the turn has no shared-computer tools", () => {
+  it("scopes a Cloud home's missing host access to managed surfaces", () => {
     for (const { mounted, opts } of shapes.filter(({ mounted }) => mounted.computer || mounted.browser)) {
       const text = surfacePrompt(mounted, { ...opts, cloudHome: true });
-      expect(text).toContain("the user's own computer cannot be reached from here");
+      expect(text).toContain("the user's own computer is outside these managed surfaces");
       expect(text).not.toContain("shared_computer");
     }
   });

@@ -10,6 +10,7 @@ import { SettingsHelp } from "./SettingsHelp";
 import { SidebarPopoverMenu } from "./SidebarPopoverMenu";
 import { KEY_FIELD, KeyStatusChip } from "./keys/KeyRow";
 import { CustomModelPicker } from "./CustomModelPicker";
+import { SavedClaudeConnections } from "./ClaudeEndpoints";
 
 type Draft = { url: string; key: string; protocol: OpenAiProtocol; models: string[]; defaultModel: string };
 function fromServer(server?: InstanceInfo): Draft {
@@ -30,6 +31,9 @@ export function CustomModelCard({ server, onDone }: { server?: InstanceInfo; onD
   const [loading, setLoading] = useState(false);
   const [fetchProblem, setFetchProblem] = useState<string | null>(null);
   const request = useRef<AbortController | null>(null);
+  const probe = useRef<AbortController | null>(null);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
   const busy = useRef(false);
   const baseline = JSON.stringify(fromServer(server));
   const dirty = JSON.stringify(draft) !== baseline;
@@ -39,11 +43,13 @@ export function CustomModelCard({ server, onDone }: { server?: InstanceInfo; onD
     previousBaseline.current = baseline;
     if (!busy.current) setDraft(current => JSON.stringify(current) === previous ? JSON.parse(baseline) as Draft : current);
   }, [baseline]);
-  useEffect(() => () => request.current?.abort(), []);
+  useEffect(() => () => { request.current?.abort(); probe.current?.abort(); }, []);
   const existingKey = Boolean(server?.openaiEndpoint?.keySaved && address(draft.url) === address(server.url ?? ""));
   const canFetch = validAddress(draft.url) && Boolean(draft.key.trim() || existingKey);
   const canSave = Boolean(canFetch && draft.models.length && draft.models.includes(draft.defaultModel));
+  const resetTest = () => { probe.current?.abort(); probe.current = null; setTesting(false); setTestResult(null); };
   const updateConnection = <K extends keyof Draft>(key: K, value: Draft[K]) => {
+    resetTest();
     request.current?.abort(); request.current = null; setLoading(false); setAvailable(null); setFetchProblem(null); setProblem(null); setSaved(false);
     setDraft(current => ({ ...current, [key]: value }));
   };
@@ -77,7 +83,7 @@ export function CustomModelCard({ server, onDone }: { server?: InstanceInfo; onD
     setLoading(true); setFetchProblem(null);
     try {
       const result = await api<{ models: string[]; error?: "unavailable" | "unauthorized" | "empty" }>("/api/instances/openai-compat/models", {
-        method: "POST", signal: controller.signal, body: JSON.stringify({ url: address(draft.url), ...(server ? { instanceId: server.instanceId } : {}), ...(draft.key.trim() ? { key: draft.key.trim() } : {}) }),
+        method: "POST", signal: controller.signal, body: JSON.stringify({ url: address(draft.url), protocol: draft.protocol, ...(server ? { instanceId: server.instanceId } : {}), ...(draft.key.trim() ? { key: draft.key.trim() } : {}) }),
       });
       if (request.current !== controller) return;
       setAvailable(result.models);
@@ -85,6 +91,23 @@ export function CustomModelCard({ server, onDone }: { server?: InstanceInfo; onD
     } catch {
       if (request.current === controller && !controller.signal.aborted) { setAvailable([]); setFetchProblem(t("customModels.fetchFailed")); }
     } finally { if (request.current === controller) setLoading(false); }
+  };
+  const testConnection = async () => {
+    if (!canSave || testing) return;
+    resetTest();
+    const controller = new AbortController(); probe.current = controller;
+    setTesting(true);
+    try {
+      const result = await api<{ ok: boolean; latencyMs: number; error?: "unauthorized" | "unavailable" | "model" | "invalid" | "timeout" }>("/api/instances/openai-compat/test", {
+        method: "POST", signal: controller.signal, body: JSON.stringify({ url: address(draft.url), protocol: draft.protocol, model: draft.defaultModel,
+          ...(server ? { instanceId: server.instanceId } : {}), ...(draft.key.trim() ? { key: draft.key.trim() } : {}) }),
+      });
+      if (probe.current !== controller) return;
+      const errors = { unauthorized: "customModels.testAuthFailed", unavailable: "customModels.testFailed", model: "customModels.testModelFailed", invalid: "customModels.testInvalid", timeout: "customModels.testTimeout" } as const;
+      setTestResult({ ok: result.ok, message: result.ok ? t("customModels.testSuccess", { ms: result.latencyMs }) : t(errors[result.error ?? "unavailable"]) });
+    } catch {
+      if (probe.current === controller && !controller.signal.aborted) setTestResult({ ok: false, message: t("customModels.testFailed") });
+    } finally { if (probe.current === controller) setTesting(false); }
   };
   const remove = async () => {
     if (!server || busy.current) return;
@@ -95,6 +118,7 @@ export function CustomModelCard({ server, onDone }: { server?: InstanceInfo; onD
   };
   const selectModels = (models: string[], defaultModel: string) => {
     if (busy.current) return;
+    resetTest();
     const next = { ...draft, models, defaultModel };
     if (server && !dirty && models.length > 0) void save(next, true);
     else { setDraft(next); setSaved(false); }
@@ -113,12 +137,12 @@ export function CustomModelCard({ server, onDone }: { server?: InstanceInfo; onD
             <legend className="mb-1 flex h-6 items-center">{t("customModels.protocol")}</legend>
             <SidebarPopoverMenu placement="below" ariaLabel={t("customModels.protocol")}
               triggerClassName={cn(KEY_FIELD, "flex items-center justify-between gap-2 font-sans text-left")}
-              items={([['chat', 'Chat Completions'], ['responses', 'Responses']] as const).map(([value, label]) => ({
+              items={([['chat', 'Chat Completions'], ['responses', 'Responses'], ['anthropic', 'Anthropic']] as const).map(([value, label]) => ({
                 key: value, label, checked: draft.protocol === value, disabled: saving,
                 trailing: draft.protocol === value ? <Check size={14} className="text-ink-secondary" aria-hidden="true" /> : undefined,
                 onSelect: () => updateConnection("protocol", value),
               }))}
-              renderTrigger={() => <><span className="truncate">{draft.protocol === "responses" ? "Responses" : "Chat Completions"}</span><ChevronDown size={13} aria-hidden="true" className="shrink-0 text-ink-tertiary" /></>} />
+              renderTrigger={() => <><span className="truncate">{draft.protocol === "anthropic" ? "Anthropic" : draft.protocol === "responses" ? "Responses" : "Chat Completions"}</span><ChevronDown size={13} aria-hidden="true" className="shrink-0 text-ink-tertiary" /></>} />
           </fieldset>
         <label className="flex min-w-0 flex-col gap-1 text-[12px] text-ink-secondary">
           <span className="flex items-center">{t("customModels.address")}<SettingsHelp label={t("customModels.address")}>{t("customModels.addressHelp")}</SettingsHelp></span>
@@ -137,7 +161,9 @@ export function CustomModelCard({ server, onDone }: { server?: InstanceInfo; onD
         <div className="-mx-3.5 mt-1 border-t border-hairline/50 px-3.5 pt-3 max-[480px]:-mx-3 max-[480px]:px-3">
           <div className="mb-2 flex items-center gap-2 text-[12px] text-ink-secondary"><Blocks size={14} aria-hidden="true" /><span>{t("customModels.models")}</span><span className="text-ink-tertiary">{t("customModels.enabled", { count: draft.models.length })}</span></div>
           <CustomModelPicker selected={draft.models} defaultModel={draft.defaultModel} available={available} loading={loading} disabled={saving} problem={fetchProblem}
+            testing={testing} canTest={canSave} onTest={() => void testConnection()}
             autoSave={Boolean(server && !dirty)} canFetch={canFetch} onFetch={() => void fetchModels()} onChange={selectModels} />
+          {testResult && <p role="status" className={cn("mt-1.5 text-[12px] leading-4", testResult.ok ? "text-ink-secondary" : "text-danger")}>{testResult.message}</p>}
         </div>
         {problem && <p role="alert" className="text-[12px] leading-5 text-danger">{problem}</p>}
       </div>
@@ -153,6 +179,7 @@ export function CustomModelSettings() {
   return <SettingsGroup label={t("customModels.title")} actions={<button type="button" className="ui-button" disabled={adding} onClick={() => setAdding(true)}><Plus size={13} aria-hidden="true" />{t("customModels.addConnection")}</button>}>
     {servers.map(server => <CustomModelCard key={server.instanceId} server={server} />)}
     {adding && <CustomModelCard onDone={() => setAdding(false)} />}
-    {!adding && servers.length === 0 && <p className="text-[12px] text-ink-tertiary">{t("customModels.start")}</p>}
+    <SavedClaudeConnections />
+    {!adding && servers.length === 0 && !state.instances.some(instance => instance.claudeEndpoint && !instance.readOnly) && <p className="text-[12px] text-ink-tertiary">{t("customModels.start")}</p>}
   </SettingsGroup>;
 }

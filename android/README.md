@@ -41,6 +41,8 @@ Windows 使用 `gradlew.bat`。调试包使用独立应用 ID `cc.hopesy.rethos.
 
 每次发布同时增加 `app/build.gradle.kts` 的 `versionCode` 和 `versionName`，新增 `docs/releases/android-v<版本>.md`。标签为 `android-v<版本>`，APK 命名为 `Rethos-Android-<版本>.apk`。Android Release 独立于 Windows 的 Latest 更新入口。
 
+网页“获取手机应用”仅提供 Rethos Android，二维码与下载按钮共用 `src/lib/app-links.ts` 中的 `ANDROID_APK_URL`。新版 APK 发布后，将此地址和本文下载链接更新为该版本的实际资源地址，再发布网页更新。
+
 升级时下载新版 APK 并覆盖安装。相同应用 ID、相同签名和递增版本号支持保留应用数据。签名密钥需要长期备份；卸载应用会清除应用内登录状态。
 
 ## 验证

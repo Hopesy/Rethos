@@ -203,7 +203,7 @@ function connectorServiceLabel(slug: string): string {
 
 export function customMcpPrompt(names: string[], off: ReadonlyArray<{ name: string; error: string }> = []): string {
   const list = names.map((name) => `"${name}"`).join(", ");
-  const mounted = names.length === 0 ? "" : ` The user also added ${names.length === 1 ? "an MCP server" : "MCP servers"} for you: ${list}. Use their available tools under the engine's normal approval rules.`;
+  const mounted = names.length === 0 ? "" : ` The user also added ${names.length === 1 ? "an MCP server" : "MCP servers"} for you: ${list}. Use their available tools under the engine's normal approval rules. These connections are independent of Works on and the managed computer/browser selector. When a mounted server provides access to the requested desktop, inspect it through that server's tools, identify the target and verify results there. For current task progress, obtain a fresh observation and distinguish running, awaiting input, finished and unknown using visible evidence. On a tool failure, report the specific connection and error with the next useful step. Prefer available inspection tools before asking the user for a screenshot. Changing Works on or provisioning another desktop is only relevant when the requested task needs that managed surface.`;
   const left = off.map(({ name, error }) => ` The MCP server "${name}" is off for you because it doesn't start for you (${error}); it is tried again on its own.`).join("");
   return mounted + left;
 }

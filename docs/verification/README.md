@@ -160,6 +160,10 @@ renderer components and isolated HTTP routes.
 The [desktop server connection smoke](desktop-server-connection.md) mounts the
 real Settings connection component in disposable Electron windows.
 
+The [Token login and phone sign-in recipe](token-login.md) checks reusable
+access tokens, browser sessions, revocation and single-use phone QR sign-in
+against isolated servers and renderer fixtures.
+
 The [loading screen and tray smoke](startup-tray.md) checks the startup close
 button, hidden handoff, tray restore, and Quit in a disposable Electron profile.
 

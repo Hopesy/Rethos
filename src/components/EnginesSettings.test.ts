@@ -470,7 +470,7 @@ describe("Settings → Engines → custom Claude endpoints", () => {
     expect(renderToStaticMarkup(createElement(EnginesSettings))).not.toContain("data-claude-endpoints");
   });
 
-  it("offers the endpoint section while Claude is not listed on this computer", () => {
+  it("offers one unified custom model entry while Claude is not listed", () => {
     vi.stubGlobal("window", {});
     vi.stubGlobal("navigator", { userAgent: "Linux" });
     fixture.instances = [{
@@ -478,6 +478,9 @@ describe("Settings → Engines → custom Claude endpoints", () => {
       snapshot: { state: "available", authenticated: true }, models: { default: "model", options: [] },
     }];
     fixture.bots = [];
-    expect(renderToStaticMarkup(createElement(EnginesSettings))).toContain("data-claude-endpoints");
+    const html = renderToStaticMarkup(createElement(EnginesSettings));
+    expect(html).not.toContain("data-claude-endpoints");
+    expect(html).toContain("Custom models");
+    expect(html).toContain("Add connection");
   });
 });

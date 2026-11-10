@@ -16,6 +16,7 @@ import {
   withClaudeEndpointInfo,
 } from "../claude-endpoints.ts";
 import { updateClaudeCli } from "../claude-update.ts";
+import { testEndpointConnection, testEndpointSchema } from "../openai-compat-endpoints.ts";
 import { persistableInstanceConfigs, saveConfig, withInstanceCli, type AppConfig } from "../config.ts";
 import { addEndpoint, addEndpointSchema, discoverEndpointModels, discoverEndpointSchema, endpointBaseUrl, endpointDisplayUrl, endpointKey, isAddedEndpoint, updateEndpoint, updateEndpointSchema, withEndpointUrls } from "../openai-compat-endpoints.ts";
 import type { InstanceConfigMap, ModelSelection, ProviderInstance } from "../contracts.ts";
@@ -155,23 +156,34 @@ export function createInstanceRoutes(deps: InstanceRouteDeps): RouteHandler {
       } finally { providerConfigBusy.set(false); }
     }
 
-    if (method === "POST" && path === "/api/instances/openai-compat/models") {
+    if (method === "POST" && ["/api/instances/openai-compat/models", "/api/instances/openai-compat/test"].includes(path)) {
       if (!String(req.headers["content-type"] ?? "").toLowerCase().startsWith("application/json")) return json(res, 415, userError("serverError.endpoint.invalid"));
-      const parsed = discoverEndpointSchema.safeParse(await readBody(req, 8192));
+      const testing = path.endsWith("/test");
+      const parsed = (testing ? testEndpointSchema : discoverEndpointSchema).safeParse(await readBody(req, 8192));
       if (!parsed.success) return json(res, 400, userError("serverError.endpoint.invalid"));
       const body = parsed.data;
       const baseUrl = endpointBaseUrl(body.url);
       if (!baseUrl) return json(res, 400, userError("serverError.endpoint.url"));
       let key = body.key;
+      let protocol = body.protocol ?? "chat";
       if (body.instanceId) {
         const entry = cfg.instances?.[body.instanceId];
         if (!isAddedEndpoint(body.instanceId, entry)) return json(res, 404, userError("serverError.endpoint.unknown"));
         const config = (entry!.config ?? {}) as Record<string, unknown>;
         if (!key && baseUrl === endpointDisplayUrl(config)) key = endpointKey(config);
+        if (!body.protocol && (config.protocol === "anthropic" || config.protocol === "responses")) protocol = config.protocol;
       }
       if (!key || /^https?:\/\//i.test(key)) return json(res, 400, userError("serverError.endpoint.key"));
       res.setHeader("cache-control", "no-store");
-      return json(res, 200, await discoverEndpointModels(baseUrl, key));
+      const controller = new AbortController();
+      const disconnect = () => { if (!res.writableEnded) controller.abort(); };
+      res.on("close", disconnect);
+      const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(testing ? 15000 : 8000)]);
+      try {
+        return json(res, 200, testing
+          ? await testEndpointConnection(baseUrl, key, protocol, testEndpointSchema.parse(body).model, signal)
+          : await discoverEndpointModels(baseUrl, key, protocol, signal));
+      } finally { res.off("close", disconnect); }
     }
 
     const openAiEndpointPatch = /^\/api\/instances\/([\w.-]+)\/openai-endpoint$/.exec(path);

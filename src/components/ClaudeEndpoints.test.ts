@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import * as store from "@/state/store";
-import { ClaudeEndpoints } from "./ClaudeEndpoints";
+import { SavedClaudeConnections } from "./ClaudeEndpoints";
 
 const endpoint = (extra: Record<string, unknown> = {}) => ({
   instanceId: "claude-endpoint-fixture",
@@ -29,23 +29,22 @@ function render(instances: store.InstanceInfo[]) {
     refreshInstances: vi.fn(),
     refreshModels: vi.fn(),
   } as unknown as ReturnType<typeof store.useStore>);
-  return renderToStaticMarkup(createElement(ClaudeEndpoints));
+  return renderToStaticMarkup(createElement(SavedClaudeConnections));
 }
 
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 describe("Claude custom endpoints settings", () => {
-  it("offers the section with nothing configured yet", () => {
+  it("hides the legacy section with nothing configured", () => {
     const html = render([]);
-    expect(html).toContain("Custom endpoint");
-    expect(html).toContain("Run this account&#x27;s bots on DeepSeek, GLM or another host");
-    expect(html).toContain("No custom endpoints yet.");
-    expect(html).toContain("Add endpoint");
+    expect(html).toBe("");
   });
 
   it("lists each endpoint's address and models, and never its token", () => {
     const html = render([endpoint()]);
     expect(html).toContain("DeepSeek");
+    expect(html).toContain("Saved Claude Code connections");
+    expect(html).not.toContain("Add endpoint");
     expect(html).toContain("https://api.deepseek.test/anthropic");
     expect(html).toContain("deepseek-chat");
     expect(html).toContain("deepseek-reasoner");
@@ -63,7 +62,7 @@ describe("Claude custom endpoints settings", () => {
       state: { ...store.initialState, instances: [endpoint()], bots: [bot] },
       dispatch: vi.fn(), flushBotPatches: vi.fn(), refreshInstances: vi.fn(), refreshModels: vi.fn(),
     } as unknown as ReturnType<typeof store.useStore>);
-    const html = renderToStaticMarkup(createElement(ClaudeEndpoints));
+    const html = renderToStaticMarkup(createElement(SavedClaudeConnections));
     expect(html).toContain("1 bot(s) use this account");
   });
 
@@ -75,7 +74,7 @@ describe("Claude custom endpoints settings", () => {
       state: { ...store.initialState, instances: [endpoint()], bots: [bot] },
       dispatch: vi.fn(), flushBotPatches: vi.fn(), refreshInstances: vi.fn(), refreshModels: vi.fn(),
     } as unknown as ReturnType<typeof store.useStore>);
-    const html = renderToStaticMarkup(createElement(ClaudeEndpoints));
+    const html = renderToStaticMarkup(createElement(SavedClaudeConnections));
     expect(html).toContain("1 bot(s) use this account");
   });
 
@@ -86,7 +85,7 @@ describe("Claude custom endpoints settings", () => {
       state: { ...store.initialState, instances: [endpoint()], bots: [bot] },
       dispatch: vi.fn(), flushBotPatches: vi.fn(), refreshInstances: vi.fn(), refreshModels: vi.fn(),
     } as unknown as ReturnType<typeof store.useStore>);
-    const html = renderToStaticMarkup(createElement(ClaudeEndpoints));
+    const html = renderToStaticMarkup(createElement(SavedClaudeConnections));
     expect(html).toContain("1 bot(s) use this account");
     expect(html).toContain("disabled");
   });

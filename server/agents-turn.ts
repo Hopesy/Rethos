@@ -76,7 +76,7 @@ const THIS_TURN: Record<Exclude<TurnKind, "person">, string> = {
   continuation: "This turn continues earlier work",
 };
 
-export const COMPUTER_OFF_REFUSAL = "This bot's Works on setting is Off, so it has no computer to pick. Work without one, or ask the person to choose a place in this bot's settings.";
+export const COMPUTER_OFF_REFUSAL = "This bot's Works on setting is Off, so select_computer has no managed computer to pick. Independently mounted MCP tools keep their own targets and permissions: inspect the requested target with matching tools if available. Ask the person to choose a place in this bot's settings when the task requires a managed computer.";
 
 /** select_computer on a turn that may not pick, `kind` being what started it. */
 export function computerPickRefusal(kind: TurnKind | undefined): string {

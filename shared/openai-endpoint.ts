@@ -2,7 +2,7 @@ export function isCustomOpenAiEndpoint(instanceId: string, driver: string): bool
   return driver === "openai-compat" && !["openaiCompat", "openai", "openrouter"].includes(instanceId) && !instanceId.startsWith("company.");
 }
 
-export type OpenAiProtocol = "chat" | "responses";
+export type OpenAiProtocol = "chat" | "responses" | "anthropic";
 
 export function isModelId(value: unknown): value is string {
   return typeof value === "string" && value.length > 0 && value.length <= 200 && !/\s/u.test(value)

@@ -1,5 +1,7 @@
 import { RuntimeNoticeError, runtimeErrorText } from "./runtime-notice-error.ts";
 import { createHash } from "node:crypto";
+import { modelApiHeaders, modelApiUrl } from "../model-api.ts";
+import { anthropicRequest, readAnthropicMessage, type AnthropicBlock } from "./anthropic-messages.ts";
 import type {
   DriverCreateInput,
   ModelCatalog,
@@ -35,7 +37,7 @@ import { requestTooLargeMessage } from "../../shared/request-too-large.ts";
 import { toolSchemaProfileFor } from "../tool-schema-profile.ts";
 import { classifyContinuable, writeTurnHandoff } from "../turn-continuation.ts";
 import { KEY_REJECTED_REASON, keyRejected, noteKeyAccepted, noteKeyRejected, rejectsKey } from "../key-rejections.ts";
-import { FETCH_LIMIT_MS, fetchPastLimit } from "./openai-chat-fetch.ts";
+import { FETCH_LIMIT_MS, fetchPastLimit, watchModelServer } from "./openai-chat-fetch.ts";
 
 export interface OpenAIChatMessage {
   role: "system" | "user" | "assistant" | "tool";
@@ -62,6 +64,8 @@ export interface Completion {
   protocolReasoningDetails: Record<string, unknown>[];
   /** Every output item of a Responses API reply, encrypted reasoning included, for the next round of this turn only. */
   responseOutput?: ResponseItem[];
+  /** Signed Anthropic content replayed verbatim in this turn's next tool round. */
+  anthropicContent?: AnthropicBlock[];
 }
 
 interface CompletionJson extends ProviderBody {
@@ -83,7 +87,6 @@ interface NativeLog {
   incoming(completion: Completion): unknown;
 }
 
-const LIVENESS_MISSES = 3;
 interface RuntimeOptions<Config> {
   protocol?: import("../../shared/openai-endpoint.ts").OpenAiProtocol;
   input: DriverCreateInput<Config>;
@@ -97,7 +100,7 @@ interface RuntimeOptions<Config> {
   unavailableReason: string;
   timeoutMs: number;
   /** Ask a server on this machine or network for its models this often while a reply is pending, and stop the reply
-   * when it misses LIVENESS_MISSES checks in a row: it crashed, froze or left the network. */
+   * when it misses three checks in a row: it crashed, froze or left the network. */
   livenessEveryMs?: number;
   nativeLog: NativeLog;
   refreshModels?: () => Promise<void>;
@@ -222,12 +225,14 @@ export function createOpenAIChatRuntime<Config>(options: RuntimeOptions<Config>)
   const routes = createModelRoutes(options.apiUrl, options.protocol);
   /** Beside the messages, not on them, so encrypted reasoning never reaches a Chat Completions body, a log or a handoff. */
   const responseOutputs = new WeakMap<OpenAIChatMessage, ResponseItem[]>();
+  const anthropicContents = new WeakMap<OpenAIChatMessage, AnthropicBlock[]>();
   const assistantReply = (model: string, completion: Completion, content: string | null, toolCalls?: ChatToolCall[]): OpenAIChatMessage => {
     const reply: OpenAIChatMessage = { role: "assistant", content,
       ...(completion.protocolReasoning && !reasoningReplayRejected.has(model) ? { [options.reasoningReplayField ?? "reasoning_content"]: completion.protocolReasoning } : {}),
       ...(completion.protocolReasoningDetails.length ? { reasoning_details: completion.protocolReasoningDetails } : {}),
       ...(toolCalls ? { tool_calls: toolCalls } : {}) };
     if (completion.responseOutput) responseOutputs.set(reply, completion.responseOutput);
+    if (completion.anthropicContent) anthropicContents.set(reply, completion.anthropicContent);
     return reply;
   };
   const delivered = new Map<string, DeliveredUserMessage[]>();
@@ -244,19 +249,6 @@ export function createOpenAIChatRuntime<Config>(options: RuntimeOptions<Config>)
     turnId,
     createdAt: new Date().toISOString(),
   });
-
-  const watchServer = (everyMs: number, stop: (reason: Error) => void) => {
-    let misses = 0;
-    const timer = setInterval(() => {
-      fetch(`${options.apiUrl}/models`, { headers: { authorization: `Bearer ${options.apiKey}` }, signal: AbortSignal.timeout(everyMs) })
-        .then((response) => { misses = 0; void response.body?.cancel(); })
-        .catch(() => {
-          if (++misses === LIVENESS_MISSES) stop(new RuntimeNoticeError(`The model server at ${new URL(options.apiUrl).host} stopped answering, so the reply was stopped.`, "chat.notice.modelServerStoppedAnswering", { host: new URL(options.apiUrl).host }));
-        });
-    }, everyMs);
-    timer.unref();
-    return timer;
-  };
 
   const completeOn = async (
     route: ModelRoute,
@@ -278,7 +270,7 @@ export function createOpenAIChatRuntime<Config>(options: RuntimeOptions<Config>)
     };
 
     resetIdleTimer();
-    const liveness = options.livenessEveryMs ? watchServer(options.livenessEveryMs, (reason) => timeoutController.abort(reason)) : null;
+    const liveness = options.livenessEveryMs ? watchModelServer(options, options.livenessEveryMs, (reason) => timeoutController.abort(reason)) : null;
 
     try {
       const activeSignal = signal
@@ -286,7 +278,9 @@ export function createOpenAIChatRuntime<Config>(options: RuntimeOptions<Config>)
         : timeoutController.signal;
 
       const served = options.servedModel ? await options.servedModel(model) : model;
-      const payload = JSON.stringify(route === "responses"
+      const payload = JSON.stringify(route === "anthropic"
+        ? anthropicRequest({ model: served, messages, tools, stream, replay: message => anthropicContents.get(message) })
+        : route === "responses"
         ? responsesRequest({ model: served, messages, tools, replay: (message) => responseOutputs.get(message), summaries: routes.summaries(model) })
         : {
           ...options.requestBody(served, messages, stream),
@@ -294,10 +288,10 @@ export function createOpenAIChatRuntime<Config>(options: RuntimeOptions<Config>)
           ...(tools.length ? { tools } : {}),
         });
       const send = options.timeoutMs > FETCH_LIMIT_MS ? fetchPastLimit : fetch;
-      const response = await send(`${options.apiUrl}/${route === "responses" ? "responses" : "chat/completions"}`, {
+      const response = await send(modelApiUrl(options.apiUrl, route === "chat-reasoning-off" ? "chat" : route, "completion"), {
         method: "POST",
-        ...(messages.some(message => Array.isArray(message.content) && message.content.some(part => part.type === "image_url")) ? { redirect: "error" as const } : {}),
-        headers: { authorization: `Bearer ${options.apiKey}`, "content-type": "application/json" },
+        redirect: "error",
+        headers: modelApiHeaders(options.apiKey, route === "anthropic" ? "anthropic" : "chat"),
         body: payload,
         signal: activeSignal,
       });
@@ -317,6 +311,12 @@ export function createOpenAIChatRuntime<Config>(options: RuntimeOptions<Config>)
       };
       if (!response.ok) throw failure(response.status, await response.text().catch(() => ""));
       noteKeyAccepted(options.apiUrl, options.apiKey);
+      if (route === "anthropic") {
+        const reply = await readAnthropicMessage(response, { onBytes: resetIdleTimer, onDelta });
+        activeSignal.throwIfAborted();
+        if (reply.usage) onUsage?.({ model, input: reply.usage.input, output: reply.usage.output });
+        return reply;
+      }
       if (route === "responses") {
         const reply = await readResponsesStream(response.body, { reasoning: Boolean(options.reasoning), onBytes: resetIdleTimer, onDelta: (text, kind) => onDelta?.(text, kind), fail: failure });
         activeSignal.throwIfAborted();

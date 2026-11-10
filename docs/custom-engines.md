@@ -139,6 +139,26 @@ token.`
 
 ## Any OpenAI-compatible endpoint (no process at all)
 
+### 设置中的自定义模型
+
+在 **设置 → AI → 自定义模型** 添加连接，选择协议并填写 API 地址与密钥：
+
+| 协议 | 请求接口 | 地址示例 |
+| --- | --- | --- |
+| Chat Completions | `/chat/completions` | `https://api.example.com/v1` |
+| Responses | `/responses` | `https://api.example.com/v1` |
+| Anthropic | `/v1/messages` | `https://api.anthropic.com` 或 `https://api.anthropic.com/v1` |
+
+Anthropic 会在基础地址末尾补齐 `/v1`，使用 `x-api-key` 和 Anthropic 版本头。
+模型栏右侧的下载图标拉取 `/models`，路径不存在时尝试 `/model`；支持在搜索框中手动添加模型 ID。
+闪电图标位于下载图标左侧，使用当前表单的协议、地址、密钥和默认模型发送一次短测试请求，显示成功耗时或中文错误。
+测试可以在保存前执行，并会产生少量 API 用量。修改地址后需要重新填写密钥。
+
+新增连接统一使用此入口。已有 Claude Code 端点显示在同一区域的“已保存的 Claude Code 连接”，保留编辑功能和原有运行方式。
+直接使用 Anthropic 协议的连接复用 Rethos 的工具审批与多轮执行流程，支持文本、截图及工具结果回传。
+
+### 配置文件
+
 The built-in `openai-compat` driver supports multiple instances, so a local
 vLLM/LM Studio/Ollama-openai endpoint or any hosted compatible API is one
 entry:

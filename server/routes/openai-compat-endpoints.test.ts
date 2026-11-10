@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { AppConfig } from "../config.ts";
 import type { InstanceConfigMap } from "../contracts.ts";
 import { json, readBody } from "../harness/http.ts";
-import { endpointBaseUrl, endpointDisplayUrl } from "../openai-compat-endpoints.ts";
+import { endpointBaseUrl, endpointDisplayUrl, testEndpointConnection } from "../openai-compat-endpoints.ts";
 import { requiredScope } from "../request-auth.ts";
 import { createInstanceRoutes, type InstanceRouteDeps } from "./instances.ts";
 import { dispatchRoutes } from "./table.ts";
@@ -16,6 +16,65 @@ afterEach(async () => {
 });
 
 const SECRET = "sk-test-0123456789";
+
+async function providerFixture() {
+  let mode = "success";
+  const requests: Array<{ url: string; key: string | undefined; bearer: string | undefined; version: string | undefined; body: any }> = [];
+  const server = createServer(async (req, res) => {
+    let raw = ""; for await (const chunk of req) raw += chunk;
+    requests.push({ url: req.url!, key: req.headers["x-api-key"] as string, bearer: req.headers.authorization, version: req.headers["anthropic-version"] as string, body: raw ? JSON.parse(raw) : null });
+    res.setHeader("content-type", "application/json");
+    if (mode === "unauthorized") { res.writeHead(401); res.end(JSON.stringify({ error: SECRET })); return; }
+    if (mode === "redirect") { res.writeHead(307, { location: "/leaked" }); res.end(); return; }
+    if (mode === "oversize") { res.end('"' + 'x'.repeat(2 * 1024 * 1024) + '"'); return; }
+    if (mode === "invalid") { res.end('{}'); return; }
+    if (req.url?.endsWith("/models")) { res.end('{"data":[{"id":"fixture-model"}]}'); return; }
+    res.end(JSON.stringify(req.url?.endsWith("/messages") ? { type: "message", content: [{ type: "text", text: "OK" }], stop_reason: "end_turn" }
+      : req.url?.endsWith("/responses") ? { object: "response", status: "completed", output: [] } : { choices: [{ message: { content: "OK", role: "assistant" } }] }));
+  });
+  servers.push(server);
+  await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
+  return { url: `http://127.0.0.1:${(server.address() as AddressInfo).port}`, requests, mode(value: string) { mode = value; } };
+}
+
+describe("custom model connection tests", () => {
+  it.each(["chat", "responses", "anthropic"] as const)("probes %s using draft settings without persistence", async protocol => {
+    const provider = await providerFixture();
+    const { call, persisted } = await serve();
+    const result = await call("POST", "/api/instances/openai-compat/test", { url: provider.url, key: SECRET, protocol, model: "fixture-model" });
+    expect(result.body).toMatchObject({ ok: true, latencyMs: expect.any(Number) });
+    expect(persisted).toEqual([]);
+    expect(result.text).not.toContain(SECRET);
+    expect(provider.requests[0]).toMatchObject({ url: protocol === "anthropic" ? "/v1/messages" : protocol === "responses" ? "/responses" : "/chat/completions", body: { model: "fixture-model", stream: false } });
+    expect(provider.requests[0]).toMatchObject(protocol === "anthropic" ? { key: SECRET, version: "2023-06-01", bearer: undefined } : { bearer: `Bearer ${SECRET}`, key: undefined });
+  });
+
+  it("saves Anthropic, discovers its catalog and reuses a key only at the saved address", async () => {
+    const provider = await providerFixture();
+    const { call, persisted } = await serve();
+    const created = await call("POST", "/api/instances/openai-compat", { displayName: "Anthropic fixture", url: provider.url, key: SECRET, protocol: "anthropic", models: ["fixture-model"], defaultModel: "fixture-model" });
+    expect(created.body.instances.find((entry: any) => entry.instanceId === created.body.instanceId).openaiEndpoint.protocol).toBe("anthropic");
+    const body = { instanceId: created.body.instanceId, url: provider.url, protocol: "anthropic", model: "fixture-model" };
+    expect((await call("POST", "/api/instances/openai-compat/test", body)).body.ok).toBe(true);
+    expect((await call("POST", "/api/instances/openai-compat/models", { instanceId: body.instanceId, url: body.url, protocol: "anthropic" })).body.models).toEqual(["fixture-model"]);
+    expect(provider.requests.at(-1)).toMatchObject({ url: "/v1/models", key: SECRET, bearer: undefined });
+    expect((await call("POST", "/api/instances/openai-compat/test", { ...body, url: provider.url + "/other" })).status).toBe(400);
+    expect(provider.requests).toHaveLength(2);
+    expect(persisted).toHaveLength(1);
+  });
+
+  it("bounds failures, rejects redirects and omits private upstream details", async () => {
+    const provider = await providerFixture();
+    for (const [mode, error] of [["unauthorized", "unauthorized"], ["redirect", "unavailable"], ["oversize", "unavailable"], ["invalid", "invalid"]]) {
+      provider.mode(mode);
+      const result = await testEndpointConnection(provider.url, SECRET, "anthropic", "fixture-model");
+      expect(result).toMatchObject({ ok: false, error });
+      expect(JSON.stringify(result)).not.toContain(SECRET);
+    }
+    expect(provider.requests.some(request => request.url === "/leaked")).toBe(false);
+    expect(await testEndpointConnection(provider.url, SECRET, "chat", "fixture-model", AbortSignal.abort())).toMatchObject({ ok: false, error: "timeout" });
+  });
+});
 
 async function serve(options: { hosted?: boolean; botInstance?: string; taskBusy?: boolean } = {}) {
   const cfg = { instances: { openaiCompat: { driver: "openai-compat" }, claude: { driver: "claudeAgent" } } } as unknown as AppConfig;
@@ -70,6 +129,7 @@ describe("added OpenAI-compatible servers", () => {
     expect(requiredScope("POST", "/api/instances/openai-compat")).toBe("admin");
     expect(requiredScope("DELETE", "/api/instances/openai-compat-1")).toBe("admin");
     expect(requiredScope("POST", "/api/instances/openai-compat/models")).toBe("admin");
+    expect(requiredScope("POST", "/api/instances/openai-compat/test")).toBe("admin");
     expect(requiredScope("PATCH", "/api/instances/wb/openai-endpoint")).toBe("admin");
   });
 

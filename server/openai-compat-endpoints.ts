@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { InstanceConfig, InstanceConfigMap } from "./contracts.ts";
-import { isCustomOpenAiEndpoint, isModelId, type OpenAiEndpointInfo } from "../shared/openai-endpoint.ts";
+import { isCustomOpenAiEndpoint, isModelId, type OpenAiEndpointInfo, type OpenAiProtocol } from "../shared/openai-endpoint.ts";
+import { boundedJson, modelApiHeaders, modelApiUrl } from "./model-api.ts";
+import { object } from "./drivers/openai-chat-protocol.ts";
 
 export const ADDED_ENDPOINT_PREFIX = "openai-compat-";
 
@@ -34,7 +36,7 @@ export const addEndpointSchema = z.object({
   key: z.string().trim().min(1).max(4096),
   models: z.array(modelIdSchema).max(64).optional(),
   catalog: z.literal("lmstudio").optional(),
-  protocol: z.enum(["chat", "responses"]).optional(),
+  protocol: z.enum(["chat", "responses", "anthropic"]).optional(),
   defaultModel: modelIdSchema.optional(),
 }).strict();
 
@@ -43,7 +45,10 @@ export const discoverEndpointSchema = z.object({
   instanceId: z.string().regex(/^[\w.-]+$/).optional(),
   url: z.string().max(512),
   key: z.string().trim().max(4096).optional(),
+  protocol: z.enum(["chat", "responses", "anthropic"]).optional(),
 }).strict();
+
+export const testEndpointSchema = discoverEndpointSchema.extend({ model: modelIdSchema, protocol: z.enum(["chat", "responses", "anthropic"]) }).strict();
 
 export function endpointKey(config: Record<string, unknown>): string {
   return typeof config.key === "string" && config.key ? config.key
@@ -108,7 +113,7 @@ export function withEndpointUrls(described: unknown, configs: InstanceConfigMap)
       : typeof config.model === "string" ? [config.model] : instance.modelsUnconfirmed ? [] : instance.models?.options.map(({ id }) => id) ?? [];
     const configuredDefault = typeof config.model === "string" ? config.model : instance.models?.default;
     const openaiEndpoint: OpenAiEndpointInfo = {
-      protocol: config.protocol === "responses" ? "responses" : "chat", models,
+      protocol: config.protocol === "anthropic" ? "anthropic" : config.protocol === "responses" ? "responses" : "chat", models,
       defaultModel: configuredDefault && models.includes(configuredDefault) ? configuredDefault : models[0] ?? "",
       keySaved: Boolean(endpointKey(config)),
     };
@@ -116,31 +121,42 @@ export function withEndpointUrls(described: unknown, configs: InstanceConfigMap)
   });
 }
 
-export async function discoverEndpointModels(url: string, key: string): Promise<{ models: string[]; error?: "unavailable" | "unauthorized" | "empty" }> {
+export async function discoverEndpointModels(url: string, key: string, protocol: OpenAiProtocol = "chat", signal = AbortSignal.timeout(8000)): Promise<{ models: string[]; error?: "unavailable" | "unauthorized" | "empty" }> {
   try {
-    let response = await fetch(`${url}/models`, { headers: { authorization: `Bearer ${key}` }, redirect: "error", signal: AbortSignal.timeout(8000) });
+    const init = { headers: modelApiHeaders(key, protocol), redirect: "error" as const, signal };
+    let response = await fetch(modelApiUrl(url, protocol, "models"), init);
     if (response.status === 404 || response.status === 405) {
       await response.body?.cancel();
-      response = await fetch(`${url}/model`, { headers: { authorization: `Bearer ${key}` }, redirect: "error", signal: AbortSignal.timeout(8000) });
+      response = await fetch(modelApiUrl(url, protocol, "model"), init);
     }
     if (!response.ok) { await response.body?.cancel(); return { models: [], error: [401, 403].includes(response.status) ? "unauthorized" : "unavailable" }; }
-    const reader = response.body?.getReader();
-    if (!reader) return { models: [], error: "empty" };
-    const chunks: Uint8Array[] = [];
-    let length = 0;
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        length += value.length;
-        if (length > 2 * 1024 * 1024) { await reader.cancel(); return { models: [], error: "unavailable" }; }
-        chunks.push(value);
-      }
-    } finally { reader.releaseLock(); }
-    const data = JSON.parse(Buffer.concat(chunks).toString("utf8"));
-    const rows = Array.isArray(data) ? data : data?.data ?? data?.models;
+    const data = await boundedJson(response);
+    const rows = Array.isArray(data) ? data : object(data)?.data ?? object(data)?.models;
     const models = Array.isArray(rows) ? [...new Set(rows.map((row: unknown) => typeof row === "string" ? row : (row as { id?: unknown } | null)?.id)
       .filter(isModelId))].slice(0, 1000) : [];
     return models.length ? { models } : { models, error: "empty" };
   } catch { return { models: [], error: "unavailable" }; }
+}
+
+export async function testEndpointConnection(url: string, key: string, protocol: OpenAiProtocol, model: string, signal = AbortSignal.timeout(15000)) {
+  const start = performance.now();
+  const result = (error?: "unauthorized" | "unavailable" | "model" | "invalid" | "timeout") => ({ ok: !error, latencyMs: Math.round(performance.now() - start), ...(error ? { error } : {}) });
+  const messages = [{ role: "user", content: "Reply with OK." }];
+  const body = protocol === "anthropic" ? { model, max_tokens: 16, messages, stream: false }
+    : protocol === "responses" ? { model, input: "Reply with OK.", max_output_tokens: 64, store: false, stream: false }
+    : { model, messages, max_completion_tokens: 64, stream: false };
+  try {
+    const response = await fetch(modelApiUrl(url, protocol, "completion"), {
+      method: "POST", headers: modelApiHeaders(key, protocol), body: JSON.stringify(body), redirect: "error", signal,
+    });
+    if (!response.ok) {
+      await response.body?.cancel();
+      return result([401, 403].includes(response.status) ? "unauthorized" : response.status === 404 ? "model" : "unavailable");
+    }
+    const data = object(await boundedJson(response));
+    const valid = data && !data.error && (protocol === "anthropic" ? data.type === "message" && Array.isArray(data.content) && typeof data.stop_reason === "string"
+      : protocol === "responses" ? data.object === "response" && ["completed", "incomplete"].includes(String(data.status)) && Array.isArray(data.output)
+      : Array.isArray(data.choices) && Boolean(object(data.choices[0])?.message));
+    return result(valid ? undefined : "invalid");
+  } catch { return result(signal.aborted ? "timeout" : "unavailable"); }
 }

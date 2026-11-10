@@ -9311,6 +9311,9 @@ describe("harness HTTP API", () => {
   it("Works on: Off withholds the browser and tells the model why", async () => {
     const bot = (await api("POST", "/api/bots", { name: "Orbit" })).body.bot;
     try {
+      expect((await api("POST", "/api/mcp/servers", { name: "desktop-fixture", command: process.execPath,
+        args: ["--experimental-strip-types", FAKE_MCP_SERVER] })).status).toBe(201);
+      expect((await api("PATCH", "/api/mcp/servers/desktop-fixture", { enabled: true })).status).toBe(200);
       expect((await api("PATCH", "/api/config", { features: { browser: true } })).status).toBe(200);
       expect((await api("PATCH", `/api/bots/${bot.id}`, {
         modelSelection: { instanceId: "claude", model: "claude-sonnet-5" },
@@ -9332,16 +9335,24 @@ describe("harness HTTP API", () => {
       const text = await previewText();
       expect(text).toContain("\"Works on\" setting is Off");
       expect(text).toContain("no computer and no built-in browser");
+      expect(text).toContain('"desktop-fixture"');
+      expect(text).toContain("These connections are independent of Works on");
+      expect(text).not.toContain("you cannot open a page, click, or type on any screen");
 
       rmSync(fakeClaudeDump, { force: true });
       expect((await api("POST", `/api/bots/${bot.id}/messages`, { text: "open a browser and check my calendar" })).status).toBe(202);
-      const dispatched = (await readJsonFileWhenReady<{ systemPrompt: string }>(fakeClaudeDump, 15_000)).systemPrompt;
+      const dump = await readJsonFileWhenReady<{ systemPrompt: string; mcpConfig: { mcpServers: Record<string, unknown> } }>(fakeClaudeDump, 15_000);
+      const dispatched = dump.systemPrompt;
       expect(dispatched).toContain("\"Works on\" setting is Off");
       expect(dispatched).not.toContain("browser_navigate");
+      expect(dispatched).toContain("These connections are independent of Works on");
+      expect(dump.mcpConfig.mcpServers).toHaveProperty("desktop-fixture");
+      expect(dump.mcpConfig.mcpServers).not.toHaveProperty("browser");
     } finally {
       await api("POST", `/api/bots/${bot.id}/interrupt`);
       await api("DELETE", `/api/bots/${bot.id}`);
       await api("PATCH", "/api/config", { features: { browser: false } });
+      await api("DELETE", "/api/mcp/servers/desktop-fixture");
     }
   });
 
