@@ -4,7 +4,9 @@ Kotlin + 系统 WebView 客户端，默认访问 `https://rethos.hopesy.cc`。�
 
 ## 使用
 
-[下载签名 APK](https://github.com/Hopesy/Rethos/releases/download/android-v0.1.1/Rethos-Android-0.1.1.apk) · [发布页与校验文件](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.1)
+[下载签名 APK](https://github.com/Hopesy/Rethos/releases/download/android-v0.1.2/Rethos-Android-0.1.2.apk) · [发布页与校验文件](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.2)
+
+当前版本 0.1.2，versionCode 3，沿用原签名与应用 ID，可直接覆盖安装 0.1.1。
 
 安装签名 APK，打开 Rethos，输入已有访问 Token 登录。0.1.1 增加应用内扫码：点击登录页“扫码登录”，或顶部菜单“扫码登录”，允许相机权限后扫描电脑端设置中生成的登录二维码，返回应用确认登录。登录 Cookie 保存在应用内；关掉应用再打开会恢复会话。顶部菜单还提供刷新、服务器地址和在浏览器中打开。更换服务器时清除旧站点 Cookie 与网页存储，随后在新地址登录。
 

@@ -52,7 +52,7 @@ Android 使用 Kotlin + WebView，默认连接 `https://rethos.hopesy.cc`。安�
 ## 用户下载与安装
 
 - [Windows 安装程序（固定下载地址）](https://github.com/Hopesy/Rethos/releases/latest/download/Rethos-setup.exe)
-- [Android 0.1.1 APK](https://github.com/Hopesy/Rethos/releases/download/android-v0.1.1/Rethos-Android-0.1.1.apk)
+- [Android 0.1.2 APK](https://github.com/Hopesy/Rethos/releases/download/android-v0.1.2/Rethos-Android-0.1.2.apk)
 - [全部版本与便携 ZIP](https://github.com/Hopesy/Rethos/releases)
 
 运行 `Rethos-<版本>-setup.exe` 后，从开始菜单打开 Rethos。也可解压 `Rethos-<版本>-x64.zip`，运行其中的 `Rethos.exe`。当前 Windows 版本未配置代码签名，Windows SmartScreen 可能显示未知发布者提示；下载来源和校验值均在 Release 页面公开。
