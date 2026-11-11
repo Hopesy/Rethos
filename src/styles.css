@@ -1511,6 +1511,9 @@ body {
     width: 20px;
     height: 20px;
   }
+  [data-voice-hidden] [data-call-button="composer"] {
+    display: none;
+  }
 }
 /* Cards and rails sitting on the glass: a second, thinner pane. */
 .glass-card {

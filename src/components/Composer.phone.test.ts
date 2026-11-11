@@ -94,7 +94,8 @@ describe("the phone composer", () => {
   it("replaces the call action with Send while a phone draft has content", () => {
     restoreComposerDraft(`bot:${bot.id}:${bot.threadId}`, { text: "准备发送", attachments: [] });
     render({ bot });
-    expect(fixture.call).toBeNull();
+    expect(fixture.call).toMatchObject({ placement: "composer", inverse: true });
+    expect(container.querySelector('[data-composer-actions]')?.hasAttribute('data-voice-hidden')).toBe(true);
     expect(container.querySelector('[data-composer-send]')).not.toBeNull();
   });
 
