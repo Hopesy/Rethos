@@ -8,7 +8,7 @@ import { Agent, backoffMs, connectUrl, savedConfig, transferAuthorization, type 
 import type { AuditEvent } from "../src/audit.ts";
 import { adminOrigin, enroll } from "../src/enroll.ts";
 import { serveRequest } from "../src/home-requests.ts";
-import { CLOSE_KEY_COPIED, CLOSE_UNAUTHORIZED, type ConfigPayload, type HostFacts, type Job, type JobReply } from "../src/protocol.ts";
+import { CLOSE_KEY_COPIED, CLOSE_UNAUTHORIZED, HANDSHAKE_MS, type ConfigPayload, type HostFacts, type Job, type JobReply } from "../src/protocol.ts";
 import { generateKeyPair, unseal } from "../src/signed.ts";
 import type { AgentRecord, ConfigRecord, StatusRecord } from "../src/state.ts";
 import { FakeAdmin } from "./fake-admin.ts";
@@ -75,10 +75,9 @@ function makeConnector(record: AgentRecord, options: {
     }),
     refused: (refusal) => fixture.refusals.push(refusal),
     status: (patch) => fixture.statuses.push(patch),
-    // Every wait of a second or more (a retry, the handshake deadline, a ping) passes in 30 ms; each is recorded.
     setTimer: (callback, ms) => {
       fixture.retries.push(ms);
-      return setTimeout(callback, ms >= 1000 ? 30 : ms);
+      return setTimeout(callback, ms >= 1000 && ms !== HANDSHAKE_MS ? 30 : ms);
     },
     ...(options.deadMs ? { deadMs: options.deadMs } : {}),
     ...(options.pingMs ? { pingMs: options.pingMs } : {}),
