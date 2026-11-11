@@ -10,7 +10,7 @@
 
 Windows 运行 `Rethos-setup.exe`，从开始菜单打开 Rethos。Android 下载 `Rethos-Android.apk` 覆盖安装，沿用原签名和应用 ID，保留登录数据。Windows 当前为未签名构建，SmartScreen 可能显示未知发布者提示。
 
-公开页面保留 5 个资产：两个安装包、`Rethos-setup.exe.blockmap`、`latest.yml` 和 `SHA256SUMS.txt`。后两个更新文件由 Windows 自动更新使用；详细构建信息、Android 签名报告与 Windows 便携 ZIP 保留在该次 Actions artifact。
+公开上传 5 个发布文件：两个安装包、`Rethos-setup.exe.blockmap`、`latest.yml` 和 `SHA256SUMS.txt`。GitHub 另提供两个源码归档。`.blockmap` 和 `latest.yml` 由 Windows 自动更新使用；详细构建信息、Android 签名报告与 Windows 便携 ZIP 保留在该次 Actions artifact。
 
 ```powershell
 Get-FileHash .\Rethos-setup.exe -Algorithm SHA256

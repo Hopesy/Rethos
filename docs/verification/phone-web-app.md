@@ -77,6 +77,17 @@ Browser screenshots, exported Markdown and the viewport matrix are in
 `.Rethos-temp/mobile-responsive/`. The shortened viewport models keyboard space;
 physical keyboard and Android document-picker checks use their own device lane.
 
+The 0.1.156 follow-up (`3568771184cb7bee88b748747c7d6770ec6da534`) repeated
+all six sizes in both simple and advanced modes. At 390px, the agent reply and
+its table use 342.4px of the available row, compared with the original 268.4px
+reply. Phone Send is 44 × 44px; typing hides the adjacent call trigger while
+keeping its component mounted for the Add menu's call events. Desktop control
+sizes remain 28px in simple mode and 32px in advanced mode. A real fixture send,
+touch message actions, retained draft and zero page overflow passed. Evidence
+is in `.Rethos-temp/release-0.1.156/browser-matrix-final.json` and the
+`verified-simple-390.png` / `verified-advanced-390.png` captures. The call-start
+event regression tests cover the mounted menu handler.
+
 ## Safe-area layout evidence
 
 These production-renderer captures use a 390px Chrome viewport with synthetic

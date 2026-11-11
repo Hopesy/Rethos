@@ -1,5 +1,16 @@
 # 客户端发布记录
 
+### Windows 与 Android 0.1.156
+
+2026-11-11 已发布 [Rethos 0.1.156](https://github.com/Hopesy/Rethos/releases/tag/v0.1.156)，两端来源提交均为 `3568771184cb7bee88b748747c7d6770ec6da534`。版本由 `package.json` 统一提供；联合发布等待两端验收完成，再将同一 Release 设置为 Latest。
+
+- [联合构建与发布](https://github.com/Hopesy/Rethos/actions/runs/42999700293)通过，包含 Windows 实际安装与启动、Android 模拟器和签名验证；[最终源码 CI](https://github.com/Hopesy/Rethos/actions/runs/42999698536) 的 29 项检查通过。公开文件精简为两个安装包、Windows 更新索引和差分文件、合并校验表；GitHub 页面已实际核对两个安装入口。
+- 五个公开文件已完整下载并逐项核对 GitHub 摘要和校验表。Windows PE 产品和文件版本均为 `0.1.156`；APK manifest 为 `0.1.156` / `1156`，应用 ID `cc.hopesy.rethos`，原签名证书验证通过。两端固定 Latest 下载入口均指向本版本。
+- APK 为 2,006,675 字节，SHA256 `7644eca3f9eeb52f30af9a158ed71b2a35195c89febc0c1f45086e5069ce71d4`；Windows 安装程序为 267,664,502 字节，SHA256 `d379ea46e3ee2cd15cc7491176d8a44087862137592de7991eafd6d2bf13e72c`。
+- Ego Lite 隔离实例覆盖简洁与完整界面的 12 组尺寸，390px 手机正文与表格宽度由原正文 268.4px 扩展到 342.4px；手机发送按钮为 44px，输入时隐藏通话触发按钮，添加菜单仍保留通话事件处理。实际发送、触摸消息菜单、草稿保留和页面溢出检查通过。
+- [双架构镜像构建与验收](https://github.com/Hopesy/Rethos/actions/runs/42999698426)通过，VPS 已部署镜像摘要 `sha256:9182647b16646ecb508f8e2f6ad510540124986229fb78600d060c58be43c9c4`。公网版本及新版静态资源核对通过，原 Token、模型选择、模型列表和桌面 MCP 配置保留。
+- 证据位于 `.Rethos-temp/release-0.1.156/`，关键文件为 `browser-matrix-final.json`、`browser-release.json`、`public-download-verification.json`、`public-android-verification.json`、`web-production.json` 和 `deployment.log`；[完成计划](../exec-plans/completed/unified-client-release.md)记录实现决定。
+
 ### Android 0.1.3 与手机响应式网页
 
 2026-11-11 已发布 [Android 0.1.3](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.3)，来源提交 `b2b9eea5a0563be2842aa9cc7b3d2df08dd4eecd`。[Android 验证、签名与发布](https://github.com/Hopesy/Rethos/actions/runs/42985650191)和[双架构镜像验收](https://github.com/Hopesy/Rethos/actions/runs/42985614500)全部通过，Android 15 模拟器的 7 项测试通过。
@@ -30,13 +41,13 @@
 
 ### Android 0.1.0
 
-2026-11-10 已发布 [Rethos Android 0.1.0](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.0)，源码提交为 `cae09ac35f00c281ef11f4eb31c59b47ef657ac7`。[构建与发布](https://github.com/Hopesy/Rethos/actions/runs/42752753773) 的验证、签名与发布任务全部通过，APK 大小约 1.61 MiB，详见 [验证记录](releases/android-v0.1.0-verification.md)。
+2026-11-10 已发布 [Rethos Android 0.1.0](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.0)，源码提交为 `cae09ac35f00c281ef11f4eb31c59b47ef657ac7`。[构建与发布](https://github.com/Hopesy/Rethos/actions/runs/42752753773) 的验证、签名与发布任务全部通过，APK 大小约 1.61 MiB，详见 [验证记录](../releases/android-v0.1.0-verification.md)。
 
-Android 使用 Kotlin + WebView，默认连接 `https://rethos.hopesy.cc`。安装后输入现有 Token 登录。后续使用相同签名和递增版本号覆盖安装。运行 `package-android.yml` 并勾选 `publish` 可自动发布；签名配置、版本号修改与使用步骤见 [Android 文档](../android/README.md)。Android 标签独立使用 `android-v<版本>`，发布时保留 Windows 的 Latest 入口。
+Android 使用 Kotlin + WebView，默认连接 `https://rethos.hopesy.cc`。安装后输入现有 Token 登录。后续使用相同签名和递增版本号覆盖安装。运行 `package-android.yml` 并勾选 `publish` 可自动发布；签名配置、版本号修改与使用步骤见 [Android 文档](../../android/README.md)。Android 标签独立使用 `android-v<版本>`，发布时保留 Windows 的 Latest 入口。
 
 ### 0.1.151
 
-2026-11-10 北京时间 00:55 已发布 [Rethos 0.1.151](https://github.com/Hopesy/Rethos/releases/tag/v0.1.151)，源码提交为 `f959859ccdde1062de99bd316f59c4fa5a125892`。本次统一 Token 登录，简化登录页并增加手机扫码登录与访问 Token 管理，详见[版本说明](releases/v0.1.151.md)。
+2026-11-10 北京时间 00:55 已发布 [Rethos 0.1.151](https://github.com/Hopesy/Rethos/releases/tag/v0.1.151)，源码提交为 `f959859ccdde1062de99bd316f59c4fa5a125892`。本次统一 Token 登录，简化登录页并增加手机扫码登录与访问 Token 管理，详见[版本说明](../releases/v0.1.151.md)。
 
 - [Windows 构建与发布](https://github.com/Hopesy/Rethos/actions/runs/42657353977)通过：登录回归、NSIS 安装、安装后桌面启动、内置浏览器、服务端与更新元数据均完成验证。
 - Release 的 7 个文件已公开，构建信息中的 SHA256 与 GitHub 上传摘要逐项一致；安装程序为 267,651,004 字节，便携 ZIP 为 371,533,907 字节。当前签名状态为未签名。
@@ -46,7 +57,7 @@ Android 使用 Kotlin + WebView，默认连接 `https://rethos.hopesy.cc`。安�
 
 ### 0.1.150
 
-2026-11-09 已发布 [Rethos 0.1.150](https://github.com/Hopesy/Rethos/releases/tag/v0.1.150)，源码提交为 `593fcab46b444c0d35ac262165b0dfc033194c9e`。本次包含新图标、简化配对、自定义模型设置、中文与设置页优化，以及官方云和组织空间入口清理，详见[版本说明](releases/v0.1.150.md)。
+2026-11-09 已发布 [Rethos 0.1.150](https://github.com/Hopesy/Rethos/releases/tag/v0.1.150)，源码提交为 `593fcab46b444c0d35ac262165b0dfc033194c9e`。本次包含新图标、简化配对、自定义模型设置、中文与设置页优化，以及官方云和组织空间入口清理，详见[版本说明](../releases/v0.1.150.md)。
 
 - [Windows 构建与发布](https://github.com/Hopesy/Rethos/actions/runs/42611670157)通过：NSIS 安装、安装后桌面启动、preload、鉴权、内置浏览器和更新元数据均完成验证。
 - Release 的 7 个文件已上传；构建信息中的 SHA256 与 GitHub 上传摘要一致。安装程序为 267,642,695 字节，便携 ZIP 为 371,523,136 字节；沿用当前未签名状态。
