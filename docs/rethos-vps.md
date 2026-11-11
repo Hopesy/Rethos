@@ -154,13 +154,13 @@ Rethos 用 MCP 读取桌面当前可见界面。发送前确认聊天、输入�
 
 手机通过同一 HTTPS 地址使用网页，可将站点添加到主屏幕。网页内消息、收件箱和定时报告沿用 Rethos 自带机制。
 
-Android 8.0+ 可安装 [Rethos Android 0.1.1](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.1)，默认访问当前 VPS，使用现有 Token 或应用内扫码登录。客户端复用网页、保存登录状态并支持系统文件选择；点击登录页或顶部菜单的“扫码登录”打开相机。原生后台推送列为后续能力。[Android 使用与更新](../android/README.md) 说明了 APK 安装、服务器切换和覆盖升级。
+Android 8.0+ 可安装 [Rethos Android 0.1.2](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.2)，默认访问当前 VPS，使用现有 Token 或应用内扫码登录。客户端复用网页、保存登录状态并支持系统文件选择；点击登录页或顶部菜单的“扫码登录”打开相机。原生后台推送列为后续能力。[Android 使用与更新](../android/README.md) 说明了 APK 安装、服务器切换和覆盖升级。
 
 当前源码的系统通知通过在线页面的 `Notification` API 发出，尚未实现独立的 Service Worker / Web Push 投递。手机浏览器关闭、系统挂起页面后的锁屏通知需要后续补齐该能力并做真机测试。浏览器的 390px 模拟验收用于检查布局和网页操作；手机安装、软键盘、后台恢复还需真机核对。
 
 ## 当前部署记录
 
-2026-11-10 核对的部署位于 `/home/zhouhl/rethos`，当前入口为 `https://rethos.hopesy.cc`，产品显示 Rethos。主机 Caddy 与 Compose 已使用新域名，旧 `hermes.hopesy.cc` 的 DNS 记录已移除。GitHub 仓库地址继续使用 `Hopesy/Rethos`。
+2026-11-11 核对的部署位于 `/home/zhouhl/rethos`，当前入口为 `https://rethos.hopesy.cc`，产品显示 Rethos。主机 Caddy 与 Compose 已使用新域名，旧 `hermes.hopesy.cc` 的 DNS 记录已移除。GitHub 仓库地址继续使用 `Hopesy/Rethos`。
 
 - 服务为 `rethos-rethos-1` 与 `rethos-caddy-1`，主机入口 `127.0.0.1:8790`。
 - 持久化卷为 `rethos_data`，服务用户 UID/GID 1001。
@@ -172,8 +172,8 @@ Android 8.0+ 可安装 [Rethos Android 0.1.1](https://github.com/Hopesy/Rethos/r
 - VPS 桌面转发入口：`/home/zhouhl/rethos-desktop/cua-driver-desktop`。
 - SSH 配置启用了连接复用；新 MCP 会话可以复用已验证的桌面 SSH 连接。
 - 自定义 MCP 启动等待调整为 30 秒，适应跨 SSH 的初始化；内置工具维持 8 秒。
-- 已部署版本 `0.1.155`，源码提交 `ec445afe74c0249fa497d8ed7f504404f4f9726d`；镜像摘要 `sha256:fa0b5c74748d097cf3f95e80fde2b2d7937ea0e527523691cce039994efe6cff`。
-- 发布记录：[0.1.155 镜像构建与验收](https://github.com/Hopesy/Rethos/actions/runs/42804448567)。源码标签与 `latest` 的多架构摘要一致。
+- 已部署版本 `0.1.155`，源码提交 `264eaf3b105fac205d07ca0b8b9cf61e63bbfa88`；镜像摘要 `sha256:d78dc14a556abd31f85dd3da5c57eb349ccab23ae661f0ec6e3173f231ea8cf7`。
+- 发布记录：[0.1.155 镜像构建与验收](https://github.com/Hopesy/Rethos/actions/runs/42962728454)。部署使用来源提交对应的不可变镜像摘要。
 - 正式机器人说明与工具选择保存在 `/home/zhouhl/rethos/production-desktop-monitor.md`、`desktop-team.yaml`，已通过 `rethos team apply` 写入持久化配置。
 - Hermes 迁移备份：`/home/zhouhl/rethos-backups/hermes-before-rethos-20261108-115245/`。
 - 首次 Rethos 升级备份：`/home/zhouhl/rethos-backups/rethos-before-update-20261108-162452/`。
@@ -183,6 +183,9 @@ Android 8.0+ 可安装 [Rethos Android 0.1.1](https://github.com/Hopesy/Rethos/r
 - 0.1.152 升级前备份：`/home/zhouhl/rethos-backups/rethos-before-0.1.152-20261110-072309/`，含数据卷、Compose、环境配置与上一版镜像记录。
 - 0.1.154 升级前备份：`/home/zhouhl/rethos-backups/rethos-before-0.1.154-20261110-083035/`，含数据卷、Compose、环境配置与上一版镜像记录，压缩包完整性已验证。
 - 0.1.155 升级前备份：`/home/zhouhl/rethos-backups/rethos-before-0.1.155-20261110-111759/`，完整性在备份容器内验证，文件保留受限权限。
+- 0.1.155 正式客户端发布同步备份：`/home/zhouhl/rethos-backups/rethos-before-0.1.155-final-20261111-051115/`，数据压缩包完整性已验证。
+
+2026-11-11 北京时间 13:11 完成新版源码部署，网页 Android 下载按钮和二维码指向 0.1.2，版本发布入口指向 `Hopesy/Rethos`。Windows 0.1.155 和 Android 0.1.2 已公开发布并核对下载摘要、安装包版本及 APK 签名。部署前两台机器人均为空闲；部署后原管理员 Token、机器人模型与电脑选择、模型端点、桌面 MCP 配置和反向端口 22222 均通过核对。证据位于 `.Rethos-temp/release-0.1.155-final/`。
 
 2026-11-10 北京时间 19:18 完成 0.1.155 部署，网页下载按钮和二维码同步指向已公开发布的 Android 0.1.1。Android 与双架构镜像发布工作流均通过；公网版本、静态模块中的下载链接、原管理员 Token、两台机器人的模型与电脑选择、模型端点及桌面 MCP 配置均已核对，反向端口 22222 在线。首次备份的宿主机校验遇到 root 所有文件的读取权限问题，保护流程恢复原镜像；改为备份容器内校验后重试成功。证据位于 `.Rethos-temp/release-0.1.155/`。
 
@@ -258,6 +261,8 @@ Windows 安装包通过 [Rethos Windows installer](https://github.com/Hopesy/Ret
 
 2026-11-10 已发布 [Windows 0.1.154](https://github.com/Hopesy/Rethos/releases/tag/v0.1.154)，[安装包工作流](https://github.com/Hopesy/Rethos/actions/runs/42781733384)的实际安装启动、桌面写操作鉴权、内置浏览器和服务端检查通过，7 个发布文件摘要已核对。固定入口：[下载 Windows 安装程序](https://github.com/Hopesy/Rethos/releases/latest/download/Rethos-setup.exe)。
 
-仓库全量 CI 仍有旧品牌断言、已移除的云端入口及 `enterprise/` 引用等测试失败。0.1.152 的专用镜像与 Windows 发布流程通过；与本轮模型、提示词、下载入口相关的本地回归、类型检查、构建、lint、中文文案与 OSS 检查通过。报告中的三处电脑提示词断言已在后续测试提交中同步；CI 排查日志和发布验证保存在 `.Rethos-temp/release-0.1.152/`。
+2026-11-11 已发布 [Windows 0.1.155](https://github.com/Hopesy/Rethos/releases/tag/v0.1.155)。[发布提交 CI](https://github.com/Hopesy/Rethos/actions/runs/42962728474) 29 项通过；此前 [CI 修复全量验证](https://github.com/Hopesy/Rethos/actions/runs/42957417956)的 40 项检查通过，覆盖 Linux、Windows、macOS 共 20 个分片。
+
+2026-11-10 发布 0.1.152 时，仓库全量 CI 存在旧品牌断言、已移除的云端入口及 `enterprise/` 引用等测试失败。该版的专用镜像与 Windows 发布流程通过；与模型、提示词、下载入口相关的本地回归、类型检查、构建、lint、中文文案与 OSS 检查通过。报告中的三处电脑提示词断言已在后续测试提交中同步；当时的 CI 排查日志和发布验证保存在 `.Rethos-temp/release-0.1.152/`。
 
 0.1.154 的专用镜像与 Windows 发布流程通过；本地类型检查、前端构建、修改文件 lint、登录与中文问候相关测试通过。既存全量 CI 问题继续按上一段记录跟踪。

@@ -4,6 +4,16 @@
 
 ## 已发布版本
 
+### Windows 0.1.155 与 Android 0.1.2
+
+2026-11-11 已发布 [Windows 0.1.155](https://github.com/Hopesy/Rethos/releases/tag/v0.1.155) 和 [Android 0.1.2](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.2)，源码提交均为 `264eaf3b105fac205d07ca0b8b9cf61e63bbfa88`。
+
+- [Windows 构建与安装验收](https://github.com/Hopesy/Rethos/actions/runs/42962731665)、[Android 模拟器与签名发布](https://github.com/Hopesy/Rethos/actions/runs/42962738440)、[Docker 双架构构建](https://github.com/Hopesy/Rethos/actions/runs/42962728454)全部通过。
+- [发布提交的主分支 CI](https://github.com/Hopesy/Rethos/actions/runs/42962728474) 29 项通过；此前 [CI 修复全量验证](https://github.com/Hopesy/Rethos/actions/runs/42957417956)覆盖三种系统的 20 个分片，40 项检查通过。
+- 公开 Windows 安装程序完整下载后，SHA256 与发布元数据一致；PE 版本资源为 `0.1.155`。Latest 下载入口已指向该版本。
+- 公开 APK 已匿名下载并通过 apksigner 与 manifest 复核：版本 `0.1.2`、versionCode `3`，签名证书与 0.1.1 相同。
+- VPS 已同步新版网页，Android 下载按钮与二维码指向 0.1.2；原 Token、模型、桌面 MCP 配置与 SSH 隧道核对通过。发布及部署证据保存在 `.Rethos-temp/release-0.1.155-final/`。
+
 ### Android 0.1.1 与 VPS 0.1.155
 
 2026-11-10 已发布 [Rethos Android 0.1.1](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.1)，源码提交 `ec445afe74c0249fa497d8ed7f504404f4f9726d`。[Android 构建与发布](https://github.com/Hopesy/Rethos/actions/runs/42804470560) 的模拟器验证、签名和公开发布全部通过。公开 APK 已匿名下载并重新验证签名、应用 ID、版本号和摘要，支持使用原签名覆盖安装。
