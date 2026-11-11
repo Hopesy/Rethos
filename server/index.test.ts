@@ -473,6 +473,7 @@ beforeAll(async () => {
     JSON.stringify({
       // generated titles are opt-in; this suite owns the one-shot's reply file (FAKE_CLAUDE_TEXT_FILE below); the setup card's tests turn its answers on
       features: { llmThreadTitles: true, browser: false, smartSetupChoices: false },
+      language: "en",
       instances: {
         ghost: { driver: "not-a-real-driver", displayName: "Ghost" },
         claude: { driver: "claudeAgent", displayName: "Fixture Claude", config: { cli: FAKE_CLAUDE_CLI } },
@@ -9017,18 +9018,24 @@ describe("harness HTTP API", () => {
   });
 
   it("round-trips the UI language and clears it back to system", async () => {
-    const set = await api("PUT", "/api/config", { language: "de" });
-    expect(set.status).toBe(200);
-    expect(set.body.language).toBe("de");
-    const after = await api("GET", "/api/config");
-    expect(after.body.language).toBe("de");
+    const previous = (await api("GET", "/api/config")).body.language;
+    try {
+      const set = await api("PUT", "/api/config", { language: "de" });
+      expect(set.status).toBe(200);
+      expect(set.body.language).toBe("de");
+      const after = await api("GET", "/api/config");
+      expect(after.body.language).toBe("de");
 
-    const cleared = await api("PUT", "/api/config", { language: "" });
-    expect(cleared.status).toBe(200);
-    expect(cleared.body.language).toBe("");
+      const cleared = await api("PUT", "/api/config", { language: "" });
+      expect(cleared.status).toBe(200);
+      expect(cleared.body.language).toBe("");
+    } finally {
+      await api("PATCH", "/api/config", { language: previous });
+    }
   });
 
   it("keeps an active turn alive when the UI language changes", async () => {
+    const previous = (await api("GET", "/api/config")).body.language;
     const bot = (await api("POST", "/api/bots", {
       modelSelection: { instanceId: "claude", model: "claude-sonnet-5" },
       requireAvailableModel: true,
@@ -9056,7 +9063,7 @@ describe("harness HTTP API", () => {
         return state.bots.find((candidate: { id: string }) => candidate.id === bot.id)?.busy;
       }, { timeout: 5_000 }).toBeFalsy();
       await api("DELETE", `/api/bots/${bot.id}`).catch(() => undefined);
-      await api("PATCH", "/api/config", { language: "" }).catch(() => undefined);
+      await api("PATCH", "/api/config", { language: previous }).catch(() => undefined);
     }
   });
 
@@ -10782,7 +10789,7 @@ describe("harness HTTP API", () => {
 
       const removed = await api("POST", `/api/bots/${bot.id}/local-computer/remove`, {});
       expect(removed.status).toBe(409);
-      expect(removed.body.error).toMatch(/not created by OpenMausBot.*remove it manually/i);
+      expect(removed.body.error).toMatch(/not created by Rethos.*remove it manually/i);
       expect(readFileSync(fakeDockerLog, "utf8").split("\n")).not.toContain(
         `rm -f ${status.body.container_name}`,
       );
@@ -13688,7 +13695,7 @@ describe("bot memory API", () => {
         id: "persona",
         label: "Identity",
         text: "You are Kiwi, a personal bot in Rethos. Role: Tracker. About: Files bugs.",
-        bytes: 78,
+        bytes: 73,
       });
       expect(before.body.sections.map((s: { id: string }) => s.id)).not.toContain("soul");
       expect(before.body.sections.map((s: { id: string }) => s.id)).toContain("memory");

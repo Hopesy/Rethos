@@ -244,7 +244,7 @@ describe("a dropped channel recovers by itself", () => {
     broker.complete(computer.id, alice.session, secret, job!.id, "back");
     await expect(waiting).resolves.toBe("back");
     await vi.advanceTimersByTimeAsync(45_000);
-    const offline = expect(broker.request({ computer_id: computer.id, action: "computer_tools" }, alice.person, () => true)).rejects.toThrow(/^Desktop is lent but has been offline for 1 min: OpenMausBot on it is closed/);
+    const offline = expect(broker.request({ computer_id: computer.id, action: "computer_tools" }, alice.person, () => true)).rejects.toThrow(/^Desktop is lent but has been offline for 1 min: Rethos on it is closed/);
     await vi.advanceTimersByTimeAsync(15_000);
     await offline;
     broker.close();
@@ -355,7 +355,7 @@ describe("server-side scope check (audit M1)", () => {
       expect(sharedComputerScopeRefusal(current, { action, folder_id: readOnly.id })).toMatch(/read-only/);
       expect(sharedComputerScopeRefusal(current, { action, folder_id: randomUUID() })).toMatch(/not been shared/);
       expect(sharedComputerScopeRefusal(current, { action, folder_id: writable.id })).toBeNull();
-      expect(sharedComputerScopeRefusal(lent, { action, folder_id: writable.id })).toMatch(/older OpenMausBot .* write_file/);
+      expect(sharedComputerScopeRefusal(lent, { action, folder_id: writable.id })).toMatch(/older Rethos .* write_file/);
     }
   });
   it("names the computer when its terminal isn't lent, sends the bot to no switch, and tells it not to run the command another way", () => {

@@ -42,7 +42,7 @@ describe("Phone & devices", () => {
     expect(html).toContain(">Pair a device<");
     expect(html).toContain("Nothing paired yet.");
     expect(html).toMatch(/data-route-row="wifi"[\s\S]*?Same Wi-Fi[\s\S]*?Off · Devices on this network[\s\S]*?>Turn on</);
-    expect(html).toMatch(/data-route-row="relay"[\s\S]*?Anywhere, through MausBot[\s\S]*?Off · End-to-end encrypted\. MausBot can't read it\./);
+    expect(html).toMatch(/data-route-row="relay"[\s\S]*?Anywhere, through Rethos[\s\S]*?Off · End-to-end encrypted\. Rethos can't read it\./);
     expect(html).toMatch(/<details class="[^"]*">\s*<summary[^>]*>More ways in</);
     expect(html).not.toContain("data-tailscale-status");
   });
@@ -59,7 +59,7 @@ describe("Phone & devices", () => {
   });
 
   it("in Simple mode offers to set up a phone, or names the phone and how it reaches this computer", () => {
-    expect(page(true)).toMatch(/Use MausBot on your phone[\s\S]*?>Set up</);
+    expect(page(true)).toMatch(/Use Rethos on your phone[\s\S]*?>Set up</);
     f.state = state({ enabled: true, routes: routes({ wifi: true, relay: true }), devices: [phone] });
     const html = page(true);
     expect(html).toContain("Your phone");

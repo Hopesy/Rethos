@@ -377,7 +377,7 @@ createInterface({ input: process.stdin }).on("line", (line) => {
     const [small, page] = JSON.parse(await nextLine()).result.tools;
     expect(small).toEqual(catalog.tools[0]);
     expect(schemaBytes(page.inputSchema)).toBeLessThanOrEqual(12_000);
-    expect(page.description).toMatch(/^Create a page\.\n\n\(OpenMausBot shortened this tool's parameters to fit Kimi's size limit/);
+    expect(page.description).toMatch(/^Create a page\.\n\n\(Rethos shortened this tool's parameters to fit Kimi's size limit/);
     gate!.kill();
     await once(gate!, "close");
 

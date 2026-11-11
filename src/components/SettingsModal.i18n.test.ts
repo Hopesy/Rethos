@@ -49,7 +49,7 @@ describe("Settings → General", () => {
     expect(ja).toContain("モデルプロバイダー");
     for (const key of [
       "settings.group.you", "settings.group.computers", "settings.group.account",
-      "settings.section.appearance", "settings.section.backups", "settings.section.people",
+      "settings.section.appearance", "settings.section.backups", "settings.section.import",
       "settings.advancedMode.title",
     ] as const) {
       expect(locales.ja[key], key).toBeTruthy();

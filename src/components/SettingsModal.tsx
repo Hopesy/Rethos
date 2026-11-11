@@ -175,7 +175,7 @@ export function SettingsModal() {
       ? "desktopWorkspaces"
       : (remoteActive && !["appearance", "desktopWorkspaces"].includes(requested)) || requested === "remote"
       ? "companion"
-      : advanced && requested === "updates" ? "general" : requested;
+      : (advanced && requested === "updates") || ["cloudAccount", "organization", "people", "botAccess"].includes(requested) ? "general" : requested;
   const dialogRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const searchFirst = useRef(advanced);

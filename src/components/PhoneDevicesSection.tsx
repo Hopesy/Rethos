@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { t } from "@/lib/i18n";
+import { activeLocale, t } from "@/lib/i18n";
 import { Loader2, ShieldCheck } from "lucide-react";
 import type { CompanionAccountState } from "../types/ogb";
 import {
@@ -171,7 +171,7 @@ const button = "rounded-lg border border-hairline/40 px-3 py-1.5 text-[12px] tex
 export function routeStateText(route: { on: boolean; since: number | null } | undefined, paired: number): string {
   if (!route?.on) return t("devices.route.off");
   if (paired === 0) return t("devices.route.waiting");
-  return route.since ? t("devices.route.onSince", { date: new Date(route.since).toLocaleDateString(undefined, { month: "short", day: "numeric" }) }) : t("devices.route.on");
+  return route.since ? t("devices.route.onSince", { date: new Date(route.since).toLocaleDateString(activeLocale(), { month: "short", day: "numeric" }) }) : t("devices.route.on");
 }
 
 function setRoute(companion: CompanionBridge, route: CompanionRoute, on: boolean): Promise<CompanionState> {
@@ -288,7 +288,7 @@ export function reachLine(state: Pick<CompanionState, "routes">): string {
     on("relay") && t("devices.reach.relay", { app: productName() }),
   ].filter((way): way is string => Boolean(way));
   if (ways.length === 0) return t("devices.reach.none");
-  return t("devices.reach.line", { ways: new Intl.ListFormat(undefined, { type: "conjunction" }).format(ways) });
+  return t("devices.reach.line", { ways: new Intl.ListFormat(activeLocale(), { type: "conjunction" }).format(ways) });
 }
 
 export function PhoneDevicesSection({ profileEmail = "", focusRequest = 0, simple = false }: { profileEmail?: string; focusRequest?: number; simple?: boolean }) {

@@ -188,10 +188,10 @@ describe("Rethos, every person's helper", () => {
     const store = new Store(selection);
     const maus = boot(store)!;
     const other = store.createBot({ name: "Writer" });
-    expect(() => store.deleteBot(maus.id)).toThrow(/MausBot can't be deleted or archived/);
+    expect(() => store.deleteBot(maus.id)).toThrow(/Rethos can't be deleted or archived/);
     expect(store.bot(maus.id)).toBeTruthy();
-    expect(defaultBotPatchRefusal(maus, { hidden: true })).toMatch(/Show MausBot in the sidebar/);
-    expect(defaultBotPatchRefusal(other, { sidebarHidden: true })).toMatch(/Only MausBot/);
+    expect(defaultBotPatchRefusal(maus, { hidden: true })).toMatch(/Show Rethos in the sidebar/);
+    expect(defaultBotPatchRefusal(other, { sidebarHidden: true })).toMatch(/Only Rethos/);
     expect(defaultBotPatchRefusal(maus, { sidebarHidden: "yes" })).toBe("sidebarHidden must be true or false");
     expect(defaultBotPatchRefusal(maus, { sidebarHidden: true })).toBeNull();
     store.patchBot(maus.id, { sidebarHidden: true });

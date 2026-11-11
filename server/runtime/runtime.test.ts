@@ -927,7 +927,7 @@ describe("Runtime: a root's later executions (every turn a root)", () => {
     expect(store.inbox({ threadId: "chief-chat" })).toEqual([]);
     second.runtime.tick();
     expect(second.runner.runs.map(r => r.a.id)).toEqual(["root-cut"]);
-    expect(second.runner.runs[0]!.input).toMatchObject({ turn: "rerun", resumed: true, restartNote: expect.stringMatching(/^OpenMausBot restarted while your previous turn here was running/) });
+    expect(second.runner.runs[0]!.input).toMatchObject({ turn: "rerun", resumed: true, restartNote: expect.stringMatching(/^Rethos restarted while your previous turn here was running/) });
     expect(store.get("root-cut")).toMatchObject({ status: "running", executions: 2 });
     second.runtime.close();
 
@@ -1021,7 +1021,7 @@ describe("tree.ts: the outward wording and the loop guard", () => {
       .toBe(`${INTERRUPTED_OUTWARD} committed (git commit), made a payment (STRIPE_CREATE_REFUND), sent a message (SLACK_SEND_MESSAGE), posted (TWITTER_CREATION_OF_A_POST) and 2 more; not resumed, so nothing is done twice.`);
     expect(outwardDetail(["COMPOSIO_PROXY_EXECUTE"])).toContain("completed an outward action (COMPOSIO_PROXY_EXECUTE)");
     const long = outwardDetail([`git push ${"origin/".repeat(20)}`, "", "   "]);
-    expect(long).toMatch(/^Interrupted by an OpenMausBot restart after it already pushed \(git push [^)]{0,40}\); not resumed, so nothing is done twice\.$/);
+    expect(long).toMatch(/^Interrupted by an Rethos restart after it already pushed \(git push [^)]{0,40}\); not resumed, so nothing is done twice\.$/);
     expect(long.length).toBeLessThan(200);
     expect(outwardDetail(["a\nb\tc"])).toContain("(a b c)");
   });

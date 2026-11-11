@@ -5,7 +5,8 @@ import { INBOX_DISMISSED_MAX, INBOX_EMAIL_KEYS, INBOX_TRIAGE_INSTRUCTIONS, INBOX
 import { ROOM_ROUTING_INSTRUCTIONS, ROOM_ROUTING_STATE_KEYS } from "./room-routing.ts";
 import type { DeciderQuestion, DeciderSeam } from "./types.ts";
 
-export const KEY_CHECK_STATE = { purpose: "Rethos is checking that a decision-model key works." };
+/** The relay admits this exact v1 probe, shared with deployed Admin servers. */
+export const KEY_CHECK_STATE = { purpose: "OpenMausBot is checking that a decision-model key works." };
 export const KEY_CHECK_QUESTION = "Is this a connection check?";
 
 /** Measured in UTF-8 bytes. */

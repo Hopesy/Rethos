@@ -126,12 +126,11 @@ export async function runBoxSelfCheck(options: SelfCheckOptions): Promise<SelfCh
     broker: credentials ? { port: BOX_BROKER_PORT, mintForProcess: credentials.mintForProcess, revoke: credentials.revoke } : null,
     seccompFile: options.seccompFile ?? null,
   });
-  const isolatedNet = !options.mutate?.has("share-net");
   const spec: ProbeSpec = {
     dataDir: data, cwd, botFolder, messagesDb: join(data, "messages.db"), configJson: join(data, "config.json"), serverFiles,
     otherWorkspace, otherTaskWorkspace: otherTask, engine: { bin: engineBin, name: engineName, says: engineSays }, marker, canaryPid: canary.pid ?? 0, serverPid: process.pid, hostTmpFile,
     canaryStart: canary.pid ? processStart(canary.pid) : null, serverStart: processStart("self"),
-    harnessPort: serverPort, egressPort: BOX_EGRESS_PORT, privatePort, publicTarget, isolatedNet,
+    harnessPort: serverPort, egressPort: BOX_EGRESS_PORT, privatePort, publicTarget, isolatedNet: true,
     // Checked whenever a filter is in the setup: the no-seccomp mutation leaves it out of the box, so the check must fail.
     seccomp: Boolean(options.seccompFile),
     cpuList: existsSync("/sys/devices/system/cpu/possible"),

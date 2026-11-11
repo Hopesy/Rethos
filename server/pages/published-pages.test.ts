@@ -73,7 +73,7 @@ describe("publishing a page", () => {
     expect(f.service.minted).toEqual([]);
     expect(f.cards).toEqual([]);
     applyIncludedPagesMessage({ type: "openmausbot:included-pages", access: null });
-    expect((await f.publish({ path: "site" })).text).toMatch(/^Publishing a page needs a MausBot account/u);
+    expect((await f.publish({ path: "site" })).text).toMatch(/^Publishing a page needs a Rethos account/u);
   });
 
   it("publishes a folder to a new link with a card showing the link and the usage, and remembers it", async () => {

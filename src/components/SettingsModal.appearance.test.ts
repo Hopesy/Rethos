@@ -421,12 +421,12 @@ describe("Settings → Appearance", () => {
     expect(render()).not.toContain('<option value="desktopWorkspaces"');
   });
 
-  it("offers optional Organisation settings only through the local desktop bridge", () => {
+  it("leaves retired Organization settings out even with a legacy desktop bridge", () => {
     fixture.section = "organization";
     vi.stubGlobal("window", { ogb: { organization: {} } });
     const local = render();
-    expect(local).toContain('<option value="organization" selected="">Organization</option>');
-    expect(local).toContain("personal and local models");
+    expect(local).not.toContain('<option value="organization"');
+    expect(local).toContain('<option value="general" selected="">General</option>');
     fixture.section = "appearance";
     vi.stubGlobal("window", {});
     expect(render()).not.toContain('<option value="organization"');
@@ -434,11 +434,11 @@ describe("Settings → Appearance", () => {
     expect(render()).not.toContain('<option value="organization"');
     expect(render()).toContain("Midnight");
   });
-  it("offers personal Cloud separately and only through the local desktop bridge", () => {
+  it("leaves retired Cloud billing out even with a legacy desktop bridge", () => {
     fixture.section = "cloudAccount";
     vi.stubGlobal("window", { ogb: { cloudAccount: {} } });
-    expect(render()).toContain('<option value="cloudAccount" selected="">MausBot Cloud</option>');
-    expect(render()).toContain("Free local use");
+    expect(render()).not.toContain('<option value="cloudAccount"');
+    expect(render()).toContain('<option value="general" selected="">General</option>');
     fixture.section = "appearance";
     vi.stubGlobal("window", {}); expect(render()).not.toContain('<option value="cloudAccount"');
     vi.stubGlobal("window", { ogb: { cloudAccount: {}, remoteClient: { active: true } } });

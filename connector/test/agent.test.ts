@@ -312,7 +312,7 @@ describe("the connector's connection to Rethos", () => {
   });
 
   it("says plainly when Rethos cannot be reached at enrolment", async () => {
-    await expect(enroll({ admin: "http://127.0.0.1:9", code: "MB-1A2B-3C4D", host, connector })).rejects.toThrow(/^This server can't reach MausBot at http:\/\/127\.0\.0\.1:9 /);
+    await expect(enroll({ admin: "http://127.0.0.1:9", code: "MB-1A2B-3C4D", host, connector })).rejects.toThrow(/^This server can't reach Rethos at http:\/\/127\.0\.0\.1:9 /);
     await expect(enroll({ admin: "http://127.0.0.1:9", code: "MB 1A2B", host, connector })).rejects.toThrow("the code is the one-time code Rethos shows next to the install command");
   });
 

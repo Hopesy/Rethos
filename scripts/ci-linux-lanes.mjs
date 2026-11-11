@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { appendFileSync, mkdirSync, openSync, readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join, posix, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // The Linux jobs' work as lanes of one machine: when the static job runs on a Boat VM (ci.yml, BOAT_CI), the vitest
@@ -8,12 +8,12 @@ import { fileURLToPath } from "node:url";
 // lane its commands in order. ci-workflow.test.ts holds every command equal to the job step it stands for.
 
 /** The vitest job's two steps for one Linux matrix entry, with the step's environment. */
-export function vitestLane(entry, retryLog) {
+export function vitestLane(entry, retryLog, results = posix.join(posix.dirname(retryLog), `vitest-${entry.shard}-results.json`)) {
   return {
     name: `vitest (ubuntu-latest, ${entry.part})`,
     env: { OMB_VITEST_RETRY_LOG: retryLog, OMB_VITEST_E2E: entry.e2e, OMB_VITEST_SUBSET: entry.files, OMB_VITEST_WORKERS: entry.workers },
     commands: [
-      `pnpm exec vitest run ${entry.files} --shard=${entry.shard}/${entry.shards} --reporter=default --reporter=github-actions`,
+      `pnpm exec vitest run ${entry.files} --shard=${entry.shard}/${entry.shards} --reporter=default --reporter=github-actions --reporter=json --outputFile.json="${results}"`,
       ...(entry.node_tests ? ["pnpm broker:test && pnpm test:electron"] : []),
     ],
   };

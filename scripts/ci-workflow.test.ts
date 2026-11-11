@@ -101,7 +101,7 @@ describe("CI concurrency", () => {
     const units = (workflow.jobs.vitest.steps as { name?: string; if?: string; "timeout-minutes"?: number }[]).find((step) => step.name === "Broker and Electron unit tests")!;
     expect(units["timeout-minutes"]).toBe(5);
     // Once per platform's full run, and beside the locale tests, never once per shard.
-    expect(units.if).toBe("matrix.node_tests");
+    expect(units.if).toBe("${{ !cancelled() && matrix.node_tests }}");
     // Browser jobs keep one job per platform, and the packaged server one per platform without the macOS smokes.
     expect(workflow.jobs["browser-identity"].strategy.matrix.os).toBe("${{ fromJSON(needs.static.outputs.vitest_os) }}");
     expect(workflow.jobs["browser-driver"].strategy.matrix.os).toBe("${{ fromJSON(needs.static.outputs.vitest_os) }}");
@@ -185,7 +185,7 @@ describe("CI concurrency", () => {
     const steps = workflow.jobs.vitest.steps as { name?: string; run?: string; if?: string; env?: Record<string, string> }[];
     const tests = steps.findIndex((step) => step.name === "Run tests");
     const report = steps.findIndex((step) => step.run === "node scripts/testing/ci-retry-summary.mjs");
-    expect(report).toBe(tests + 1);
+    expect(report).toBeGreaterThan(tests);
     expect(steps[report]!.if).toBe("${{ !cancelled() }}");
     // The runner context exists only at step level, never in a job's env.
     expect(workflow.jobs.vitest.env).toBeUndefined();
@@ -386,7 +386,7 @@ describe("CI on Boat", () => {
       const context = { matrix: entry, runner: { temp: "/t" } };
       const tests = steps("vitest").find((step) => step.name === "Run tests")!;
       const units = steps("vitest").find((step) => step.name === "Broker and Electron unit tests")!;
-      const lane = vitestLane(entry, "/t/vitest-retries.jsonl");
+      const lane = vitestLane(entry, "/t/vitest-retries.jsonl", "/t/vitest-results.json");
       expect(lane.commands).toEqual([interpolate(tests.run!, context), ...(entry.node_tests ? [units.run] : [])]);
       expect(lane.env).toEqual(Object.fromEntries(Object.entries(tests.env!).map(([key, value]) => [key, interpolate(value, context)])));
     }

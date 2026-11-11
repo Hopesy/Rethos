@@ -416,7 +416,7 @@ describe("custom auth configs made in the Composio dashboard", () => {
         + "it uses it. Check that your Composio project key may edit auth configs. Composio said: This API key may not edit auth configs",
     });
     const reply = await callTool(cfg, "XERO_LIST_INVOICES");
-    expect(reply.result.content[1]!.text).toMatch(/^OpenMausBot note: OpenMausBot could not turn on Tool Router for your xero auth config/);
+    expect(reply.result.content[1]!.text).toMatch(/^Rethos note: Rethos could not turn on Tool Router for your xero auth config/);
   });
 });
 

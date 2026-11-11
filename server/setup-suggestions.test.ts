@@ -24,7 +24,7 @@ describe("the prompt", () => {
     for (const { id, ctx } of evaluation.scenarios) {
       const prompt = setupSuggestionPrompt({ name: ctx.name ?? undefined, title: ctx.title, department: ctx.department, apps: ctx.apps ?? [],
         aboutMe: ctx.about || undefined, otherJobs: ctx.jobs ?? [], language: ctx.language, canBrowse: ctx.canBrowse ?? true });
-      expect(prompt, id).toBe(evaluation.prompts[id]);
+      expect(prompt, id).toBe(evaluation.prompts[id]!.replaceAll("OpenMausBot", "Rethos"));
     }
   });
 

@@ -218,7 +218,22 @@ jobs:
           OMB_VITEST_E2E: ${{ matrix.e2e }}
           OMB_VITEST_SUBSET: ${{ matrix.files }}
           OMB_VITEST_WORKERS: ${{ matrix.workers }}
-        run: pnpm exec vitest run ${{ matrix.files }} --shard=${{ matrix.shard }}/${{ matrix.shards }} --reporter=default --reporter=github-actions
+        run: pnpm exec vitest run ${{ matrix.files }} --shard=${{ matrix.shard }}/${{ matrix.shards }} --reporter=default --reporter=github-actions --reporter=json --outputFile.json="${{ runner.temp }}/vitest-results.json"
+      - name: Summarize test failures
+        if: ${{ !cancelled() }}
+        env:
+          OMB_VITEST_RESULTS: ${{ runner.temp }}/vitest-results.json
+        run: node scripts/testing/ci-test-summary.mjs
+      - name: Upload test diagnostics
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: vitest-${{ matrix.os }}-${{ matrix.shard }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/vitest-results.json
+            ${{ runner.temp }}/vitest-retries.jsonl
+          if-no-files-found: warn
+          retention-days: 7
       - name: Report flaky tests that needed a retry
         # Known flakes (scripts/testing/ci-retry-list.json) get two retries in
         # CI. A pass after a retry is still listed in the job summary, so the
@@ -228,7 +243,7 @@ jobs:
           OMB_VITEST_RETRY_LOG: ${{ runner.temp }}/vitest-retries.jsonl
         run: node scripts/testing/ci-retry-summary.mjs
       - name: Broker and Electron unit tests
-        if: matrix.node_tests
+        if: ${{ !cancelled() && matrix.node_tests }}
         # About half a minute; node --test has no overall deadline, so a file
         # that never exits would otherwise hold the job to its cap.
         timeout-minutes: 5

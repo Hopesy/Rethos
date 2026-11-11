@@ -88,7 +88,7 @@ test("the patch fails closed when upstream's shape moves", () => {
   }
 });
 
-test("the shipped installer replaces the AppImage and queues its original path for relaunch", (t) => {
+test("the shipped installer replaces the AppImage and queues its original path for relaunch", { skip: process.platform === "win32" && "AppImage installation requires POSIX mv" }, (t) => {
   let relaunched = null;
   let relaunchEnvironment = null;
   const electron = { app: { relaunch(options) {
@@ -144,7 +144,7 @@ test("the shipped installer replaces the AppImage and queues its original path f
   assert.deepEqual(renames, [], "no filename change means no appimage-filename-updated event");
 });
 
-test("a rejected AppImage relaunch is reported without quitting the desktop", (t) => {
+test("a rejected AppImage relaunch is reported without quitting the desktop", { skip: process.platform === "win32" && "AppImage installation requires POSIX mv" }, (t) => {
   const electron = { app: { relaunch: () => false }, autoUpdater: new EventEmitter() };
   const load = Module._load;
   Module._load = (request, ...rest) => request === "electron" ? electron : load(request, ...rest);

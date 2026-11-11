@@ -7,11 +7,14 @@ import { SettingsModal } from "./SettingsModal";
 const fixture = vi.hoisted(() => ({ section: "cloudAccount" as AppSettingsSection, config: undefined as { cloudHome?: boolean } | undefined, advanced: false }));
 vi.mock("@/lib/interface-mode", () => ({ useAdvancedMode: () => fixture.advanced, setAdvancedMode: vi.fn() }));
 vi.mock("./DesktopCapabilities", () => ({ useDesktopCapabilities: () => ({ capabilities: {} }) }));
-vi.mock("@/state/store", async (importOriginal) => ({
-  ...await importOriginal<typeof import("@/state/store")>(),
-  api: vi.fn(),
-  useStore: () => ({ state: { appSettingsSection: fixture.section, config: fixture.config }, dispatch: vi.fn() }),
-}));
+vi.mock("@/state/store", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@/state/store")>();
+  return {
+    ...original,
+    api: vi.fn(),
+    useStore: () => ({ state: { ...original.initialState, appSettingsSection: fixture.section, config: fixture.config ? { rooms: {}, ...fixture.config } : undefined }, dispatch: vi.fn() }),
+  };
+});
 vi.mock("./CloudAccountSettings", () => ({
   CloudAccountSettings: ({ cloudHome, onAddCloud }: { cloudHome?: boolean; onAddCloud?: () => void }) => `CLOUD_PLAN_MARKER${cloudHome ? " home" : ""}${onAddCloud ? " offer" : ""}`,
 }));
@@ -32,20 +35,18 @@ describe.each(["Simple", "Advanced"] as const)("%s Settings → OMB Cloud on a s
     const html = render();
     expect(html).not.toContain("CLOUD_PLAN_MARKER"); expect(html).not.toContain(reachable());
   });
-  it("shows the plan, read only, on the person's own Cloud", () => {
+  it("keeps hosted workspaces on the self-hosted settings pages", () => {
     vi.stubGlobal("window", { ogb: { cloudPlan: plan } });
     fixture.config = { cloudHome: true };
     const html = render();
-    expect(html).toContain("CLOUD_PLAN_MARKER home"); expect(html).toContain(reachable());
-    expect(html).toContain(fixture.advanced ? 'value="cloudAccount"' : 'data-settings-page="billing"');
+    expect(html).not.toContain("CLOUD_PLAN_MARKER"); expect(html).not.toContain(reachable());
+    expect(html).toContain(fixture.advanced ? 'value="general" selected=""' : 'data-settings-page="general"');
   });
-  it("is the full account section in the app on this computer", () => {
+  it("opens General for a retired Cloud account deep link on the desktop", () => {
     vi.stubGlobal("window", { ogb: { cloudAccount: {}, cloudPlan: plan } });
     const html = render();
-    expect(html).toContain("CLOUD_PLAN_MARKER");
-    expect(html).not.toContain("CLOUD_PLAN_MARKER home");
-    expect(html).toContain(reachable());
-    // Simple's plan row above the card already carries the offer, so the card does not repeat it.
-    expect(html.includes("CLOUD_PLAN_MARKER offer")).toBe(fixture.advanced);
+    expect(html).not.toContain("CLOUD_PLAN_MARKER");
+    expect(html).not.toContain(reachable());
+    expect(html).toContain(fixture.advanced ? 'value="general" selected=""' : 'data-settings-page="general"');
   });
 });

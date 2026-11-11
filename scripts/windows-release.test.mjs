@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { test } from "node:test";
+import { test } from "vitest";
 import { stringify } from "yaml";
 import { verifyWindowsFeed } from "./windows-release.mjs";
 

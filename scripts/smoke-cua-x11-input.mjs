@@ -44,7 +44,7 @@ windowManager.once("error", (error) => {
 {
   const deadline = Date.now() + 10_000;
   for (;;) {
-    const { stdout } = await execFileAsync("xprop", ["-root", "_NET_SUPPORTING_WM_CHECK"]).catch(() => ({ stdout: "" }));
+    const { stdout } = await execFileAsync("xprop", ["-root", "_NET_CLIENT_LIST"]).catch(() => ({ stdout: "" }));
     if (/window id #/.test(stdout)) break;
     if (windowManager.exitCode !== null || Date.now() > deadline) {
       throw new Error("the window manager did not start on this display");
@@ -67,38 +67,41 @@ for (const stream of [xev.stdout, xev.stderr]) {
   });
 }
 
-const driverProcess = spawn(
-  driver,
-  [
-    "serve",
-    "--embedded",
-    "--no-overlay",
-    "--socket",
-    socketPath,
-    "--pid-file",
-    pidFile,
-    "--permission-mode",
-    "standard",
-  ],
-  {
-    env: {
-      ...process.env,
-      HOME: home,
-      XDG_RUNTIME_DIR: runtime,
-      XDG_SESSION_TYPE: "x11",
-      CUA_DRIVER_EMBEDDED: "1",
-      CUA_DRIVER_PARENT_LIVENESS_STDIN: "1",
-      CUA_DRIVER_RS_TELEMETRY_ENABLED: "false",
-      CUA_DRIVER_RS_UPDATE_CHECK: "false",
-    },
-    stdio: ["pipe", "ignore", "pipe"],
-  },
-);
+let driverProcess;
 let driverError = "";
-driverProcess.stderr.setEncoding("utf8");
-driverProcess.stderr.on("data", (chunk) => {
-  driverError += chunk;
-});
+function startDriver() {
+  driverProcess = spawn(
+    driver,
+    [
+      "serve",
+      "--embedded",
+      "--no-overlay",
+      "--socket",
+      socketPath,
+      "--pid-file",
+      pidFile,
+      "--permission-mode",
+      "standard",
+    ],
+    {
+      env: {
+        ...process.env,
+        HOME: home,
+        XDG_RUNTIME_DIR: runtime,
+        XDG_SESSION_TYPE: "x11",
+        CUA_DRIVER_EMBEDDED: "1",
+        CUA_DRIVER_PARENT_LIVENESS_STDIN: "1",
+        CUA_DRIVER_RS_TELEMETRY_ENABLED: "false",
+        CUA_DRIVER_RS_UPDATE_CHECK: "false",
+      },
+      stdio: ["pipe", "ignore", "pipe"],
+    },
+  );
+  driverProcess.stderr.setEncoding("utf8");
+  driverProcess.stderr.on("data", (chunk) => {
+    driverError += chunk;
+  });
+}
 let proxy;
 let proxyError = "";
 
@@ -108,7 +111,7 @@ async function until(probe, description, timeout = 10_000) {
   while (Date.now() < deadline) {
     const value = await probe().catch(() => null);
     if (value) return value;
-    if (driverProcess.exitCode !== null || driverProcess.signalCode !== null) {
+    if (driverProcess && (driverProcess.exitCode !== null || driverProcess.signalCode !== null)) {
       throw new Error(
         `Cua Driver exited before ${description}: ${driverProcess.exitCode ?? driverProcess.signalCode}\n${driverError}`,
       );
@@ -234,6 +237,7 @@ try {
     return null;
   }, "the unrelated X11 test window", 20_000);
   if (!windowId) throw new Error("xev test window did not appear");
+  startDriver();
 
   const metadata = await until(
     async () => {
@@ -308,7 +312,7 @@ try {
   );
 } finally {
   if (proxy) await stop(proxy);
-  await stop(driverProcess);
+  if (driverProcess) await stop(driverProcess);
   if (xev.exitCode === null && xev.signalCode === null) xev.kill("SIGTERM");
   if (windowManager.exitCode === null && windowManager.signalCode === null) windowManager.kill("SIGTERM");
   rmSync(sandbox, { recursive: true, force: true });

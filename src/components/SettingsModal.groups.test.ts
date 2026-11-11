@@ -102,7 +102,7 @@ describe("Settings rail groups", () => {
     expect(SETTINGS_GROUPS.map((group) => group.id)).toEqual(["you", "ai", "computers", "account"]);
     const ids = SECTIONS.map((entry) => entry.id);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(ids).toHaveLength(21); // 16 + the shared Skills library (AI group) + Image generation (AI) + Logins (Devices) + Import and a team's Bot access (Account)
+    expect(ids).toHaveLength(16);
     for (const entry of SECTIONS) expect(SETTINGS_GROUPS.map((group) => group.id)).toContain(entry.group);
   });
 
@@ -115,7 +115,7 @@ describe("Settings rail groups", () => {
       you: ["general", "appearance", "companion"],
       ai: ["engines", "connections", "decisionModel", "imageGeneration"],
       computers: ["desktopWorkspaces", "computer", "logins"],
-      account: ["cloudAccount", "organization", "usage", "backups", "import", "experimental"],
+      account: ["usage", "backups", "import", "experimental"],
     });
     expect(html).toContain('<optgroup label="AI">');
   });
@@ -123,15 +123,15 @@ describe("Settings rail groups", () => {
   it("keeps the browser-only pages for a hosted workspace's admins", () => {
     fixture.ownerOrAdmin = true;
     const groups = rail(render());
-    expect(groups.account).toEqual(["usage", "backups", "import", "people", "activity", "experimental"]);
+    expect(groups.account).toEqual(["usage", "backups", "import", "activity", "experimental"]);
     expect(Object.values(groups).flat()).not.toContain("desktopWorkspaces");
     expect(Object.values(groups).flat()).not.toContain("cloudAccount");
   });
 
-  it("gives a team's admins its Bot access page, and nobody else", () => {
+  it("keeps retired commercial pages out of every workspace's settings", () => {
     fixture.config = { team: { id: "team-acme", name: "Acme" }, cloudHome: true };
     fixture.ownerOrAdmin = true;
-    expect(rail(render()).account).toContain("botAccess");
+    for (const id of ["botAccess", "cloudAccount", "organization", "people"]) expect(Object.values(rail(render())).flat()).not.toContain(id);
     fixture.ownerOrAdmin = false;
     expect(Object.values(rail(render())).flat()).not.toContain("botAccess");
     fixture.config = {};

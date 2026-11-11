@@ -94,6 +94,23 @@ run in the Windows Vitest/Electron jobs.
 
 ## Vitest shards
 
+Each shard publishes a seven-day `vitest-<os>-<shard>-<attempt>` artifact with
+its JSON results and retry records. Its job summary lists assertion failures
+and suite collection errors together. Broker and Electron tests still run
+after a Vitest failure, so one failing suite does not conceal the next gate.
+
+The portable Cloud fixtures explicitly set `OMB_BOT_BOX=0`: their synthetic
+engines exchange control files with the test process outside conversation
+homes. Their behavior must stay the same when a runner gains bubblewrap.
+The dedicated `*.linux.test.ts` suites exercise real sandbox isolation,
+including uploads, engine homes, sockets and deliberately broken sandboxes.
+
+A red main commit makes subsequent documentation-only pushes take the full
+main lane again; the nightly lane also tests the same revision. Repeated
+failures at the same SHA therefore require repairing the shared baseline.
+Check the failed job and artifact before rerunning a workflow. Increasing
+retries cannot repair stale expectations or fixture configuration errors.
+
 The slowest shard sets how long a PR and a release wait. Linux and Windows run
 eight shards each, macOS four (the full lane only); `scripts/ci-scope.mjs`
 builds the matrix.

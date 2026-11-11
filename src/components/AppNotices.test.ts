@@ -92,8 +92,7 @@ function desktopMachine(): Desktop {
   return machine;
 }
 
-// The real preload, as this desktop's window loads it for a page; the Cloud account and plan answer from this file's fakes.
-function windowOn(origin: string, { click = true } = {}) {
+function windowOn(origin: string, { click = true } = {}): Record<string, unknown> {
   const page: Page = origin === LOCAL_ORIGIN ? "local" : origin === MY_CLOUD ? "cloud" : "server";
   let ogb: Record<string, unknown> = {};
   vm.runInNewContext(PRELOAD, {
@@ -105,7 +104,9 @@ function windowOn(origin: string, { click = true } = {}) {
         invoke: async (channel: string, ...args: unknown[]) => desk.handlers.get(channel)?.({ page }, ...args) } }),
   });
   const fakes: Record<string, unknown> = { cloudAccount: bridges.cloud, cloudPlan: bridges.plan, openExternal: vi.fn(async () => true), organization: undefined };
-  return { ...ogb, ...Object.fromEntries(Object.entries(fakes).filter(([key]) => key in ogb)) };
+  const cloudSendPage = { notice: async () => desk.handlers.get("cloud-send:notice")?.({ page }), onNotice: () => () => {} };
+  const hosted = page === "local" ? { cloudAccount: bridges.cloud, cloudPlan: bridges.plan, cloudSendPage } : page === "cloud" ? { cloudPlan: bridges.plan, cloudSendPage } : {};
+  return { ...ogb, ...Object.fromEntries(Object.entries(fakes).filter(([key]) => key in ogb)), ...hosted };
 }
 const showWindow = (origin: string, options?: { click?: boolean }) => {
   vi.stubGlobal("window", { ogb: windowOn(origin, options), addEventListener: vi.fn(), removeEventListener: vi.fn() });
@@ -511,7 +512,7 @@ describe("Boat's credit offer", () => {
     expect(window.ogb?.openExternal).toHaveBeenCalledWith(boatClaimMailto());
     const draft = new URL(vi.mocked(window.ogb!.openExternal!).mock.calls[0]![0]);
     expect(`${draft.protocol}${draft.pathname}`).toBe("mailto:support@ascii.dev");
-    expect(draft.searchParams.get("subject")).toBe("Rethos introduced me: $50 Boat credit");
+    expect(draft.searchParams.get("subject")).toBe("MausBot introduced me: $50 Boat credit");
     expect(draft.searchParams.get("body")!.replace(/\r\n/g, "\n")).toBe("Hi Boat team,\n\nMausBot introduced me to Boat. I'm on the $___ plan.\nMy Boat account email: ___\n\nThanks!");
     expect(vi.mocked(api).mock.calls.map(([path]) => path), "only the dismissal is saved").toEqual(["/api/config"]);
     expect(boatEvents()).toContainEqual({ action: "claim", place: "card" });

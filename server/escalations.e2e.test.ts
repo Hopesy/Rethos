@@ -157,7 +157,7 @@ it("carries the provenance fence header on a bot-raised escalation", async () =>
     expect(prompt).toContain("it raised this flag itself");
     expect(prompt).toContain(`thread_id \\"${mira.activeTaskId}\\"`);
     const noticeLine = (await messages(escalations.threadId)).find((m) => m.role === "user" && /Escalation notice/.test(m.text ?? ""));
-    expect(noticeLine?.text?.split("\n")[0]).toMatch(/^\[.+ from OpenMausBot — not from the person\. .+\]$/);
+    expect(noticeLine?.text?.split("\n")[0]).toMatch(/^\[.+ from Rethos — not from the person\. .+\]$/);
     expect(noticeLine?.peerAsk).toEqual({ botId: mira.id, name: "Mira", unattended: true, incident: { threadId: mira.activeTaskId } });
     await turnEnded(chief.id, escalations.threadId);
   } finally {

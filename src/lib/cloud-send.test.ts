@@ -132,9 +132,9 @@ describe("a refusal the preload words before main is asked", () => {
   const unclicked = en["cloudAccount.keepHere.unclicked"];
   const keys = ["cloudAccount.keepHere.unclicked", "cloudSend.move.unclicked", "teamMove.unclicked"] as const;
 
-  it("is the preload's own sentence", () => {
+  it("keeps retired Cloud mutation channels out of the desktop preload", () => {
     const preload = readFileSync(new URL("../../electron/preload.cjs", import.meta.url), "utf8");
-    for (const key of keys) expect(preload, key).toContain(`new Error(${JSON.stringify(en[key])})`);
+    for (const channel of ["one-home:keep-set", "cloud-send:move", "team-move:move"]) expect(preload).not.toContain(`invoke("${channel}"`);
   });
 
   it("each one shown on a page reads in pt-BR", () => {
