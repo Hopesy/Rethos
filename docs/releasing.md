@@ -4,6 +4,15 @@
 
 ## 已发布版本
 
+### Android 0.1.3 与手机响应式网页
+
+2026-11-11 已发布 [Android 0.1.3](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.3)，来源提交 `b2b9eea5a0563be2842aa9cc7b3d2df08dd4eecd`。[Android 验证、签名与发布](https://github.com/Hopesy/Rethos/actions/runs/42985650191)和[双架构镜像验收](https://github.com/Hopesy/Rethos/actions/runs/42985614500)全部通过，Android 15 模拟器的 7 项测试通过。
+
+- APK 版本为 0.1.3，versionCode 4，应用 ID 和签名证书沿用旧版，可直接覆盖安装。
+- 公开 APK 已完整下载，核对摘要、apksigner 和 manifest 通过。文件为 2,006,699 字节，SHA256 `0292c03f2ad1d817829342466dd64738b9b5a8b5ecb5350cecc7456fd70c5410`。
+- VPS 已同步部署手机响应式优化，下载按钮与二维码指向 0.1.3；浏览器确认下载弹窗，原 Token、模型及桌面 MCP 配置核对一致。
+- Windows Latest 继续指向 0.1.155。发布与部署证据位于 `.Rethos-temp/android-0.1.3/`。
+
 ### Windows 0.1.155 与 Android 0.1.2
 
 2026-11-11 已发布 [Windows 0.1.155](https://github.com/Hopesy/Rethos/releases/tag/v0.1.155) 和 [Android 0.1.2](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.2)，源码提交均为 `264eaf3b105fac205d07ca0b8b9cf61e63bbfa88`。

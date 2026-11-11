@@ -172,8 +172,8 @@ Android 8.0+ 可安装 [Rethos Android 0.1.3](https://github.com/Hopesy/Rethos/r
 - VPS 桌面转发入口：`/home/zhouhl/rethos-desktop/cua-driver-desktop`。
 - SSH 配置启用了连接复用；新 MCP 会话可以复用已验证的桌面 SSH 连接。
 - 自定义 MCP 启动等待调整为 30 秒，适应跨 SSH 的初始化；内置工具维持 8 秒。
-- 已部署版本 `0.1.155`，源码提交 `264eaf3b105fac205d07ca0b8b9cf61e63bbfa88`；镜像摘要 `sha256:d78dc14a556abd31f85dd3da5c57eb349ccab23ae661f0ec6e3173f231ea8cf7`。
-- 发布记录：[0.1.155 镜像构建与验收](https://github.com/Hopesy/Rethos/actions/runs/42962728454)。部署使用来源提交对应的不可变镜像摘要。
+- 已部署版本 `0.1.155`，源码提交 `b2b9eea5a0563be2842aa9cc7b3d2df08dd4eecd`；镜像摘要 `sha256:1dfa6e8f6c5842cf99050f9e355ddb7e8750bdd198a7950b9906ef8cb2e1aaec`。
+- 发布记录：[Android 0.1.3 配套镜像构建与验收](https://github.com/Hopesy/Rethos/actions/runs/42985614500)。部署使用来源提交对应的不可变镜像摘要。
 - 正式机器人说明与工具选择保存在 `/home/zhouhl/rethos/production-desktop-monitor.md`、`desktop-team.yaml`，已通过 `rethos team apply` 写入持久化配置。
 - Hermes 迁移备份：`/home/zhouhl/rethos-backups/hermes-before-rethos-20261108-115245/`。
 - 首次 Rethos 升级备份：`/home/zhouhl/rethos-backups/rethos-before-update-20261108-162452/`。
@@ -184,6 +184,9 @@ Android 8.0+ 可安装 [Rethos Android 0.1.3](https://github.com/Hopesy/Rethos/r
 - 0.1.154 升级前备份：`/home/zhouhl/rethos-backups/rethos-before-0.1.154-20261110-083035/`，含数据卷、Compose、环境配置与上一版镜像记录，压缩包完整性已验证。
 - 0.1.155 升级前备份：`/home/zhouhl/rethos-backups/rethos-before-0.1.155-20261110-111759/`，完整性在备份容器内验证，文件保留受限权限。
 - 0.1.155 正式客户端发布同步备份：`/home/zhouhl/rethos-backups/rethos-before-0.1.155-final-20261111-051115/`，数据压缩包完整性已验证。
+- Android 0.1.3 与移动界面同步备份：`/home/zhouhl/rethos-backups/rethos-before-android-0.1.3-20261111-082539/`，数据压缩包完整性已验证。
+
+2026-11-11 北京时间 16:25 完成移动界面部署，下载按钮与二维码指向 Android 0.1.3。手机响应式布局、逐层返回、触控菜单、设置分类与 Enter 换行复用现有界面；安卓顶栏移除与 Markdown 系统保存随 APK 生效。部署前两台机器人空闲，部署后容器健康、公网资源、原管理员 Token、机器人模型与电脑选择、模型端点及桌面 MCP 配置均已核对。证据位于 `.Rethos-temp/android-0.1.3/`。
 
 2026-11-11 北京时间 13:11 完成新版源码部署，网页 Android 下载按钮和二维码指向 0.1.2，版本发布入口指向 `Hopesy/Rethos`。Windows 0.1.155 和 Android 0.1.2 已公开发布并核对下载摘要、安装包版本及 APK 签名。部署前两台机器人均为空闲；部署后原管理员 Token、机器人模型与电脑选择、模型端点、桌面 MCP 配置和反向端口 22222 均通过核对。证据位于 `.Rethos-temp/release-0.1.155-final/`。
 
