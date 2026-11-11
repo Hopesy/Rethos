@@ -927,7 +927,7 @@ export function Composer({
           <button
             onClick={interruptTurn}
             aria-label={t("chat.stopTurn")}
-            data-composer-stop={simpleDock ? (stopInSlot ? "slot" : "beside") : undefined}
+            data-composer-stop={stopInSlot ? "slot" : "beside"}
             className={cn(
               "flex shrink-0 items-center justify-center rounded-full",
               !simpleDock ? "size-8 text-ink-secondary hover:bg-raised hover:text-ink"

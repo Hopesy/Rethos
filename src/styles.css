@@ -1482,7 +1482,7 @@ body {
     height: 100%;
     border-radius: 0;
   }
-  [data-message-author="bot"] > .chat-message-content {
+  [data-message-author="bot"] .chat-message-content {
     flex-direction: column;
     align-items: flex-start;
     gap: 0;
@@ -1491,6 +1491,9 @@ body {
     min-width: 0;
     max-width: 100%;
     overflow-wrap: anywhere;
+  }
+  [data-message-author="bot"] [data-reply-table] {
+    max-width: 100%;
   }
   [data-message-author="bot"] [data-testid="message-actions"] {
     align-self: flex-start;
