@@ -67,7 +67,7 @@ const installed = inContainer(
   [
     prepare,
     command,
-    'dpkg-query -W -f="INSTALLED=\\${Version} \\${db:Status-Abbrev}\\n" openmausbot',
+    'dpkg-query -W -f="INSTALLED=\\${Version} \\${db:Status-Abbrev}\\n" rethos',
     'test -x /opt/Rethos/rethos && echo "EXECUTABLE=yes"',
   ].join("\n"),
 );

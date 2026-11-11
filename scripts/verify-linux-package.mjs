@@ -72,8 +72,8 @@ function requireUpdaterTarget(resources, label) {
   const updateFile = path.join(resources, "app-update.yml");
   requireFile(updateFile);
   const update = readFileSync(updateFile, "utf8");
-  if (!/^owner: milind-soni$/m.test(update) || !/^repo: OpenMausBot$/m.test(update)) {
-    fail(`${label} app-update.yml does not point at milind-soni/OpenMausBot`);
+  if (!/^owner: Hopesy$/m.test(update) || !/^repo: Rethos$/m.test(update)) {
+    fail(`${label} app-update.yml does not point at Hopesy/Rethos`);
   }
 }
 
@@ -424,7 +424,7 @@ const fields = execFileSync(
 for (const expected of [
   "Package: rethos",
   "Architecture: amd64",
-  "Maintainer: Milind Soni",
+  "Maintainer: hopesy",
   "Section: utils",
   "Priority: optional",
 ]) {
@@ -464,7 +464,7 @@ try {
     "hicolor",
     "scalable",
     "apps",
-    "openmausbot.svg",
+    "rethos.svg",
   );
   requireFile(desktopFile);
   requireFile(scalableIcon);
