@@ -7,10 +7,16 @@ on:
         description: Commit, tag or branch to build
         required: false
         type: string
-      publish:
-        description: Publish the verified signed APK
-        type: boolean
-        default: false
+  workflow_call:
+    inputs:
+      ref:
+        required: true
+        type: string
+    outputs:
+      sha:
+        value: ${{ jobs.verify.outputs.sha }}
+      version:
+        value: ${{ jobs.package.outputs.version }}
 
 permissions:
   contents: read
@@ -109,32 +115,10 @@ jobs:
         run: |
           mkdir -p release/android-assets
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs android/app/build/outputs/apk/release/app-release.apk > release/android-assets/SIGNATURE.txt
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging android/app/build/outputs/apk/release/app-release.apk > release/android-assets/MANIFEST.txt
           node android/scripts/release.mjs prepare
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: rethos-android-release
           path: release/android-assets/
           retention-days: 30
-
-  publish:
-    name: Publish Android release
-    needs: [verify, package]
-    if: inputs.publish
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: ${{ needs.verify.outputs.sha }}
-          persist-credentials: false
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          name: rethos-android-release
-          path: release/android-assets
-      - name: Publish verified files
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_SHA: ${{ needs.verify.outputs.sha }}
-        run: node android/scripts/release.mjs publish

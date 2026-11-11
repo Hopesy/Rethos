@@ -1482,6 +1482,32 @@ body {
     height: 100%;
     border-radius: 0;
   }
+  [data-message-author="bot"] > .chat-message-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+  }
+  [data-message-author="bot"] [data-chat-bubble], .chat-bot-bubble {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  [data-message-author="bot"] [data-testid="message-actions"] {
+    align-self: flex-start;
+  }
+  [data-message-author="bot"] [data-testid="message-actions"]:not([data-shown]) {
+    height: 0;
+    overflow: hidden;
+    padding: 0;
+  }
+  [data-composer-send], [data-composer-stop] {
+    width: 44px;
+    height: 44px;
+  }
+  [data-composer-send] > svg {
+    width: 20px;
+    height: 20px;
+  }
 }
 /* Cards and rails sitting on the glass: a second, thinner pane. */
 .glass-card {

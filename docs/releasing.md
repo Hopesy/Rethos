@@ -1,151 +1,58 @@
 # Rethos 安装包发布与维护
 
-当前客户端发布目标为 **Windows x64** 与 **Android 8.0+**。VPS 的 Docker 镜像、Windows 安装包和 Android APK 分别使用独立工作流。手机同时支持 HTTPS 网页访问。macOS 打包留到后续配置。
-
-## 已发布版本
-
-### Android 0.1.3 与手机响应式网页
-
-2026-11-11 已发布 [Android 0.1.3](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.3)，来源提交 `b2b9eea5a0563be2842aa9cc7b3d2df08dd4eecd`。[Android 验证、签名与发布](https://github.com/Hopesy/Rethos/actions/runs/42985650191)和[双架构镜像验收](https://github.com/Hopesy/Rethos/actions/runs/42985614500)全部通过，Android 15 模拟器的 7 项测试通过。
-
-- APK 版本为 0.1.3，versionCode 4，应用 ID 和签名证书沿用旧版，可直接覆盖安装。
-- 公开 APK 已完整下载，核对摘要、apksigner 和 manifest 通过。文件为 2,006,699 字节，SHA256 `0292c03f2ad1d817829342466dd64738b9b5a8b5ecb5350cecc7456fd70c5410`。
-- VPS 已同步部署手机响应式优化，下载按钮与二维码指向 0.1.3；浏览器确认下载弹窗，原 Token、模型及桌面 MCP 配置核对一致。
-- Windows Latest 继续指向 0.1.155。发布与部署证据位于 `.Rethos-temp/android-0.1.3/`。
-
-### Windows 0.1.155 与 Android 0.1.2
-
-2026-11-11 已发布 [Windows 0.1.155](https://github.com/Hopesy/Rethos/releases/tag/v0.1.155) 和 [Android 0.1.2](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.2)，源码提交均为 `264eaf3b105fac205d07ca0b8b9cf61e63bbfa88`。
-
-- [Windows 构建与安装验收](https://github.com/Hopesy/Rethos/actions/runs/42962731665)、[Android 模拟器与签名发布](https://github.com/Hopesy/Rethos/actions/runs/42962738440)、[Docker 双架构构建](https://github.com/Hopesy/Rethos/actions/runs/42962728454)全部通过。
-- [发布提交的主分支 CI](https://github.com/Hopesy/Rethos/actions/runs/42962728474) 29 项通过；此前 [CI 修复全量验证](https://github.com/Hopesy/Rethos/actions/runs/42957417956)覆盖三种系统的 20 个分片，40 项检查通过。
-- 公开 Windows 安装程序完整下载后，SHA256 与发布元数据一致；PE 版本资源为 `0.1.155`。Latest 下载入口已指向该版本。
-- 公开 APK 已匿名下载并通过 apksigner 与 manifest 复核：版本 `0.1.2`、versionCode `3`，签名证书与 0.1.1 相同。
-- VPS 已同步新版网页，Android 下载按钮与二维码指向 0.1.2；原 Token、模型、桌面 MCP 配置与 SSH 隧道核对通过。发布及部署证据保存在 `.Rethos-temp/release-0.1.155-final/`。
-
-### Android 0.1.1 与 VPS 0.1.155
-
-2026-11-10 已发布 [Rethos Android 0.1.1](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.1)，源码提交 `ec445afe74c0249fa497d8ed7f504404f4f9726d`。[Android 构建与发布](https://github.com/Hopesy/Rethos/actions/runs/42804470560) 的模拟器验证、签名和公开发布全部通过。公开 APK 已匿名下载并重新验证签名、应用 ID、版本号和摘要，支持使用原签名覆盖安装。
-
-- APK 为 1,964,498 字节，SHA-256：`04d6bd3caabc4916aaa60352f1be0429daddd776aff0b70f42e9b2cb7c8cff6c`。
-- 登录页和顶部菜单提供原生相机扫码。电脑网页在“设置 → 通用 → 手机扫码登录”生成登录二维码。
-- VPS 已部署 0.1.155，网页下载按钮与二维码均指向公开 0.1.1 APK。[双架构镜像构建与验收](https://github.com/Hopesy/Rethos/actions/runs/42804448567) 全部通过。
-- Windows 的 Latest 发布入口继续指向 0.1.154；桌面连接安装器源码见 `deploy/desktop`。
-
-### Android 0.1.0
-
-2026-11-10 已发布 [Rethos Android 0.1.0](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.0)，源码提交为 `cae09ac35f00c281ef11f4eb31c59b47ef657ac7`。[构建与发布](https://github.com/Hopesy/Rethos/actions/runs/42752753773) 的验证、签名与发布任务全部通过，APK 大小约 1.61 MiB，详见 [验证记录](releases/android-v0.1.0-verification.md)。
-
-Android 使用 Kotlin + WebView，默认连接 `https://rethos.hopesy.cc`。安装后输入现有 Token 登录。后续使用相同签名和递增版本号覆盖安装。运行 `package-android.yml` 并勾选 `publish` 可自动发布；签名配置、版本号修改与使用步骤见 [Android 文档](../android/README.md)。Android 标签独立使用 `android-v<版本>`，发布时保留 Windows 的 Latest 入口。
-
-### 0.1.151
-
-2026-11-10 北京时间 00:55 已发布 [Rethos 0.1.151](https://github.com/Hopesy/Rethos/releases/tag/v0.1.151)，源码提交为 `f959859ccdde1062de99bd316f59c4fa5a125892`。本次统一 Token 登录，简化登录页并增加手机扫码登录与访问 Token 管理，详见[版本说明](releases/v0.1.151.md)。
-
-- [Windows 构建与发布](https://github.com/Hopesy/Rethos/actions/runs/42657353977)通过：登录回归、NSIS 安装、安装后桌面启动、内置浏览器、服务端与更新元数据均完成验证。
-- Release 的 7 个文件已公开，构建信息中的 SHA256 与 GitHub 上传摘要逐项一致；安装程序为 267,651,004 字节，便携 ZIP 为 371,533,907 字节。当前签名状态为未签名。
-- [Docker 版本构建与发布](https://github.com/Hopesy/Rethos/actions/runs/42658410982)通过，AMD64 与 ARM64 的源码标签均为上述提交。
-- `ghcr.io/hopesy/rethos:v0.1.151`、`latest` 与 VPS 正在运行的镜像均对应多架构摘要 `sha256:8c778da934e72f294abad7f260f225a01d678004423051a040f11b7eaa404229`。
-- VPS 已更新；当前入口为 [rethos.hopesy.cc](https://rethos.hopesy.cc)。公网版本、登录页资源与管理员 Token 鉴权已核对，登录和二维码交互在隔离服务完成验证。
-
-### 0.1.150
-
-2026-11-09 已发布 [Rethos 0.1.150](https://github.com/Hopesy/Rethos/releases/tag/v0.1.150)，源码提交为 `593fcab46b444c0d35ac262165b0dfc033194c9e`。本次包含新图标、简化配对、自定义模型设置、中文与设置页优化，以及官方云和组织空间入口清理，详见[版本说明](releases/v0.1.150.md)。
-
-- [Windows 构建与发布](https://github.com/Hopesy/Rethos/actions/runs/42611670157)通过：NSIS 安装、安装后桌面启动、preload、鉴权、内置浏览器和更新元数据均完成验证。
-- Release 的 7 个文件已上传；构建信息中的 SHA256 与 GitHub 上传摘要一致。安装程序为 267,642,695 字节，便携 ZIP 为 371,523,136 字节；沿用当前未签名状态。
-- [Docker 构建与发布](https://github.com/Hopesy/Rethos/actions/runs/42611869265)通过：AMD64、ARM64 均经过启动、OSS、浏览器、HTTPS 配对和持久化验证。
-- 镜像 `ghcr.io/hopesy/rethos:v0.1.150` 与 `latest` 指向相同的多架构摘要：`sha256:24a30bc0690f1eddb8720d14434c90beedaffa3e794a0d4c83769995e3db693a`。
-
-### 0.1.149
-
-2026-11-09 已发布 [Rethos 0.1.149](https://github.com/Hopesy/Rethos/releases/tag/v0.1.149)，[GitHub Actions 42551723554](https://github.com/Hopesy/Rethos/actions/runs/42551723554) 的构建与发布作业均通过，来源提交为 `b9f8023c44e39ce75e68270e64a91520c57c5ff5`。
-
-- 116 项更新文件、鉴权、桌面会话与启动相关回归测试通过。
-- 内置浏览器、独立服务端、安装后桌面渲染、preload 和写操作鉴权通过实际运行验证。
-- 7 个 Release 文件的上传摘要与本地构建字节一致，固定安装包下载地址经匿名访问返回 HTTP 200。
-- Windows 安装程序为 267,606,661 字节，便携 ZIP 为 371,460,148 字节；当前签名状态为未签名。
-
-此次验收修复了桌面鉴权请求头在产品改名后的不一致；鉴权使用稳定的内部协议标识。测试用户目录包含 Windows 标准文件夹，桌面验收结果同时写入独立 JSON，方便诊断 GUI 进程的启动问题。
+从 0.1.156 起，Windows x64 与 Android 8.0+ 共用 `package.json` 版本和 `v<版本>` Release。详细发布结果记录于[客户端发布历史](histories/client-releases.md)。
 
 ## 用户下载与安装
 
-- [Windows 安装程序（固定下载地址）](https://github.com/Hopesy/Rethos/releases/latest/download/Rethos-setup.exe)
-- [Android 0.1.3 APK](https://github.com/Hopesy/Rethos/releases/download/android-v0.1.3/Rethos-Android-0.1.3.apk)
-- [全部版本与便携 ZIP](https://github.com/Hopesy/Rethos/releases)
+- [Windows 安装程序](https://github.com/Hopesy/Rethos/releases/latest/download/Rethos-setup.exe)
+- [Android APK](https://github.com/Hopesy/Rethos/releases/latest/download/Rethos-Android.apk)
+- [最新统一发布页](https://github.com/Hopesy/Rethos/releases/latest)
 
-运行 `Rethos-<版本>-setup.exe` 后，从开始菜单打开 Rethos。也可解压 `Rethos-<版本>-x64.zip`，运行其中的 `Rethos.exe`。当前 Windows 版本未配置代码签名，Windows SmartScreen 可能显示未知发布者提示；下载来源和校验值均在 Release 页面公开。
+Windows 运行 `Rethos-setup.exe`，从开始菜单打开 Rethos。Android 下载 `Rethos-Android.apk` 覆盖安装，沿用原签名和应用 ID，保留登录数据。Windows 当前为未签名构建，SmartScreen 可能显示未知发布者提示。
 
-PowerShell 校验下载文件：
+公开页面保留 5 个资产：两个安装包、`Rethos-setup.exe.blockmap`、`latest.yml` 和 `SHA256SUMS.txt`。后两个更新文件由 Windows 自动更新使用；详细构建信息、Android 签名报告与 Windows 便携 ZIP 保留在该次 Actions artifact。
 
 ```powershell
 Get-FileHash .\Rethos-setup.exe -Algorithm SHA256
+Get-FileHash .\Rethos-Android.apk -Algorithm SHA256
 ```
 
-将结果与该版本的 `SHA256SUMS-windows-x64.txt` 对照。`BUILD-INFO.json` 记录版本、源码提交、架构、签名状态以及各文件的 SHA256。
+## 联合发布
 
-桌面客户端包含本机服务和桌面集成，用户数据沿用 `~/.openmausbot`。已有 VPS 的日常使用入口继续见 [VPS 部署文档](rethos-vps.md)，本机独立 CUA 与反向 SSH 的维护方式见 [桌面接入](../deploy/desktop/README.md)。
-
-## 一键 Windows 发布
-
-打开 [Actions → Rethos Windows installer](https://github.com/Hopesy/Rethos/actions/workflows/package-win.yml)，选择 **Run workflow**：
-
-1. 选择 `main`，或在 `ref` 填写要打包的提交、标签或分支。
-2. 默认仅构建并保留 Actions artifact，适合候选版本验证。
-3. 勾选 `publish`，通过所有验证后发布到本仓库 GitHub Releases。
-
-命令行等价入口：
+运行 **Rethos client release**（`release-clients.yml`），选择 ref，并按需要勾选 `publish`。入口先把 ref 解析为固定提交，再分别构建两端；全部验收通过后合并资产、核对版本和来源，并公开同一个 Release。
 
 ```sh
-# 构建验证，保存 Actions artifact 30 天
-gh workflow run package-win.yml --repo Hopesy/Rethos --ref main
-
-# 构建、验证并发布
-gh workflow run package-win.yml --repo Hopesy/Rethos --ref main -f publish=true
-
-# 查看当前运行
-gh run list --repo Hopesy/Rethos --workflow package-win.yml --limit 5
+gh workflow run release-clients.yml --repo Hopesy/Rethos --ref main -f publish=true
+gh run list --repo Hopesy/Rethos --workflow release-clients.yml --limit 5
 ```
 
-工作流在 Windows runner 完成以下步骤：
+Windows 继续验证浏览器、独立服务端、NSIS 安装后桌面启动和更新摘要。Android 继续执行单元测试、Lint、模拟器真实触摸验收和正式签名检查。公开前逐个核对 GitHub 返回的资产 SHA256。
 
-- 按锁文件安装依赖并清理旧输出，编译前端、服务端、桌面资源和原生依赖。
-- 构建 NSIS 安装程序及 ZIP，验证内置浏览器和独立服务端运行。
-- 在临时用户数据目录实际安装，启动安装后的 `Rethos.exe`，检查桌面渲染、preload、服务健康和桌面访问权限。
-- 检查更新地址为 `Hopesy/Rethos`，验证 `latest.yml` 的版本、路径、文件大小和 SHA512。
-- 汇总安装包、ZIP、差分更新文件、固定下载名、SHA256 和构建来源。
-- 发布作业仅在构建成功且勾选 `publish` 时执行：先上传草稿、对照 GitHub 返回的文件摘要，随后公开 Release。
-
-构建作业使用只读权限，发布作业使用当前仓库的 `contents: write`。Windows 发布使用工作流内置的 `GITHUB_TOKEN`。测试数据和诊断位于 `.Rethos-temp/desktop-release/`，失败时上传日志。
+单独运行 `package-win.yml` 或 `package-android.yml` 可构建候选包并保存 Actions artifact；联合入口负责公开版本。已公开的版本保持原样，后续修改提升版本号。
 
 ## 更新版本
 
-1. 修改并提交 `package.json` 中的版本，例如从 `0.1.149` 提升到 `0.1.150`。也可通过 **Prepare next release** 创建版本 PR。
-2. 推送并运行 Windows 发布工作流。已公开的同版本 Release 会受到保护，发布修复应提升版本号。
-3. 确认 Release 中同时存在安装程序、`.exe.blockmap` 和 `latest.yml`。固定下载名 `Rethos-setup.exe` 是同一安装程序的副本。
-4. 已安装桌面端从同一仓库读取更新；也可下载新安装程序进行覆盖升级。
+1. 修改 `package.json` 版本并新增 `docs/releases/v<版本>.md`，提交代码。
+2. Android Gradle 自动读取此版本，versionCode 为 major × 1000000 + minor × 1000 + patch。minor 与 patch 范围为 0–999，major 范围为 0–2000。
+3. 运行联合发布流程，核对两端版本、安装包和 SHA256。
+4. 更新 VPS 镜像并检查在线网页。网页下载按钮与二维码共用 Android Latest 固定链接。
 
-卸载使用 Windows **设置 → 应用 → 已安装的应用 → Rethos**。便携 ZIP 的程序目录可在退出后删除。用户数据单独保留；涉及删除数据时先备份。
+Windows 自动更新仍从同一仓库读取 `latest.yml`。Android 通过原签名覆盖安装；卸载会删除应用登录数据。
 
-首次发布的工作流验证覆盖安装与启动、更新文件完整性。两个正式版本之间的实际自动升级将在下一版本发布时验证。
-
-## 产物与工作流
+## 其他构建入口
 
 | 产物 | 入口 | 用途 |
 | --- | --- | --- |
-| Windows 安装程序、便携 ZIP、更新文件 | `package-win.yml` | Windows 桌面安装和升级；支持直接发布 Release |
-| Ubuntu DEB、AppImage | `package-linux.yml` | 保留独立构建入口，按该平台工作流单独验收 |
-| VPS Docker 镜像 | `docker.yml` | `ghcr.io/hopesy/rethos`，AMD64 / ARM64 |
-| npm `.tgz` | `npm-package.yml`、`pnpm package:npm` | 服务端与 CLI；公共 npm 发布需配置包所有权和发布认证 |
-| 全平台 Release | `release.yml` | 手动入口，需先具备 macOS 签名及 notarization 凭据，并完成各平台验收 |
-
-Windows 发布流程独立执行，版本修改通过手动发布入口推进。全平台 Release 的自动版本触发已关闭，避免版本提交立即启动 macOS 签名任务。Docker 和 npm 的发布命令分别按对应工作流执行。
-
-## 本地构建
+| Windows + Android | `release-clients.yml` | 统一版本、联合验收与公开 Release |
+| Windows / Android 单端 | `package-win.yml` / `package-android.yml` | 候选包和隔离验收 |
+| Linux DEB、AppImage | `package-linux.yml` | 按平台验收 |
+| VPS Docker | `docker.yml` | `ghcr.io/hopesy/rethos`，AMD64 / ARM64 |
+| npm | `npm-package.yml` | 服务端和 CLI，按包所有权配置 |
+| macOS 等全平台 | `release.yml` | 需先完成签名配置和各平台验收 |
 
 ```sh
 pnpm install --frozen-lockfile
 pnpm package:win
 ```
 
-`release/` 保存构建输出。安装后的桌面验收脚本仅在 GitHub Actions 的临时 Windows runner 执行。源代码中的 `after-pack.mjs` 继续检查浏览器、cloudflared、数据引擎及许可文件；第三方资源来源和固定版本保留在相应准备脚本中。
+`release/` 保存安装包构建输出；测试过程与证据位于 `.Rethos-temp/`。第三方资源的固定版本和许可检查继续由现有打包脚本执行。

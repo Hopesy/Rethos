@@ -1,12 +1,12 @@
 # Rethos Android
 
-Kotlin + 系统 WebView 客户端，默认访问 `https://rethos.hopesy.cc`。网页与 VPS 共用版本，应用外壳独立发布。
+Kotlin + 系统 WebView 客户端，默认访问 `https://rethos.hopesy.cc`。Windows、Android 与网页共用 `package.json` 版本。
 
 ## 使用
 
-[下载签名 APK](https://github.com/Hopesy/Rethos/releases/download/android-v0.1.3/Rethos-Android-0.1.3.apk) · [发布页与校验文件](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.3)
+[下载签名 APK](https://github.com/Hopesy/Rethos/releases/latest/download/Rethos-Android.apk) · [发布页与校验文件](https://github.com/Hopesy/Rethos/releases/latest)
 
-当前版本 0.1.3，versionCode 4，沿用原签名与应用 ID，可直接覆盖安装 0.1.2。
+当前版本 0.1.156，versionCode 1156，沿用原签名与应用 ID，可直接覆盖安装 0.1.3。
 
 安装签名 APK，打开 Rethos，输入已有访问 Token 登录。也可点击登录页“扫码登录”，允许相机权限后扫描电脑端设置中生成的登录二维码，返回应用确认登录。登录 Cookie 保存在应用内；关掉应用再打开会恢复会话。0.1.3 移除了外壳的图标、标题和菜单顶栏，网页直接铺满系统状态栏下方。
 
@@ -36,7 +36,7 @@ Windows 使用 `gradlew.bat`。调试包使用独立应用 ID `cc.hopesy.rethos.
 
 ## GitHub Actions 发布
 
-运行 **Rethos Android APK**，选择源码 ref，并按需要勾选 `publish`。流程先做单元测试、Lint 和 Android 模拟器隔离验收，再构建签名 APK；发布前核对 GitHub 上传摘要。测试页面只进入 debug 构建。
+运行 **Rethos client release** 并勾选 `publish`，两端完成验证后一起发布。**Rethos Android APK** 单独运行时生成候选包和验收记录。流程执行单元测试、Lint、Android 模拟器隔离验收、正式签名与 APK manifest 版本检查。
 
 仓库 Secrets：
 
@@ -45,9 +45,9 @@ Windows 使用 `gradlew.bat`。调试包使用独立应用 ID `cc.hopesy.rethos.
 - `RETHOS_ANDROID_KEY_ALIAS`：签名别名。
 - `RETHOS_ANDROID_KEY_PASSWORD`：签名密钥密码。
 
-每次发布同时增加 `app/build.gradle.kts` 的 `versionCode` 和 `versionName`，新增 `docs/releases/android-v<版本>.md`。标签为 `android-v<版本>`，APK 命名为 `Rethos-Android-<版本>.apk`。Android Release 独立于 Windows 的 Latest 更新入口。
+每次发布只更新 `package.json` 版本；Gradle 自动生成相同的 versionName，versionCode 为 major × 1000000 + minor × 1000 + patch。版本规则和联合发布步骤见[发布指南](../docs/releasing.md)。
 
-网页“获取手机应用”仅提供 Rethos Android，二维码与下载按钮共用 `src/lib/app-links.ts` 中的 `ANDROID_APK_URL`。新版 APK 发布后，将此地址和本文下载链接更新为该版本的实际资源地址，再发布网页更新。
+网页下载按钮与二维码共用 `src/lib/app-links.ts` 的 `ANDROID_APK_URL`，固定指向 Latest 的 `Rethos-Android.apk`。
 
 升级时下载新版 APK 并覆盖安装。相同应用 ID、相同签名和递增版本号支持保留应用数据。签名密钥需要长期备份；卸载应用会清除应用内登录状态。
 

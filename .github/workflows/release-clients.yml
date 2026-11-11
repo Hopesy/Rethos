@@ -1,0 +1,89 @@
+name: Rethos client release
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Commit, tag or branch for both clients
+        type: string
+      publish:
+        description: Publish both verified clients as one release
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rethos-client-release
+  cancel-in-progress: false
+
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.source.outputs.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - id: source
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  windows:
+    needs: source
+    uses: ./.github/workflows/package-win.yml
+    with:
+      ref: ${{ needs.source.outputs.sha }}
+
+  android:
+    needs: source
+    uses: ./.github/workflows/package-android.yml
+    with:
+      ref: ${{ needs.source.outputs.sha }}
+    secrets: inherit
+
+  release:
+    needs: [source, windows, android]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ needs.source.outputs.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: rethos-windows-${{ needs.windows.outputs.version }}-x64
+          path: release/windows-assets
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: rethos-android-release
+          path: release/android-assets
+      - name: Verify and assemble both platforms
+        env:
+          RELEASE_SHA: ${{ needs.source.outputs.sha }}
+          RELEASE_VERSION: ${{ needs.windows.outputs.version }}
+          ANDROID_VERSION: ${{ needs.android.outputs.version }}
+        run: node scripts/client-release.mjs prepare
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: rethos-clients-${{ needs.windows.outputs.version }}
+          path: release/client-assets/
+          compression-level: 0
+          retention-days: 30
+      - name: Publish the complete release
+        if: inputs.publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RELEASE_SHA: ${{ needs.source.outputs.sha }}
+          RELEASE_VERSION: ${{ needs.windows.outputs.version }}
+          ANDROID_VERSION: ${{ needs.android.outputs.version }}
+        run: node scripts/client-release.mjs publish

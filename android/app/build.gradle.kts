@@ -1,4 +1,10 @@
+import groovy.json.JsonSlurper
+
 plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }
+
+val productVersion = (JsonSlurper().parse(rootProject.file("../package.json")) as Map<*, *>)["version"] as String
+val versionParts = productVersion.split('.').map(String::toInt)
+require(versionParts.size == 3 && versionParts[0] in 0..2000 && versionParts[1] in 0..999 && versionParts[2] in 0..999)
 
 android {
     namespace = "cc.hopesy.rethos"
@@ -7,8 +13,8 @@ android {
         applicationId = "cc.hopesy.rethos"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4
-        versionName = "0.1.3"
+        versionCode = versionParts[0] * 1_000_000 + versionParts[1] * 1_000 + versionParts[2]
+        versionName = productVersion
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     signingConfigs {

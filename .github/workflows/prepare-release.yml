@@ -108,7 +108,7 @@ jobs:
             --base main \
             --head "release/v$VERSION" \
             --title "chore(release): bump version to $VERSION" \
-            --body "Bumps Rethos to \`$VERSION\`. After merging, run the Rethos Windows installer workflow with publish enabled. See docs/releasing.md for the release checks and other platform requirements.")
+            --body "Bumps Rethos to \`$VERSION\`. After merging, run the Rethos client release workflow with publish enabled. See docs/releasing.md for the release checks and other platform requirements.")
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "### Release PR" >> "$GITHUB_STEP_SUMMARY"
           echo "$url" >> "$GITHUB_STEP_SUMMARY"

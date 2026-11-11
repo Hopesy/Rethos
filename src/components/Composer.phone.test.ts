@@ -91,6 +91,13 @@ afterEach(() => {
 });
 
 describe("the phone composer", () => {
+  it("replaces the call action with Send while a phone draft has content", () => {
+    restoreComposerDraft(`bot:${bot.id}:${bot.threadId}`, { text: "准备发送", attachments: [] });
+    render({ bot });
+    expect(fixture.call).toBeNull();
+    expect(container.querySelector('[data-composer-send]')).not.toBeNull();
+  });
+
   it("shows only the + and the pill in Simple mode, with an inverse voice button", () => {
     render({ bot });
     expect(plus()).not.toBeNull();

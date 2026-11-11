@@ -93,7 +93,7 @@ rethos
 
 ## Windows 桌面安装包
 
-[下载 Windows 安装程序](https://github.com/Hopesy/Rethos/releases/latest/download/Rethos-setup.exe) · [Release 与便携 ZIP](https://github.com/Hopesy/Rethos/releases)
+[下载 Windows 安装程序](https://github.com/Hopesy/Rethos/releases/latest/download/Rethos-setup.exe) · [下载 Android APK](https://github.com/Hopesy/Rethos/releases/latest/download/Rethos-Android.apk) · [统一发布页](https://github.com/Hopesy/Rethos/releases/latest)
 
 Windows x64 使用 `Rethos-<版本>-setup.exe` 安装，也可解压 `Rethos-<版本>-x64.zip` 后运行 `Rethos.exe`。当前安装包未签名，首次打开可能出现 Windows SmartScreen 提示。Release 附带 SHA256 校验值及构建来源提交。
 
