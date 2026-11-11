@@ -54,8 +54,10 @@ beforeAll(async () => {
       if (rest === `${root}/${boxId}/commands`) return send(200, { exitCode: 0, stdout: "", stderr: "" });
       if (rest === `${root}/${boxId}/commands/7`) return send(200, { ok: true, processId: 7, status: jobRunning ? "running" : "exited", running: jobRunning, exitCode: jobRunning ? null : 0, stdout: "", stderr: "" });
       if (rest === `${root}/${boxId}/stop`) {
-        if (stopStatus < 300) state = "archived";
-        return send(stopStatus, stopStatus < 300 ? { ok: true } : { ok: false, message: "Cloud computers are not available right now." });
+        const status = stopStatus;
+        if (status < 300) state = "archived";
+        setTimeout(() => send(status, status < 300 ? { ok: true } : { ok: false, message: "Cloud computers are not available right now." }), 100);
+        return;
       }
       send(404, { ok: false, code: "not_found", message: `unexpected ${req.method} ${url.pathname}` });
     });
@@ -76,6 +78,7 @@ describe("a cloud computer goes to sleep after its idle window", () => {
   async function powerFor(cfg: import("./config.ts").AppConfig) {
     vi.resetModules();
     const { createCloudComputerPower } = await import("./host/cloud-computer-power.ts");
+    const powerLogs = logs;
     power = createCloudComputerPower({
       cfg,
       busy: () => busy,
@@ -84,7 +87,7 @@ describe("a cloud computer goes to sleep after its idle window", () => {
       routines: () => [],
       routineComputer: () => null,
       broadcast: () => {},
-      log: line => logs.push(line),
+      log: line => powerLogs.push(line),
     });
     return power;
   }
