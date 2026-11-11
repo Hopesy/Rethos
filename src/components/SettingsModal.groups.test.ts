@@ -117,7 +117,7 @@ describe("Settings rail groups", () => {
       computers: ["desktopWorkspaces", "computer", "logins"],
       account: ["usage", "backups", "import", "experimental"],
     });
-    expect(html).toContain('<optgroup label="AI">');
+    expect(html).toContain('data-settings-group="ai"');
   });
 
   it("keeps the browser-only pages for a hosted workspace's admins", () => {

@@ -30,7 +30,6 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.PopupMenu
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
@@ -43,6 +42,8 @@ import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.webkit.WebViewCompat
+import androidx.webkit.WebViewFeature
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.Executors
@@ -65,6 +66,7 @@ open class MainActivity : ComponentActivity() {
     private var pickerOrigin: String? = null
     private data class Download(val url: String, val origin: ServerOrigin, val cookie: String?, val userAgent: String)
     private var download: Download? = null
+    private var textExport: Pair<ServerOrigin, TextExport>? = null
     private val downloads = Executors.newSingleThreadExecutor()
     private val preferences by lazy { getSharedPreferences("connection", MODE_PRIVATE) }
     private var scanningOrigin: String? = null
@@ -107,6 +109,42 @@ open class MainActivity : ComponentActivity() {
         }
     }
 
+    private val saveText = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val pending = textExport
+        textExport = null
+        val uri = result.data?.data
+        if (result.resultCode == RESULT_OK && uri != null && pending?.first == origin) {
+            toast(R.string.download_started)
+            downloads.execute {
+                val ok = runCatching { requireNotNull(contentResolver.openOutputStream(uri)).use { it.write(pending.second.bytes) } }.isSuccess
+                runOnUiThread { if (!isDestroyed) toast(if (ok) R.string.download_done else R.string.download_failed) }
+            }
+        }
+    }
+
+    private fun installTextDownloads() {
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) return
+        WebViewCompat.removeWebMessageListener(browser, "RethosDownloads")
+        WebViewCompat.addWebMessageListener(browser, "RethosDownloads", setOf(origin.value)) { view, message, sourceOrigin, isMainFrame, _ ->
+            if (!isMainFrame || !origin.contains(sourceOrigin.toString()) || !origin.contains(view.url.orEmpty()) || textExport != null) return@addWebMessageListener
+            val export = runCatching {
+                val raw = message.data ?: return@runCatching null
+                if (raw.length > TextExport.MAX_BYTES + 1024) return@runCatching null
+                val data = JSONObject(raw)
+                if (data.optString("type") != "save-text") return@runCatching null
+                TextExport.create(data.getString("filename"), data.getString("content"), data.getString("mime"))
+            }.getOrNull()
+            if (export == null) { toast(R.string.download_failed); return@addWebMessageListener }
+            textExport = origin to export
+            val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "text/markdown"
+                putExtra(Intent.EXTRA_TITLE, export.filename)
+            }
+            try { saveText.launch(intent) } catch (_: ActivityNotFoundException) { textExport = null; toast(R.string.download_failed) }
+        }
+    }
+
     protected open fun initialOrigin(): ServerOrigin = ServerOrigin.parse(preferences.getString("server", null).orEmpty())
         ?: requireNotNull(ServerOrigin.parse(getString(R.string.default_server)))
     protected open fun intercept(request: WebResourceRequest): WebResourceResponse? = null
@@ -127,19 +165,12 @@ open class MainActivity : ComponentActivity() {
             view.setPadding(edges.left, edges.top, edges.right, edges.bottom)
             WindowInsetsCompat.CONSUMED
         }
-        val toolbar = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL; setPadding(dp(16), 0, dp(6), 0) }
-        toolbar.addView(ImageView(this).apply { setImageResource(R.drawable.app_icon); importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO }, LinearLayout.LayoutParams(dp(24), dp(24)))
-        toolbar.addView(TextView(this).apply { text = getString(R.string.app_name); textSize = 14f; gravity = Gravity.CENTER_VERTICAL; setTextColor(getColor(R.color.ink)); setPadding(dp(8), 0, 0, 0) }, LinearLayout.LayoutParams(0, dp(44), 1f))
-        toolbar.addView(Button(this, null, android.R.attr.borderlessButtonStyle).apply {
-            text = "⋮"; textSize = 22f; contentDescription = getString(R.string.menu)
-            setOnClickListener { menu(this) }
-        }, LinearLayout.LayoutParams(dp(48), dp(48)))
-        root.addView(toolbar)
         progress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply { max = 100; contentDescription = getString(R.string.loading) }
         root.addView(progress, LinearLayout.LayoutParams(-1, dp(2)))
         val content = FrameLayout(this)
         browser = WebView(this)
         configureBrowser()
+        installTextDownloads()
         content.addView(browser, FrameLayout.LayoutParams(-1, -1))
         failure = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setPadding(dp(32), dp(32), dp(32), dp(32)); setBackgroundColor(getColor(R.color.surface)); visibility = View.GONE }
         failure.addView(ImageView(this).apply { setImageResource(R.drawable.app_icon) }, LinearLayout.LayoutParams(dp(56), dp(56)))
@@ -269,20 +300,6 @@ open class MainActivity : ComponentActivity() {
         error("Too many redirects")
     }
 
-    private fun menu(anchor: View) {
-        PopupMenu(this, anchor).apply {
-            menu.add(0, 4, 0, R.string.scan_login)
-            menu.add(0, 1, 0, R.string.reload)
-            menu.add(0, 2, 1, R.string.server)
-            menu.add(0, 3, 2, R.string.open_browser)
-            setOnMenuItemClickListener { item ->
-                when (item.itemId) { 1 -> browser.reload(); 2 -> editServer(); 3 -> openExternal((browser.url?.takeIf { origin.contains(it) } ?: origin.value).toUri()); 4 -> scanLogin() }
-                true
-            }
-            show()
-        }
-    }
-
     private fun scanLogin() {
         if (scanningOrigin != null) return
         scanningOrigin = origin.value
@@ -323,13 +340,14 @@ open class MainActivity : ComponentActivity() {
                 dialog.dismiss()
                 if (next == origin) { loadHome(); return@setOnClickListener }
                 browser.stopLoading()
-                picker?.onReceiveValue(null); picker = null; download = null
+                picker?.onReceiveValue(null); picker = null; download = null; textExport = null
                 CookieManager.getInstance().removeAllCookies {
                     if (isDestroyed) return@removeAllCookies
                     WebStorage.getInstance().deleteAllData()
                     clearHistoryAfterLoad = true
                     browser.clearCache(true)
                     origin = next
+                    installTextDownloads()
                     preferences.edit { putString("server", next.value) }
                     loadHome()
                 }

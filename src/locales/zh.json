@@ -2005,6 +2005,8 @@
   "common.delete": "删除",
   "common.undo": "撤销",
   "sidebar.aria": "机器人与导航",
+  "sidebar.back": "返回",
+  "sidebar.chats": "聊天",
   "sidebar.cloudOwner": "{email} 的云端",
   "sidebar.search": "搜索",
   "sidebar.searchAria": "搜索机器人和消息",

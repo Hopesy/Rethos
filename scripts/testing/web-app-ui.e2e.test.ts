@@ -120,6 +120,8 @@ async function connect(url: string) {
     await request("Input.insertText", { text: "Phone web app fixture message" });
     await request("Input.dispatchKeyEvent", { type: "keyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13 });
     await request("Input.dispatchKeyEvent", { type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13 });
+    await expect.poll(() => evaluate("document.querySelector('textarea[aria-label^=\"Message\"]').value")).toBe("Phone web app fixture message\n");
+    await evaluate("document.querySelector('button[aria-label=\"Send message\"]').click()");
     const settled = await runControlOmb(["wait", "--bot", bot.id, "--task", bot.activeTaskId, "--timeout", "25", "--url", url]) as { status: string };
     expect(settled.status).toBe("settled");
     await expect.poll(() => evaluate("document.body.textContent.includes('Phone web app fixture message')"), { timeout: 15_000 }).toBe(true);

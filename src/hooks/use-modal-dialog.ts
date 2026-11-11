@@ -1,14 +1,18 @@
 import { useEffect, useRef, type RefObject } from "react";
+import { PHONE_LAYOUT, useMediaQuery } from "@/lib/use-media-query";
+import { registerMobileBackTarget } from "@/lib/mobile-back-targets";
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]';
 
 /** The dialog element needs `tabIndex={-1}` so it can take focus when it has no field to start in. */
 export function useModalDialog(dialogRef: RefObject<HTMLElement | null>, onClose: () => void) {
+  const phone = useMediaQuery(PHONE_LAYOUT);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
+    const releaseBack = phone ? registerMobileBackTarget(() => onCloseRef.current(), 10) : undefined;
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     if (!dialog.contains(document.activeElement)) dialog.focus();
     const focusable = () => Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE))
@@ -36,8 +40,9 @@ export function useModalDialog(dialogRef: RefObject<HTMLElement | null>, onClose
     };
     dialog.addEventListener("keydown", onKey);
     return () => {
+      releaseBack?.();
       dialog.removeEventListener("keydown", onKey);
       previousFocus?.focus();
     };
-  }, [dialogRef]);
+  }, [dialogRef, phone]);
 }

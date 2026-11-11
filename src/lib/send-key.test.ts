@@ -154,6 +154,17 @@ describe("the local send key choice", () => {
     }
   });
 
+  it("defaults phone keyboards to new lines and preserves an explicit send choice", async () => {
+    Object.assign(browser, { matchMedia: () => ({ matches: true }) });
+    const preference = await import("./send-key");
+    expect(preference.useSendKey()).toBe("mod-enter");
+    expect(sendsMessage(key(), preference.useSendKey())).toBe(false);
+    local.setItem(preference.SEND_KEY_KEY, "enter");
+    expect(preference.useSendKey()).toBe("enter");
+    preference.setSendKey("shift-enter");
+    expect(preference.useSendKey()).toBe("shift-enter");
+  });
+
   it("notifies mounted composers immediately and unsubscribes cleanly", async () => {
     const preference = await import("./send-key");
     preference.useSendKey();

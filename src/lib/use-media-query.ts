@@ -17,8 +17,6 @@ export const TWO_SIDE_PANELS_FIT = "(min-width: 1536px)";
 
 export const SIDEBAR_AND_PANEL_FIT = "(min-width: 1280px)";
 
-/** Tailwind's md breakpoint. */
-export const SIDEBAR_INLINE = "(min-width: 768px)";
+export const SIDEBAR_INLINE = "(min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine), (min-width: 768px) and (pointer: none)";
 
-/** Below Tailwind's md breakpoint: the phone layout, where the sidebar is a full-screen bot list. */
-export const PHONE_LAYOUT = "(max-width: 767.98px)";
+export const PHONE_LAYOUT = "(max-width: 767.98px), (pointer: coarse) and (max-height: 500px)";

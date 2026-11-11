@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { createPortal } from "react-dom";
-import { ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useMenuMotion } from "./MenuMotion";
 import { popoverClosesOnKey, usePopoverDismiss } from "@/hooks/use-popover-dismiss";
 import { submenuIntent, type Point, type SubmenuIntent } from "@/lib/submenu-intent";
 import { MENU_HEADING, MENU_ITEM_SEPARATOR, MENU_SHEET } from "./menu-recipe";
+import { PHONE_LAYOUT, useMediaQuery } from "@/lib/use-media-query";
+import { useMobileBackDismiss } from "@/hooks/use-mobile-back-dismiss";
+import { t } from "@/lib/i18n";
 
 export interface SidebarMenuItem {
   key: string;
@@ -123,7 +126,7 @@ function MenuRows({
             onPointerEnter={(event) => onRowEnter?.(item, event.currentTarget, { x: event.clientX, y: event.clientY })}
             onPointerLeave={() => onRowLeave?.(item)}
             className={cn(
-              "flex min-h-[30px] w-full items-center gap-2 rounded-md px-2 py-1.5 text-start text-[14px] leading-[18px] disabled:opacity-60 focus-visible:bg-menu-hover focus-visible:outline-none",
+              "flex min-h-[30px] w-full items-center gap-2 rounded-md px-2 py-1.5 text-start text-[14px] leading-[18px] disabled:opacity-60 focus-visible:bg-menu-hover focus-visible:outline-none max-md:min-h-12 max-md:px-3 max-md:text-base",
               item.active || (item.submenu && openSubmenu === item.key && engaged) ? "bg-menu-active text-ink" : "text-ink hover:bg-menu-hover",
             )}
           >
@@ -143,7 +146,7 @@ function MenuRows({
             ) : (
               <span className={cn("flex-1", item.wrap ? "min-w-0 break-words" : "truncate")}>{item.label}</span>
             )}
-            {item.value && <span className="shrink-0 text-[13px] font-normal leading-[18px] tabular-nums text-ink-secondary">{item.value}</span>}
+            {item.value && <span className="max-w-[45%] truncate text-[13px] font-normal leading-[18px] tabular-nums text-ink-secondary">{item.value}</span>}
             {item.trailing}
             {item.attention && (
               <span
@@ -190,6 +193,7 @@ export function SidebarPopoverMenu({
   onOpenChange?: (open: boolean) => void;
   renderTrigger: (state: { open: boolean }) => React.ReactNode;
 }) {
+  const phone = useMediaQuery(PHONE_LAYOUT);
   const [open, setOpen] = useState(false);
   const [pinned, setPinned] = useState(false);
   const [submenu, setSubmenu] = useState<string | null>(null);
@@ -232,7 +236,7 @@ export function SidebarPopoverMenu({
   useEffect(() => () => { clearTimers(); intentRef.current?.reset(); }, []);
 
   const hoverOpen = () => {
-    if (!openOnHover || pinned) return;
+    if (phone || !openOnHover || pinned) return;
     clearTimers();
     openTimer.current = setTimeout(() => setOpen(true), OPEN_DELAY_MS);
   };
@@ -288,12 +292,16 @@ export function SidebarPopoverMenu({
   const openSub = (item: SidebarMenuItem, row: HTMLElement, focus = false) => {
     rowsByKey.current.set(item.key, row);
     intent.openNow(item.key);
-    if (focus) requestAnimationFrame(() => menuItems(subRef.current)[0]?.focus());
+    if (focus) requestAnimationFrame(() => menuItems(phone ? menuRef.current : subRef.current)[0]?.focus());
   };
   const closeSub = (focusRow = false) => {
     intent.closeNow();
-    if (focusRow) subRowRef.current?.focus();
+    if (focusRow) requestAnimationFrame(() => {
+      const row = phone ? menuItems(menuRef.current).find((item) => item.dataset.menuKey === submenu) : subRowRef.current;
+      row?.focus();
+    });
   };
+  useMobileBackDismiss(phone && open && submenu !== null, () => closeSub(true), 30);
 
   const selectItem = (item: SidebarMenuItem, row: HTMLElement, keyboard: boolean) => {
     if (item.submenu) {
@@ -348,35 +356,42 @@ export function SidebarPopoverMenu({
       ref={menuRef}
       id={menuId}
       role="menu"
-      aria-label={ariaLabel}
+      aria-label={phone && openItem ? openItem.label : ariaLabel}
+      data-phone-menu={phone ? "" : undefined}
       data-sidebar-popover-menu={anchored ? "anchored" : undefined}
       {...motion.exitProps}
-      onKeyDown={(event) => onMenuKey(event, false)}
-      onPointerMove={(event) => intent.move({ x: event.clientX, y: event.clientY }, Boolean(submenu && subRowRef.current?.contains(event.target as Node)))}
-      onPointerLeave={() => intent.leaveMenu()}
-      style={anchored ? { position: "fixed", left: position?.left ?? 0, top: position?.top ?? 0, minWidth: MENU_MIN_WIDTH, width: "max-content", maxWidth: `min(${MENU_MAX_WIDTH}px, calc(100vw - ${EDGE_MARGIN * 2}px))`, maxHeight: `calc(100vh - ${EDGE_MARGIN * 2}px)`, visibility: position ? undefined : "hidden" } : undefined}
+      onKeyDown={(event) => onMenuKey(event, phone && Boolean(openItem))}
+      onPointerMove={(event) => !phone && intent.move({ x: event.clientX, y: event.clientY }, Boolean(submenu && subRowRef.current?.contains(event.target as Node)))}
+      onPointerLeave={() => !phone && intent.leaveMenu()}
+      style={phone ? { position: "fixed", left: 8, right: 8, bottom: "max(8px, env(safe-area-inset-bottom))", maxHeight: "min(75dvh, 600px)" } : anchored ? { position: "fixed", left: position?.left ?? 0, top: position?.top ?? 0, minWidth: MENU_MIN_WIDTH, width: "max-content", maxWidth: `min(${MENU_MAX_WIDTH}px, calc(100vw - ${EDGE_MARGIN * 2}px))`, maxHeight: `calc(100vh - ${EDGE_MARGIN * 2}px)`, visibility: position ? undefined : "hidden" } : undefined}
       className={cn(
         sheetClass,
-        anchored ? "z-[60] overflow-y-auto" : "absolute z-40",
-        placement === "below" && "top-full right-0 mt-1 w-72 max-w-[calc(100vw-2rem)]",
+        phone || anchored ? "z-[60] overflow-y-auto" : "absolute z-40",
+        !phone && placement === "below" && "top-full right-0 mt-1 w-72 max-w-[calc(100vw-2rem)]",
         motion.className,
       )}
     >
+      {phone && <div className="sticky -top-1.5 z-10 flex min-h-12 items-center gap-2 border-b border-hairline bg-menu px-1">
+        {openItem && <button type="button" onClick={() => closeSub(true)} aria-label={t("sidebar.back")} className="flex size-11 items-center justify-center rounded-xl hover:bg-menu-hover"><ChevronLeft size={20} /></button>}
+        <span className="min-w-0 flex-1 truncate px-2 text-base font-medium">{openItem?.label ?? ariaLabel}</span>
+        <button type="button" onClick={() => close(true)} aria-label={t("common.close")} className="flex size-11 items-center justify-center rounded-xl hover:bg-menu-hover"><X size={20} /></button>
+      </div>}
       <MenuRows
-        items={items}
+        items={phone && openItem?.submenu ? openItem.submenu : items}
         openSubmenu={submenu}
         engaged={engaged}
         onItem={selectItem}
         onRowEnter={(item, row, point) => {
+          if (phone) return;
           if (item.submenu) rowsByKey.current.set(item.key, row);
           intent.enterRow(item.key, Boolean(item.submenu), point);
         }}
-        onRowLeave={(item) => intent.leaveRow(item.key)}
+        onRowLeave={(item) => !phone && intent.leaveRow(item.key)}
       />
     </div>
   );
 
-  const subSheet = motion.shown && openItem?.submenu && (
+  const subSheet = !phone && motion.shown && openItem?.submenu && (
     <div
       ref={subRef}
       role="menu"
@@ -406,7 +421,7 @@ export function SidebarPopoverMenu({
       className="relative"
       onPointerEnter={hoverOpen}
       onPointerLeave={hoverClose}
-      onFocus={() => openOnHover && setOpen(true)}
+      onFocus={() => !phone && openOnHover && setOpen(true)}
       onBlur={(event) => {
         if (pinned) return;
         if (!event.relatedTarget || !insideRef.current.contains(event.relatedTarget)) setOpen(false);
@@ -450,8 +465,8 @@ export function SidebarPopoverMenu({
         {renderTrigger({ open })}
       </button>
 
-      {anchored
-        ? typeof document !== "undefined" && sheet ? createPortal(<>{sheet}{subSheet}</>, document.body) : null
+      {phone || anchored
+        ? typeof document !== "undefined" && sheet ? createPortal(<>{phone && <div aria-hidden className="fixed inset-0 z-[59] bg-black/35" onPointerDown={() => close(true)} />}{sheet}{subSheet}</>, document.body) : null
         : <>{sheet}{typeof document !== "undefined" && subSheet ? createPortal(subSheet, document.body) : null}</>}
     </div>
   );

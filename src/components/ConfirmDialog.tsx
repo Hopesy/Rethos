@@ -4,6 +4,8 @@ import { AlertTriangle } from "lucide-react";
 
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
+import { PHONE_LAYOUT, useMediaQuery } from "@/lib/use-media-query";
+import { useMobileBackDismiss } from "@/hooks/use-mobile-back-dismiss";
 
 export type ConfirmTone = "danger" | "neutral";
 
@@ -32,6 +34,7 @@ export interface ConfirmDialogProps {
  */
 export function ConfirmDialog(props: ConfirmDialogProps) {
   const { open, onCancel, returnFocusRef } = props;
+  useMobileBackDismiss(useMediaQuery(PHONE_LAYOUT) && open, onCancel, 40);
   const dialogRef = useRef<HTMLDivElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
   const cancelAction = useRef(onCancel);

@@ -259,13 +259,13 @@ export function CallTargetButton({
         data-call-button={placement}
         style={fill && !active ? { backgroundColor: fill, color: ink } : undefined}
         className={cn(
-          "relative flex shrink-0 items-center justify-center disabled:opacity-60",
+          "relative flex shrink-0 items-center justify-center disabled:opacity-60 max-md:size-11",
           round ? "rounded-full transition-[color,background,filter]" : "rounded-l-3xl rounded-r-lg active:rounded-3xl transition-[color,background,border-radius]",
           composer && fill ? "size-7" : composer || placement === "panel" ? "size-8" : "size-9",
           active
             ? "bg-danger text-white hover:brightness-110"
             : inverse
-              ? "bg-ink text-app hover:opacity-90 max-md:size-9"
+              ? "bg-ink text-app hover:opacity-90"
             : fill
               ? "hover:brightness-110"
             : placement === "panel"

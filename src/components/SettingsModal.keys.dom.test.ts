@@ -9,6 +9,7 @@ import type { AppSettingsSection } from "@/state/store";
 const fx = vi.hoisted(() => ({
   section: "engines" as AppSettingsSection,
   advanced: false,
+  phone: false,
   config: {} as Record<string, unknown>,
   listeners: new Set<() => void>(),
   dispatch: vi.fn(),
@@ -32,6 +33,10 @@ vi.mock("@/state/store", async (original) => {
   };
 });
 vi.mock("@/lib/interface-mode", () => ({ useAdvancedMode: () => fx.advanced, setAdvancedMode: vi.fn() }));
+vi.mock("@/lib/use-media-query", async (original) => ({
+  ...await original<typeof import("@/lib/use-media-query")>(),
+  useMediaQuery: () => fx.phone,
+}));
 vi.mock("@/lib/analytics", () => ({ analyticsEnabled: () => false, setAnalyticsEnabled: vi.fn(), track: vi.fn() }));
 vi.mock("@/lib/use-owner-or-admin", () => ({ useOwnerOrAdmin: () => null }));
 vi.mock("./DesktopCapabilities", () => ({ useDesktopCapabilities: () => ({ capabilities: {} }) }));
@@ -75,6 +80,8 @@ function type(value: string) {
 beforeEach(() => {
   setLocale("en");
   fx.section = "engines";
+  fx.advanced = false;
+  fx.phone = false;
   fx.config = { composio: { configured: false }, box: { configured: false }, vps: { configured: false, sshAlias: "" } };
   fx.dispatch.mockReset();
   fx.dispatch.mockImplementation((action: { type: string; section?: AppSettingsSection; config?: Record<string, unknown> }) => {
@@ -94,6 +101,30 @@ afterEach(() => {
 });
 
 describe("searching Settings for a key", () => {
+  it.each([false, true])("navigates the phone index, details and searchable API keys (Advanced: %s)", async (advanced) => {
+    fx.phone = true;
+    fx.advanced = advanced;
+    fx.section = "general";
+    flushSync(() => root.render(createElement(SettingsModal)));
+    expect(host.querySelector("[data-phone-settings-index]")).not.toBeNull();
+    expect(document.activeElement).not.toBe(search());
+    const section = host.querySelector<HTMLButtonElement>('[data-phone-settings-section="engines"]')!;
+    expect(section).not.toBeNull();
+    flushSync(() => section.click());
+    expect(host.querySelector("[data-phone-settings-index]")).toBeNull();
+    expect(fx.section).toBe("engines");
+    flushSync(() => host.querySelector<HTMLButtonElement>("[data-phone-settings-back]")!.click());
+    expect(host.querySelector("[data-phone-settings-index]")).not.toBeNull();
+    type("fish");
+    flushSync(() => result("fishAudio")!.click());
+    expect(fx.section).toBe("connections");
+    expect(host.querySelector("[data-phone-settings-index]")).toBeNull();
+    await vi.waitFor(() => expect(document.activeElement).toBe(row("fishAudio").querySelector("[data-key-input]")));
+    flushSync(() => host.querySelector<HTMLButtonElement>("[data-phone-settings-back]")!.click());
+    expect(host.querySelector("[data-phone-settings-index]")).not.toBeNull();
+    expect(search().value).toBe("");
+  });
+
   it.each([false, true])("lists it by name and section and lands on its row, focused (Advanced: %s)", async (advanced) => {
     fx.advanced = advanced;
     flushSync(() => root.render(createElement(SettingsModal)));

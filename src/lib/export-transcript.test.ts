@@ -302,6 +302,15 @@ describe("export-transcript", () => {
     expect(revoke).toHaveBeenCalledWith("blob:local-transcript");
   });
 
+  it("hands the complete UTF-8 transcript to the Android save dialog without creating a blob URL", () => {
+    const postMessage = vi.fn();
+    vi.stubGlobal("window", { RethosDownloads: { postMessage } });
+    const create = vi.spyOn(URL, "createObjectURL");
+    downloadMarkdownTranscript("聊天.md", "# 对话\n你好 🌍");
+    expect(JSON.parse(postMessage.mock.calls[0]![0])).toEqual({ type: "save-text", filename: "聊天.md", content: "# 对话\n你好 🌍", mime: "text/markdown" });
+    expect(create).not.toHaveBeenCalled();
+  });
+
   it("formats dates and times consistently", () => {
     const formattedDate = formatExportDate(fixedDate);
     expect(typeof formattedDate).toBe("string");

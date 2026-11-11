@@ -45,7 +45,39 @@ device qualification:
 Record browser and OS versions and whether each check used a simulator or a
 physical device. No real account, paid provider or production server is needed.
 
-## Layout evidence
+## Responsive interaction checks
+
+Use the isolated fixture with a production UI build. In a touch viewport, check
+360 × 780, 390 × 844, 430 × 932 and landscape 844 × 390, then restore a desktop
+1280 × 900 viewport with mouse input. Check a 390 × 400 viewport for the space
+available above an onscreen keyboard.
+
+- Open the chat list, its profile menu and Settings. System Back closes the
+  topmost menu, settings detail, settings index and drawer in that order. The
+  chat URL and unsent draft stay intact.
+- Open the composer's Add menu and its approval submenu. Back returns to the
+  parent menu, then chat. Check the message actions menu with a real touch tap.
+- Check 44px action buttons, 48px menu rows, scrollable bottom sheets and no
+  horizontal overflow. Landscape retains the phone drawer; desktop restores the
+  inline sidebar and existing header controls.
+- With no saved send-key preference, Enter inserts a line. Verify an explicitly
+  saved Enter-to-send choice still sends, and the Send button submits a multiline
+  Chinese fixture message once.
+- In both interface modes, open settings categories, return to the index, search
+  for an API key and open its existing form. Opening the index leaves keyboard
+  focus on the dialog.
+- Download the transcript and inspect its UTF-8 Chinese text and line breaks.
+  The Android shell uses its origin-scoped `RethosDownloads` bridge and the system
+  document picker; `WebViewSmokeTest.savesChineseMarkdownThroughSystemDocumentPicker`
+  exercises that path on an isolated Android WebView.
+
+The 2026-11-11 Ego Lite browser run covered these viewport, navigation, search,
+send and browser-download checks against a disposable fake-engine fixture.
+Browser screenshots, exported Markdown and the viewport matrix are in
+`.Rethos-temp/mobile-responsive/`. The shortened viewport models keyboard space;
+physical keyboard and Android document-picker checks use their own device lane.
+
+## Safe-area layout evidence
 
 These production-renderer captures use a 390px Chrome viewport with synthetic
 44px top and 34px bottom safe areas, and the same disposable fake-engine setup.

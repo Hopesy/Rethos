@@ -56,7 +56,9 @@ import { scrollWithin } from "@/lib/scroll-within";
 import { glassPopupFrameStyle } from "@/lib/glass-popup";
 import { NotificationRows } from "./NotificationSettingsRows";
 import { useAdvancedMode } from "@/lib/interface-mode";
-import { Select } from "./Select";
+import { PhoneSettingsHeader, PhoneSettingsNavigation } from "./PhoneSettingsNavigation";
+import { PHONE_LAYOUT, useMediaQuery } from "@/lib/use-media-query";
+import { useMobileBackDismiss } from "@/hooks/use-mobile-back-dismiss";
 import { SavedStepsRow } from "./SavedStepsRow";
 import { BrowserProfilesRow, ColorUserBubblesRow, AdvancedModeRow, ExperimentalFeaturesRow, LanguageRow, NewBotEffortRow, PinnedCirclesRow, ReplayTourRow, RunCardRow, FollowUpRow, SendKeyRow, ShowThreadsRow, ToolCallsRow, UniversalPinsRow, UpdatesRow } from "./AppSettingsRows";
 import { SIMPLE_ADVANCED_ONLY, SimpleAiPage, SimpleBillingPage, SimpleComputerPage, SimpleGeneralPage, SimpleLooksPage, SimpleUpdatesPage, type Disclose, type SimpleDisclosureId } from "./SettingsSimplePages";
@@ -170,6 +172,8 @@ export function SettingsModal() {
   const advanced = useAdvancedMode();
   const remoteActive = window.ogb?.remoteClient?.active === true;
   const requested = state.appSettingsSection;
+  const phone = useMediaQuery(PHONE_LAYOUT);
+  const [phoneDetail, setPhoneDetail] = useState(requested !== "general");
   const section: AppSettingsSection =
     advanced && requested === "remote" && window.ogb?.environments
       ? "desktopWorkspaces"
@@ -178,7 +182,7 @@ export function SettingsModal() {
       : (advanced && requested === "updates") || ["cloudAccount", "organization", "people", "botAccess"].includes(requested) ? "general" : requested;
   const dialogRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const searchFirst = useRef(advanced);
+  const searchFirst = useRef(advanced && !phone);
   const [query, setQuery] = useState("");
   useEffect(() => window.ogb?.environments?.onOpenSettings?.(() => setQuery("")), []);
   useEffect(() => window.ogb?.onOpenAppSettings?.(() => setQuery("")), []);
@@ -220,12 +224,14 @@ export function SettingsModal() {
     return { id, open, onToggle: () => setFolds((current) => ({ ...current, [id]: !open })) };
   };
   const [looks, setLooks] = useState(false);
+  const backToSettings = () => { if (looks) setLooks(false); else setPhoneDetail(false); };
+  useMobileBackDismiss(phone && phoneDetail, backToSettings, 5);
   const [reveal, setReveal] = useState<string | null>(null);
   const advancedMatches = advanced || !q ? [] : SIMPLE_ADVANCED_ONLY.filter((key) => t(key).toLowerCase().includes(q));
   const keyResults = remoteActive || !availableSections.some((entry) => entry.id === "connections") ? [] : keySearchResults(q);
   const keyResultButtons = (className: string) => keyResults.map((entry) => (
     <button key={entry.id} type="button" data-settings-key-result={entry.id} className={className}
-      onClick={() => { setQuery(""); setLooks(false); dispatch(openKeyResult(entry)); }}>
+      onClick={() => { setQuery(""); setLooks(false); setPhoneDetail(true); dispatch(openKeyResult(entry)); }}>
       <span>{t(entry.labelKey)} <span className="text-ink-secondary">· {t(keySection(entry).titleKey)}</span></span>
     </button>
   ));
@@ -297,7 +303,7 @@ export function SettingsModal() {
     };
   }, [dispatch]);
 
-  const openSection = (id: AppSettingsSection) => dispatch({ type: "toggleAppSettings", open: true, section: id });
+  const openSection = (id: AppSettingsSection) => { setPhoneDetail(true); dispatch({ type: "toggleAppSettings", open: true, section: id }); };
 
   const phoneFocus = state.appSettingsPhonePairing;
   const computerPairs = currentPhonePairingTarget(state.config?.cloudHome === true) === "computer";
@@ -439,6 +445,17 @@ export function SettingsModal() {
     </div>
   );
 
+  const phoneNavigation = phone && !phoneDetail && <PhoneSettingsNavigation
+    groups={advanced ? SETTINGS_GROUPS.map((group) => ({ label: t(group.labelKey), entries: visibleSections.filter((entry) => entry.group === group.id).map((entry) => ({ id: entry.id, label: t(entry.labelKey), icon: entry.icon })) }))
+      : [{ entries: visiblePages.map((page) => ({ id: page.sections[0]!, label: t(page.labelKey), icon: page.icon })) }]}
+    search={searchField("flex h-12 items-center gap-2 rounded-xl border border-hairline bg-card px-3", "w-full min-w-0 bg-transparent text-base text-ink focus:outline-none")}
+    onSelect={openSection} onClose={close}>
+    {visibleSections.length === 0 && <p className="py-4 text-center text-sm text-ink-secondary">{t("settings.noMatch", { query: query.trim() })}</p>}
+    {keyResultButtons("flex min-h-12 items-center rounded-xl px-3 text-left text-base hover:bg-raised")}
+    {advancedMatches.map((key) => <button key={key} type="button" className="min-h-12 rounded-xl px-3 text-left text-base hover:bg-raised" onClick={() => { setQuery(""); openSection("general"); setReveal("advanced-mode"); }}>{t(key)}</button>)}
+  </PhoneSettingsNavigation>;
+  const phoneHeader = phone && phoneDetail && <PhoneSettingsHeader title={looks ? t("settings.simple.page.looks") : sectionLabelKey ? t(sectionLabelKey) : t("settings.title")} onBack={backToSettings} onClose={close} />;
+
   if (!advanced) {
     const looksOpen = looks && currentPage?.id === "general";
     const goTo = (id: AppSettingsSection) => { setLooks(false); openSection(id); };
@@ -461,7 +478,8 @@ export function SettingsModal() {
           className="glass-surface glass-popup animate-pop-in relative flex overflow-hidden rounded-2xl text-ink"
         >
           <span id="app-settings-title" className="sr-only">{t("settings.title")}</span>
-          <nav aria-label={t("settings.title")} className="glass-rail hidden min-h-0 w-[198px] shrink-0 flex-col gap-0.5 overflow-y-auto px-3 py-4 sm:flex">
+          {phoneNavigation}
+          <nav aria-label={t("settings.title")} className="glass-rail hidden min-h-0 w-[198px] shrink-0 flex-col gap-0.5 overflow-y-auto px-3 py-4 md:flex">
             {searchField(
               "mb-2 flex h-8 shrink-0 items-center gap-2 rounded-lg bg-ink/[0.05] px-[9px] text-[13px] focus-within:ring-2 focus-within:ring-focus/60",
               "w-full min-w-0 bg-transparent text-[13px] text-ink placeholder:text-ink-secondary focus:outline-none",
@@ -503,22 +521,10 @@ export function SettingsModal() {
             {keyResultButtons("flex min-h-8 shrink-0 cursor-pointer items-center rounded-lg px-[9px] py-1.5 text-left text-[13px] leading-[18px] text-ink transition-colors hover:bg-ink/[0.06] motion-reduce:transition-none")}
           </nav>
 
-          <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-            <header className="flex shrink-0 items-center gap-3 py-3 pl-4 pr-14 sm:pb-1.5 sm:pl-12 sm:pt-8">
-              <Select className="min-w-0 sm:hidden"
-                aria-label={t("settings.title")}
-                value={currentPage?.id ?? ""}
-                onChange={(event) => {
-                  setQuery("");
-                  const page = simplePages.find((candidate) => candidate.id === event.target.value);
-                  if (page) goTo(page.sections[0]!);
-                }}
-              >
-                {simplePages.map((page) => (
-                  <option key={page.id} value={page.id}>{t(page.labelKey)}</option>
-                ))}
-              </Select>
-              <h2 className="hidden truncate text-[17px] font-medium leading-6 tracking-[-0.008em] text-ink sm:block">
+          {(!phone || phoneDetail) && <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+            {phoneHeader}
+            <header className="hidden md:flex shrink-0 items-center gap-3 py-3 pl-4 pr-14 md:pb-1.5 md:pl-12 md:pt-8">
+              <h2 className="hidden truncate text-[17px] font-medium leading-6 tracking-[-0.008em] text-ink md:block">
                 {looksOpen ? t("settings.simple.page.looks") : currentPage ? t(currentPage.labelKey) : null}
               </h2>
             </header>
@@ -527,7 +533,7 @@ export function SettingsModal() {
               onClick={close}
               aria-label={t("settings.close")}
               title={`${t("settings.close")} (${shortcutLabel("close-panel")})`}
-              className="absolute right-3 top-3 flex size-8 cursor-pointer items-center justify-center rounded-full text-ink-secondary transition-colors hover:bg-ink/[0.06] hover:text-ink motion-reduce:transition-none"
+              className="absolute right-3 top-3 hidden md:flex size-8 cursor-pointer items-center justify-center rounded-full text-ink-secondary transition-colors hover:bg-ink/[0.06] hover:text-ink motion-reduce:transition-none"
             >
               <X size={16} aria-hidden="true" />
             </button>
@@ -536,14 +542,14 @@ export function SettingsModal() {
               ref={scrollRef}
               data-settings-scroll
               className={cn(
-                "flex min-h-0 flex-1 flex-col gap-7 overflow-y-auto px-4 pb-8 pt-4 sm:px-8 sm:pb-7 sm:pt-[22px]",
+                "flex min-h-0 flex-1 flex-col gap-7 overflow-y-auto px-4 pb-8 pt-4 md:px-8 md:pb-7 md:pt-[22px]",
                 SIMPLE_BUTTONS,
                 "[&_.uppercase]:normal-case [&_.uppercase]:tracking-normal",
               )}
             >
               {currentPage ? renderSimplePage(currentPage) : null}
             </div>
-          </div>
+          </div>}
         </div>
       </div>
     );
@@ -568,7 +574,8 @@ export function SettingsModal() {
         className="glass-surface glass-popup animate-pop-in relative flex overflow-hidden rounded-2xl outline-none"
       >
         <span id="app-settings-title" className="sr-only">{t("settings.title")}</span>
-        <nav className="glass-rail hidden min-h-0 w-[200px] shrink-0 flex-col gap-1 overflow-y-auto border-r border-hairline/30 p-3 sm:flex">
+        {phoneNavigation}
+        <nav className="glass-rail hidden min-h-0 w-[200px] shrink-0 flex-col gap-1 overflow-y-auto border-r border-hairline/30 p-3 md:flex">
           <div className="shrink-0 px-2 py-3 text-[15px] font-semibold text-ink">
             {t("settings.title")}
           </div>
@@ -610,28 +617,10 @@ export function SettingsModal() {
           {keyResultButtons("cursor-pointer flex min-h-9 items-center rounded-lg px-2.5 py-2 text-left text-[13px] text-ink transition-colors hover:bg-control/50 motion-reduce:transition-none")}
         </nav>
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-hairline/30 px-3 py-3 sm:pl-9">
-            <Select className="min-w-0 sm:hidden"
-              aria-label={t("settings.title")}
-              value={section}
-              onChange={(event) => {
-                setQuery("");
-                openSection(event.target.value as AppSettingsSection);
-              }}
-            >
-              {SETTINGS_GROUPS.map((group) => {
-                const entries = availableSections.filter((entry) => entry.group === group.id);
-                return entries.length === 0 ? null : (
-                  <optgroup key={group.id} label={t(group.labelKey)}>
-                    {entries.map(({ id, labelKey }) => (
-                      <option key={id} value={id}>{t(labelKey)}</option>
-                    ))}
-                  </optgroup>
-                );
-              })}
-            </Select>
-            <span className="hidden text-[15px] font-semibold text-ink sm:block">
+        {(!phone || phoneDetail) && <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          {phoneHeader}
+          <div className="hidden md:flex shrink-0 items-center justify-between gap-3 border-b border-hairline/30 px-3 py-3 md:pl-9">
+            <span className="hidden text-[15px] font-semibold text-ink md:block">
               {sectionLabelKey ? t(sectionLabelKey) : null}
             </span>
             <button
@@ -644,10 +633,10 @@ export function SettingsModal() {
             </button>
           </div>
 
-          <div ref={scrollRef} className="flex flex-1 flex-col gap-4 overflow-y-auto px-3 py-4 sm:px-5 sm:pb-5">
+          <div ref={scrollRef} className="flex flex-1 flex-col gap-4 overflow-y-auto px-3 py-4 md:px-5 md:pb-5">
             {renderSection(section)}
           </div>
-        </div>
+        </div>}
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import type { EffectCallback } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const fixture = vi.hoisted(() => ({ effects: [] as EffectCallback[] }));
+vi.mock("@/lib/use-media-query", () => ({ useMediaQuery: () => false, PHONE_LAYOUT: "phone" }));
 vi.mock("react", async (original) => ({
   ...await original<typeof import("react")>(),
   useRef: (initial: unknown) => ({ current: initial }),

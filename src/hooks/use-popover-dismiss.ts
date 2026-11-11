@@ -1,4 +1,6 @@
 import { useEffect, useRef, type RefObject } from "react";
+import { PHONE_LAYOUT, useMediaQuery } from "@/lib/use-media-query";
+import { useMobileBackDismiss } from "./use-mobile-back-dismiss";
 
 export function popoverClosesOnKey(event: Pick<KeyboardEvent, "key" | "defaultPrevented" | "isComposing">): boolean {
   return event.key === "Escape" && !event.defaultPrevented && !event.isComposing;
@@ -14,6 +16,7 @@ export function popoverClosesOnPointer(target: EventTarget | null, root: Contain
 }
 
 export function usePopoverDismiss(open: boolean, rootRef: RefObject<Containing | null>, close: () => void) {
+  useMobileBackDismiss(useMediaQuery(PHONE_LAYOUT) && open, close, 20);
   const closeRef = useRef(close);
   closeRef.current = close;
   useEffect(() => {

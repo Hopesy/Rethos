@@ -144,7 +144,7 @@ describe("Settings → Appearance", () => {
     fixture.advancedMode = advanced;
     vi.stubGlobal("window", { ogb: { remoteClient: { active: true } } });
     const html = render();
-    expect(html).not.toContain('<option value="general">');
+    expect(html).not.toContain('data-settings-section="general"');
     expect(html).toContain('aria-label="App language"');
     expect(html).toContain('<option value="en">English</option>');
   });
@@ -156,7 +156,7 @@ describe("Settings → Appearance", () => {
 
   it("groups skins, thread visibility, and tool-call display with preservation copy", () => {
     const html = render();
-    expect(html).toContain('<option value="appearance" selected="">Appearance</option>');
+    expect(html).toContain('data-settings-section="appearance" aria-current="page"');
     expect(html).toContain("Midnight");
     expect(html).toContain('aria-label="Show threads"');
     expect(html).toContain('aria-label="Pinned bots as circles"');
@@ -352,12 +352,12 @@ describe("Settings → Appearance", () => {
   it("makes local appearance available remotely without exposing server settings", () => {
     vi.stubGlobal("window", { ogb: { remoteClient: { active: true } } });
     const html = render();
-    expect(html).toContain('<option value="appearance" selected="">Appearance</option>');
-    expect(html).toContain('<option value="companion">This server</option>');
-    expect(html).not.toContain('<option value="general">');
-    expect(html).not.toContain('<option value="connections">');
-    expect(html).not.toContain('<option value="engines">');
-    expect(html).not.toContain('<option value="backups">');
+    expect(html).toContain('data-settings-section="appearance" aria-current="page"');
+    expect(html).toContain('data-settings-section="companion"');
+    expect(html).not.toContain('data-settings-section="general"');
+    expect(html).not.toContain('data-settings-section="connections"');
+    expect(html).not.toContain('data-settings-section="engines"');
+    expect(html).not.toContain('data-settings-section="backups"');
     expect(html).toContain("Midnight");
     expect(html).toContain('aria-label="Show threads"');
     expect(html).toContain('aria-label="Notification sounds"');
@@ -368,7 +368,7 @@ describe("Settings → Appearance", () => {
   it("offers full backups in local Settings", () => {
     fixture.section = "backups";
     const html = render();
-    expect(html).toContain('<option value="backups" selected="">Backups</option>');
+    expect(html).toContain('data-settings-section="backups" aria-current="page"');
     expect(html).toContain("Export full backup");
     expect(html).toContain('type="file" accept=".ombbackup"');
     expect(html).toContain("Older team backups and shareable templates");
@@ -412,36 +412,36 @@ describe("Settings → Appearance", () => {
     fixture.section = "desktopWorkspaces";
     vi.stubGlobal("window", { ogb: { environments: {} } });
     const local = render();
-    expect(local).toContain('<option value="desktopWorkspaces" selected="">Servers</option>');
+    expect(local).toContain('data-settings-section="desktopWorkspaces" aria-current="page"');
     expect(local).toContain("Your servers");
     expect(local).toContain("Loading servers…");
     expect(local, "connecting is the same sheet as ＋, not a form of its own").not.toContain("Name (optional)");
     fixture.section = "general";
     vi.stubGlobal("window", { ogb: { workspaces: {} } });
-    expect(render()).not.toContain('<option value="desktopWorkspaces"');
+    expect(render()).not.toContain('data-settings-section="desktopWorkspaces"');
   });
 
   it("leaves retired Organization settings out even with a legacy desktop bridge", () => {
     fixture.section = "organization";
     vi.stubGlobal("window", { ogb: { organization: {} } });
     const local = render();
-    expect(local).not.toContain('<option value="organization"');
-    expect(local).toContain('<option value="general" selected="">General</option>');
+    expect(local).not.toContain('data-settings-section="organization"');
+    expect(local).toContain('data-settings-section="general" aria-current="page"');
     fixture.section = "appearance";
     vi.stubGlobal("window", {});
-    expect(render()).not.toContain('<option value="organization"');
+    expect(render()).not.toContain('data-settings-section="organization"');
     vi.stubGlobal("window", { ogb: { organization: {}, remoteClient: { active: true } } });
-    expect(render()).not.toContain('<option value="organization"');
+    expect(render()).not.toContain('data-settings-section="organization"');
     expect(render()).toContain("Midnight");
   });
   it("leaves retired Cloud billing out even with a legacy desktop bridge", () => {
     fixture.section = "cloudAccount";
     vi.stubGlobal("window", { ogb: { cloudAccount: {} } });
-    expect(render()).not.toContain('<option value="cloudAccount"');
-    expect(render()).toContain('<option value="general" selected="">General</option>');
+    expect(render()).not.toContain('data-settings-section="cloudAccount"');
+    expect(render()).toContain('data-settings-section="general" aria-current="page"');
     fixture.section = "appearance";
-    vi.stubGlobal("window", {}); expect(render()).not.toContain('<option value="cloudAccount"');
+    vi.stubGlobal("window", {}); expect(render()).not.toContain('data-settings-section="cloudAccount"');
     vi.stubGlobal("window", { ogb: { cloudAccount: {}, remoteClient: { active: true } } });
-    expect(render()).not.toContain('<option value="cloudAccount"');
+    expect(render()).not.toContain('data-settings-section="cloudAccount"');
   });
 });

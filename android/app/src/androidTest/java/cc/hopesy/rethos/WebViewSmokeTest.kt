@@ -157,6 +157,33 @@ class WebViewSmokeTest {
         }
     }
 
+    @Test fun savesChineseMarkdownThroughSystemDocumentPicker() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val context = instrumentation.targetContext
+        val directory = File(context.cacheDir, "fixture-uploads").apply { mkdirs() }
+        val file = File(directory, "export.md").apply { writeText("") }
+        val uri = FileProvider.getUriForFile(context, context.packageName + ".fixtures", file)
+        val opened = CountDownLatch(1)
+        val monitor = object : Instrumentation.ActivityMonitor() {
+            override fun onStartActivity(intent: Intent): Instrumentation.ActivityResult? {
+                if (intent.action != Intent.ACTION_CREATE_DOCUMENT) return null
+                assertEquals("text/markdown", intent.type)
+                assertEquals("聊天.md", intent.getStringExtra(Intent.EXTRA_TITLE))
+                opened.countDown()
+                return Instrumentation.ActivityResult(Activity.RESULT_OK, Intent().setData(uri).addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION))
+            }
+        }
+        instrumentation.addMonitor(monitor)
+        try {
+            launch().use { scenario ->
+                waitFor(scenario, "typeof window.RethosDownloads==='object'", "true")
+                js(scenario, "RethosDownloads.postMessage(JSON.stringify({type:'save-text',filename:'聊天.md',content:'# 对话\\n你好 🌍',mime:'text/markdown'}))")
+                assertTrue("System save dialog launched", opened.await(10, TimeUnit.SECONDS))
+                waitForNative(scenario) { file.readText() == "# 对话\n你好 🌍" }
+            }
+        } finally { instrumentation.removeMonitor(monitor); file.delete() }
+    }
+
     @Test fun phoneEntryLaunchesNativeCameraAndCancelReturnsToLogin() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val monitor = instrumentation.addMonitor(QrCaptureActivity::class.java.name, null, false)

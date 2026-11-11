@@ -23,7 +23,7 @@ import {
   PluginsPanel, preloadScreens, RemoteAgentSettingsPanel, RemoteDesktopPanel, RoomPanel, SettingsModal, TeamMapPage, TriggersPage,
 } from "@/components/lazy-screens";
 import { useAdvancedMode } from "@/lib/interface-mode";
-import { useRoomPanelShown } from "@/lib/room-panel";
+import { closeRoomPanel, useRoomPanelShown } from "@/lib/room-panel";
 import { WorkspaceBackupRecovery } from "@/components/WorkspaceBackupSettings";
 import { NotificationRail, NotificationsPanel } from "@/components/NotificationsPanel";
 import { useNotificationFeed } from "@/lib/notification-preferences";
@@ -36,7 +36,7 @@ import { CloudSendStrip } from "@/components/CloudSendStrip";
 import { HomeLine } from "@/components/HomeLine";
 import { useTeamChats } from "@/state/team-chats";
 import { needsYouVersion, useTeamPeopleLoader } from "@/state/team-people";
-import { inboxVersion, useInboxLoader, useInboxPanel, useInboxReady } from "@/state/inbox";
+import { closeInbox, inboxVersion, useInboxLoader, useInboxPanel, useInboxReady } from "@/state/inbox";
 import { InboxPanel } from "@/components/inbox/InboxPanel";
 import { PlacesRail } from "@/components/PlacesRail";
 import { NewLocalFromMenu } from "@/components/PlaceAddSheet";
@@ -64,6 +64,7 @@ import { useDesktopNotificationOpens, useExternalChatLinks } from "@/hooks/use-e
 import { useUsageSnapshot } from "@/hooks/use-usage-snapshot";
 import { useReadShownChatOnFocus } from "@/hooks/use-read-shown-chat";
 import { usePresence } from "@/hooks/use-presence";
+import { useMobileBackDismiss, useMobileBackNavigation } from "@/hooks/use-mobile-back-dismiss";
 import { ChatNotice } from "@/components/ChatErrorBanner";
 import { loadingLine } from "@/lib/app-loading";
 import { useAiSwitchKeeper } from "@/lib/ai-switch";
@@ -73,6 +74,7 @@ import { PairPage } from "./pair/PairPage";
 import { WebPanelPage } from "@/components/WebPanelPage";
 
 function Shell({ viewer }: { viewer: WelcomeViewer | null }) {
+  useMobileBackNavigation();
   const { state, dispatch } = useStore();
   useTeamChats(state.config);
   const needsYou = needsYouVersion(state.bots, state.groups, state.notifications);
@@ -130,6 +132,10 @@ function Shell({ viewer }: { viewer: WelcomeViewer | null }) {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [localVmWorkspaceBotId, setLocalVmWorkspaceBotId] = useState<string | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const closeDrawer = useCallback(() => {
+    setDrawerOpen(false);
+    requestAnimationFrame(() => menuButtonRef.current?.focus());
+  }, []);
   const previousViewRef = useRef(state.activeView);
   const calendarOriginRef = useRef<"chat" | "team-map" | "web-panel">("chat");
   const loading = loadingLine({ connected: state.connected, hydrated: state.hydrated === true, developer: import.meta.env.DEV });
@@ -143,6 +149,19 @@ function Shell({ viewer }: { viewer: WelcomeViewer | null }) {
   const collapseSidebar = sidePanelOpen && !sidebarAndPanelFit;
   const calendarFocus = state.activeView === "routines" && state.routinesFocus.view === "calendar";
   const notificationTray = notificationFeed && !calendarFocus;
+  useMobileBackDismiss(!sidebarInline && (drawerOpen || state.appSettingsOpen || state.pluginsOpen || sidePanelOpen || state.activeView !== "chat"), () => {
+    if (state.appSettingsOpen) dispatch({ type: "toggleAppSettings", open: false });
+    else if (state.pluginsOpen) dispatch({ type: "togglePlugins", open: false });
+    else if (notificationTray && state.notificationsOpen) dispatch({ type: "toggleNotifications", open: false });
+    else if (inboxShown) closeInbox();
+    else if (state.activityOpen) dispatch({ type: "toggleActivity", open: false });
+    else if (state.inspectorOpen) dispatch({ type: "toggleInspector", open: false });
+    else if (roomPanelOpen) closeRoomPanel({ refocus: true });
+    else if (state.computerOpen) dispatch({ type: "toggleComputer", open: false });
+    else if (state.settingsOpen) dispatch({ type: "toggleSettings", open: false });
+    else if (drawerOpen) closeDrawer();
+    else dispatch({ type: "select", id: state.selectedId });
+  });
 
   const noEngines =
     state.connected &&
@@ -310,8 +329,9 @@ function Shell({ viewer }: { viewer: WelcomeViewer | null }) {
         ref={menuButtonRef}
         aria-label={t("app.openBotList")}
         aria-expanded={drawerOpen}
+        inert={!sidebarInline && drawerOpen}
         onClick={() => setDrawerOpen(true)}
-        className="absolute left-3 top-3 z-30 rounded-md p-1.5 text-ink-secondary hover:bg-raised hover:text-ink max-md:flex max-md:size-9 max-md:items-center max-md:justify-center max-md:rounded-full max-md:border max-md:border-hairline max-md:bg-card max-md:p-0 max-md:text-ink md:hidden"
+        className="absolute left-2 top-2 z-30 rounded-md p-1.5 text-ink-secondary hover:bg-raised hover:text-ink max-md:flex max-md:size-11 max-md:items-center max-md:justify-center max-md:rounded-full max-md:p-0 max-md:text-ink md:hidden"
       >
         <Menu size={18} className="max-md:hidden" />
         <ChevronLeft size={20} aria-hidden="true" className="hidden max-md:block" />
@@ -334,11 +354,9 @@ function Shell({ viewer }: { viewer: WelcomeViewer | null }) {
       {!calendarFocus && <Sidebar
         collapseToIcons={collapseSidebar}
         open={drawerOpen}
-        onClose={() => {
-          setDrawerOpen(false);
-          menuButtonRef.current?.focus();
-        }}
+        onClose={closeDrawer}
       />}
+      <div className="contents" inert={!sidebarInline && drawerOpen} aria-hidden={!sidebarInline && drawerOpen ? true : undefined}>
       {state.activeView === "team-map" ? (
         <TeamMapPage />
       ) : state.activeView === "files" ? (
@@ -406,6 +424,7 @@ function Shell({ viewer }: { viewer: WelcomeViewer | null }) {
       {inboxShown && <InboxPanel />}
       {notificationTray && state.notificationsOpen && <NotificationsPanel />}
       {notificationTray && !framed && <NotificationRail />}
+      </div>
       </div>
       </div>
       {state.appSettingsOpen && <SettingsModal />}

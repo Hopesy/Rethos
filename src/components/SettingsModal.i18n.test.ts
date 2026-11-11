@@ -67,11 +67,10 @@ describe("Settings → General", () => {
     expect(en).toContain("Stop after no progress for");
   });
 
-  it("offers a labeled compact section picker without removing desktop navigation", async () => {
+  it("keeps labeled desktop navigation alongside the responsive settings sheet", async () => {
     const html = await renderSettings();
-    expect(html).toMatch(/<div class="[^"]*sm:hidden[^"]*"><select[^>]*aria-label="Settings"/);
-    expect(html).toContain('<option value="companion">This server</option>');
-    expect(html).toMatch(/<nav[^>]*hidden[^>]*sm:flex/);
+    expect(html).toContain('data-settings-section="companion"');
+    expect(html).toMatch(/<nav[^>]*hidden[^>]*md:flex/);
     expect(html).toContain('id="app-settings-title" class="sr-only"');
   });
 });

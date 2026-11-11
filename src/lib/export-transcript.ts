@@ -1,6 +1,7 @@
 import type { Message } from "@/state/store";
 import { splitTranscriptAttachments } from "./composer-attachments";
 import { copyText } from "./copy-text";
+import { saveNativeMarkdown } from "./native-download";
 
 export interface ExportTranscriptOptions {
   title: string;
@@ -149,6 +150,7 @@ export function slugifyTranscriptFilename(title: string, date = new Date()): str
 }
 
 export function downloadMarkdownTranscript(filename: string, content: string): void {
+  if (saveNativeMarkdown(filename, content)) return;
   const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
