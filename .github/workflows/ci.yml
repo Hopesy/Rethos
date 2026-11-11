@@ -702,6 +702,7 @@ jobs:
         env:
           OMB_KEEP_SMOKE_DIR: "1"
           OMB_SMOKE_INSTALLED_DEB: "1"
+          OMB_SMOKE_DIAGNOSTICS_DIR: ${{ runner.temp }}/rethos-linux-smoke-diagnostics
         run: pnpm smoke:linux-package
       - name: Remove the installed upgrade fixture
         if: always()
@@ -711,9 +712,7 @@ jobs:
         if: failure()
         with:
           name: openmausbot-ubuntu-smoke-diagnostics
-          path: |
-            /tmp/omb-linux-smoke-*
-            /tmp/omb-linux-smoke-runtime-*
+          path: ${{ runner.temp }}/rethos-linux-smoke-diagnostics
           if-no-files-found: warn
           include-hidden-files: true
           retention-days: 7

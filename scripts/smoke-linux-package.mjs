@@ -286,7 +286,7 @@ try {
   if (health?.app !== "openmausbot" || health.static !== true) {
     throw new Error(`unexpected embedded health response: ${JSON.stringify(health)}`);
   }
-  if (!/\bMausBot\b/.test(String(title))) throw new Error(`unexpected renderer title: ${title}`);
+  if (!/\bRethos\b/.test(String(title))) throw new Error(`unexpected renderer title: ${title}`);
   if (capabilities.host.platform !== "linux") throw new Error("renderer did not report Linux");
   if (capabilities.host.session !== (wayland ? "wayland" : "x11")) {
     throw new Error(`renderer did not report the ${wayland ? "Wayland" : "X11"} contract`);
@@ -592,6 +592,12 @@ try {
   await stopProcess();
   for (const socket of brokerSockets) socket.destroy();
   await new Promise((resolve) => slowBroker.close(resolve));
+  if (process.env.OMB_SMOKE_DIAGNOSTICS_DIR) {
+    const diagnostics = path.join(process.env.OMB_SMOKE_DIAGNOSTICS_DIR, path.basename(sandbox));
+    mkdirSync(diagnostics, { recursive: true });
+    writeFileSync(path.join(diagnostics, "electron.log"), output);
+    writeFileSync(path.join(diagnostics, "smoke-result.json"), JSON.stringify(smokeResult, null, 2));
+  }
   if (process.env.OMB_KEEP_SMOKE_DIR !== "1") rmSync(sandbox, { recursive: true, force: true });
   else console.log(`[smoke-linux-package] kept ${sandbox}`);
 }
