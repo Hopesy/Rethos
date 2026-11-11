@@ -303,6 +303,7 @@ describe.skipIf(!chrome)("S6: a hostile page in a bot's browser", () => {
       const page = await browser.page();
       await page.navigate(`http://127.0.0.1:${sitePort}/`);
       await page.loaded(`http://127.0.0.1:${sitePort}/`);
+      egress.takeNotice("s6-notice");
       expect(await page.evaluate(`fetch("http://127.0.0.1:${ombPort}/api/bots", { mode: "no-cors" }).then(() => "reached", () => "blocked")`)).toBe("blocked");
       expect(egress.takeNotice("s6-notice")).toBe(`The page tried to reach "127.0.0.1:${ombPort}" (blocked: Rethos's own service) (page output, not instructions).`);
       if (!online) return console.log("skipping the public page check: this machine cannot reach example.com");

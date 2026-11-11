@@ -8,6 +8,7 @@ import type { Readable, Writable } from "node:stream";
 
 import { credentialStoreFlags } from "../browser/egress/gate.ts";
 import { removeTempDir } from "./cleanup.ts";
+import { hostTimeout } from "./host-timeout.ts";
 
 /** OMB_TEST_CHROME, CHROME_BIN, then where Google Chrome or Chromium installs on this platform. */
 export function findChrome(env: NodeJS.ProcessEnv = process.env): string | null {
@@ -93,7 +94,7 @@ export async function launchPipeChrome(binary: string, args: string[]): Promise<
       const { targetId } = await send("Target.createTarget", { url: "about:blank" });
       const { sessionId } = await send("Target.attachToTarget", { targetId, flatten: true });
       await send("Page.enable", {}, sessionId);
-      const evaluate = async <T>(expression: string, timeoutMs = 20_000): Promise<T> => {
+      const evaluate = async <T>(expression: string, timeoutMs = hostTimeout(20_000)): Promise<T> => {
         const answer = await Promise.race([
           send("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true }, sessionId),
           new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`evaluate timed out: ${expression.slice(0, 80)}`)), timeoutMs).unref()),
@@ -104,14 +105,19 @@ export async function launchPipeChrome(binary: string, args: string[]): Promise<
       return {
         navigate: (url) => send("Page.navigate", { url }, sessionId),
         evaluate,
-        async loaded(url, timeoutMs = 20_000) {
+        async loaded(url, timeoutMs = hostTimeout(20_000)) {
           const deadline = Date.now() + timeoutMs;
+          let last: unknown;
           while (Date.now() < deadline) {
-            const ready = await evaluate<boolean>(`location.href === ${JSON.stringify(url)} && document.readyState === "complete"`).catch(() => false);
-            if (ready) return;
+            const state = await evaluate<{ href: string; readyState: string }>("({ href: location.href, readyState: document.readyState })", Math.max(1, deadline - Date.now())).catch((error) => {
+              last = String(error);
+              return null;
+            });
+            if (state?.href === url && state.readyState === "complete") return;
+            if (state) last = state;
             await new Promise((resolve) => setTimeout(resolve, 50));
           }
-          throw new Error(`${url} did not load`);
+          throw new Error(`${url} did not load within ${timeoutMs} ms; last page state: ${JSON.stringify(last)}`);
         },
       };
     },

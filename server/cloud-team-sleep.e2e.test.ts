@@ -3,7 +3,7 @@
 // until it is done. The engine is the synthetic Claude CLI with each bot's tool calls scripted; nothing leaves loopback.
 import { randomBytes } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -20,7 +20,7 @@ const TEAM = { id: "team-sleep-1", name: "Harbor" };
 const OWNER = { email: "olive@harbor.test", role: "owner" as const }, MEMBER = { email: "ada@harbor.test", role: "member" as const };
 const EDGE = { host: HOST, "x-forwarded-for": "203.0.113.9", "x-forwarded-proto": "https", origin: `https://${HOST}` };
 const secret = randomBytes(32).toString("base64url");
-type Bot = { id: string; threadId: string };
+type Bot = { id: string; threadId: string; engine: string };
 let home = "", base = "", log = "", owner = "", member = "";
 let child: ChildProcess | undefined;
 let lead: Bot, helper: Bot;
@@ -56,9 +56,8 @@ async function pair(person: { email: string; role: "owner" | "member" }) {
   return ((await paired.json()) as { token: string }).token;
 }
 
-/** Each bot's engine reads its own scripted tool calls (its working folder names the bot); a held call ends with `release`. */
 const script = (bot: Bot, calls: unknown[] | null) => {
-  const file = join(home, `tools-${bot.id}.json`);
+  const file = join(home, `tools-${bot.engine}.json`);
   if (calls) writeFileSync(file, JSON.stringify(calls)); else rmSync(file, { force: true });
 };
 
@@ -74,17 +73,19 @@ async function sleepsWithin(ms: number) {
 
 beforeAll(async () => {
   home = mkdtempSync(join(tmpdir(), "omb-cloud-team-sleep-"));
-  const cli = join(home, "fixture-claude.mjs");
-  writeFileSync(cli, `#!/usr/bin/env node
-import { readdirSync } from "node:fs";
+  const instances = Object.fromEntries(["lead", "helper"].map((name) => {
+    const cli = join(home, `fixture-${name}.mjs`);
+    writeFileSync(cli, `#!/usr/bin/env node
 if (process.argv[2] === "auth") { console.log(JSON.stringify({ loggedIn: true, email: "person@example.test" })); process.exit(0); }
 process.env.FAKE_CLAUDE_VERSION = "2.1.284";
 process.env.FAKE_CLAUDE_RELEASE = ${JSON.stringify(join(home, "release"))};
-const own = readdirSync(${JSON.stringify(home)}).map((name) => /^tools-(.+)\\.json$/.exec(name)?.[1]).find((id) => id && process.cwd().includes(id));
-if (own) process.env.FAKE_CLAUDE_TOOL_CALLS_FILE = ${JSON.stringify(home)} + "/tools-" + own + ".json";
+process.env.FAKE_CLAUDE_TOOL_CALLS_FILE = ${JSON.stringify(join(home, `tools-${name}.json`))};
+process.env.FAKE_CLAUDE_DUMP = ${JSON.stringify(join(home, `${name}-turn.json`))};
 await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-claude-cli.ts")).href)});
 `, { mode: 0o755 });
-  writeFileSync(join(home, "config.json"), JSON.stringify({ instances: { claude: { driver: "claudeAgent", displayName: "Fixture", config: { cli } } } }));
+    return [name, { driver: "claudeAgent", displayName: name, config: { cli } }];
+  }));
+  writeFileSync(join(home, "config.json"), JSON.stringify({ instances }));
   const port = await freePortBlock([0, 1]);
   base = `http://127.0.0.1:${port}`;
   const offline = `data:text/javascript,${encodeURIComponent('const real = globalThis.fetch; globalThis.fetch = async (url, init) => String(url).startsWith("http://127.0.0.1:") ? real(url, init) : new Response("offline fixture", { status: 503 });')}`;
@@ -94,7 +95,7 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
       PATH: process.env.PATH, ...(process.env.SystemRoot ? { SystemRoot: process.env.SystemRoot } : {}), HOME: home, USERPROFILE: home, OMB_DATA_DIR: home,
       OMB_PORT: String(port), OMB_WEBHOOK_PORT: String(port + 1), OMB_CLOUD_ROLE: "team", OMB_CLOUD_TEAM_ID: TEAM.id, OMB_CLOUD_TEAM_NAME: TEAM.name,
       OMB_CLOUD_MACHINE_ID: MACHINE, OMB_CLOUD_ADMIN_URL: "https://cloud.example.test", OMB_CLOUD_BOOTSTRAP_SECRET: secret, OMB_PUBLIC_URL: `https://${HOST}`,
-      OMB_TEST_POWER_CLOCK: "1",
+      OMB_TEST_POWER_CLOCK: "1", OMB_BOT_BOX: "0",
     },
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -109,10 +110,13 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
   }
   owner = await pair(OWNER);
   member = await pair(MEMBER);
+  const probed = (await as(owner, "GET", "/api/instances?fresh=1")).body.instances;
+  for (const name of ["lead", "helper"]) expect(probed.find((instance: any) => instance.instanceId === name)?.snapshot.state).toBe("available");
   const make = async (name: string) => {
-    const made = await as(owner, "POST", "/api/bots", { name, modelSelection: { instanceId: "claude", model: "claude-sonnet-5" } });
+    const engine = name.toLowerCase();
+    const made = await as(owner, "POST", "/api/bots", { name, modelSelection: { instanceId: engine, model: "claude-sonnet-5" } });
     expect(made.status, JSON.stringify(made.body)).toBe(201);
-    return made.body.bot as Bot;
+    return { ...made.body.bot, engine } as Bot;
   };
   lead = await make("Lead");
   helper = await make("Helper");
@@ -148,9 +152,10 @@ it("waits for a hand-off between two bots until it is done, then sleeps", async 
   script(helper, [{ name: "Bash", input: { command: "echo counting" }, hold: true }]);
   const sent = await as(owner, "POST", `/api/bots/${lead.id}/messages`, { text: "Ask Helper to count the rooms.", threadId: lead.threadId });
   expect(sent.status, JSON.stringify(sent.body)).toBe(202);
+  await expect.poll(() => existsSync(join(home, "helper-turn.json")), { timeout: 45_000, interval: 100 }).toBe(true);
   await expect.poll(async () => (await admin("GET", "/api/cloud/power")).body.busy, { timeout: 45_000, interval: 250 }).toContain("handoff");
   const refused = await askToSleep();
-  expect(refused.status).toBe(409);
+  expect(refused.status, log.slice(-4000)).toBe(409);
   expect(refused.body.busy).toContain("handoff");
   script(lead, null);
   writeFileSync(join(home, "release"), "");
