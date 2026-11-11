@@ -154,7 +154,7 @@ Rethos 用 MCP 读取桌面当前可见界面。发送前确认聊天、输入�
 
 手机通过同一 HTTPS 地址使用网页，可将站点添加到主屏幕。网页内消息、收件箱和定时报告沿用 Rethos 自带机制。
 
-Android 8.0+ 可安装 [Rethos Android 0.1.2](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.2)，默认访问当前 VPS，使用现有 Token 或应用内扫码登录。客户端复用网页、保存登录状态并支持系统文件选择；点击登录页或顶部菜单的“扫码登录”打开相机。原生后台推送列为后续能力。[Android 使用与更新](../android/README.md) 说明了 APK 安装、服务器切换和覆盖升级。
+Android 8.0+ 可安装 [Rethos Android 0.1.3](https://github.com/Hopesy/Rethos/releases/tag/android-v0.1.3)，默认访问当前 VPS，使用现有 Token 或登录页扫码登录。客户端复用响应式网页、保存登录状态，支持系统文件选择和 Markdown 保存；应用顶栏已移除。原生后台推送列为后续能力。[Android 使用与更新](../android/README.md) 说明了 APK 安装和覆盖升级。
 
 当前源码的系统通知通过在线页面的 `Notification` API 发出，尚未实现独立的 Service Worker / Web Push 投递。手机浏览器关闭、系统挂起页面后的锁屏通知需要后续补齐该能力并做真机测试。浏览器的 390px 模拟验收用于检查布局和网页操作；手机安装、软键盘、后台恢复还需真机核对。
 
