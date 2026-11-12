@@ -4,6 +4,7 @@ import { api, useStore, type ConfigStatus } from "@/state/store";
 import { t } from "@/lib/i18n";
 import { saveTeamProfile } from "@/lib/own-profile";
 import { createAboutMeDraft } from "./about-me-draft";
+import { SettingsHelp } from "./SettingsHelp";
 
 const drafts = new WeakMap<object, { controller: ReturnType<typeof createAboutMeDraft>; team: { current: boolean } }>();
 
@@ -97,8 +98,10 @@ function LearnedFacts({ onChanged }: { onChanged: (aboutMe: string) => void }) {
   if (!facts.length) return null;
   return (
     <div className="mt-1 rounded-lg border border-hairline/40 bg-inset p-3">
-      <div className="text-[13px] font-medium text-ink">{t("settings.profile.learned.title")}</div>
-      <p className="mt-0.5 text-[12px] text-ink-secondary">{t("settings.profile.learned.hint")}</p>
+      <div className="flex items-center gap-1 text-[13px] font-medium text-ink">{t("settings.profile.learned.title")}
+        <SettingsHelp label={t("settings.profile.learned.title")}>{t("settings.profile.learned.hint")}</SettingsHelp>
+      </div>
+      <p className="mt-0.5 text-[12px] text-ink-secondary">{t("settings.profile.learned.summary")}</p>
       <ul className="mt-2 flex flex-col gap-2">
         {facts.map((fact) => (
           <li key={fact.id} className="flex flex-wrap items-center gap-2 text-[13px] text-ink">

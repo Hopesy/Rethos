@@ -3,6 +3,7 @@ import { useState } from "react";
 
 import type { Bot } from "@/state/store";
 import { t } from "@/lib/i18n";
+import { SettingsHelp } from "../SettingsHelp";
 import {
   WRITTEN_SKILL_SOURCE, writtenSkillMd, writtenSkillProblem, type WrittenSkillProblem,
 } from "../../../shared/written-skill";
@@ -64,8 +65,9 @@ export function WriteCommandCard({ bot, taken, onSaved }: { bot: Bot; taken: rea
       <div className="flex items-center gap-2">
         <SquareSlash size={16} className="text-ink-secondary" />
         <div className="text-[15px] font-medium text-ink">{t("skills.write.title")}</div>
+        <SettingsHelp label={t("skills.write.title")}>{t("skills.write.hint")}</SettingsHelp>
       </div>
-      <div className="mt-1 text-[12px] leading-relaxed text-ink-secondary">{t("skills.write.hint")}</div>
+      <div className="mt-1 text-[12px] text-ink-secondary">{t("skills.write.summary")}</div>
       <form
         className="mt-3 flex flex-col gap-2"
         onSubmit={(e) => {

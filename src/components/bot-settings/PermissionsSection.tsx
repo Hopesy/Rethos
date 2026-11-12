@@ -5,6 +5,7 @@ import { Crown } from "lucide-react";
 
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
+import { SettingsHelp } from "../SettingsHelp";
 import { useOwnerOrAdmin } from "@/lib/use-owner-or-admin";
 import { useStore, type Bot } from "@/state/store";
 import type { ApprovalMode } from "../../../shared/approval-mode";
@@ -71,7 +72,9 @@ export function PermissionsSection({
             <Crown size={17} />
           </span>
           <div className="min-w-0 flex-1">
-            <div className="text-[15px] font-medium text-ink">{t("permissions.chief.title")}</div>
+            <div className="flex items-center gap-1 text-[15px] font-medium text-ink">{t("permissions.chief.title")}
+              <SettingsHelp label={t("permissions.chief.title")}>{t("permissions.chief.active", { section: displaySectionName })}</SettingsHelp>
+            </div>
             <div className="text-[12px] text-ink-secondary">{t("permissions.chief.oneFor", { section: displaySectionName })}</div>
           </div>
           <Switch
@@ -87,7 +90,7 @@ export function PermissionsSection({
           {bot.chiefOfStaff && !canCoordinate
             ? t("permissions.chief.unsupportedCurrent")
             : bot.chiefOfStaff
-              ? t("permissions.chief.active", { section: displaySectionName })
+              ? t("permissions.chief.summary")
               : !canCoordinate
                 ? t("permissions.chief.unsupported")
                 : currentChief
@@ -130,10 +133,10 @@ export function PermissionsSection({
       </div>}
 
       {shows("approval") && <div className="rounded-xl bg-card p-4">
-        <div className="text-[15px] font-medium text-ink">{t("permissions.approval.title")}</div>
-        <div className="mt-0.5 text-[13px] text-ink-secondary">
-          {draft ? t("permissions.approval.draftHanded") : t("permissions.approval.helpHanded")}
+        <div className="flex items-center gap-1 text-[15px] font-medium text-ink">{t("permissions.approval.title")}
+          <SettingsHelp label={t("permissions.approval.title")}>{t(draft ? "permissions.approval.draftHanded" : "permissions.approval.helpHanded")}</SettingsHelp>
         </div>
+        <div className="mt-0.5 text-[13px] text-ink-secondary">{t(draft ? "permissions.approval.draftSummary" : "permissions.approval.summary")}</div>
         <ProposalStatus bot={bot} kind="owner" />
         <div className="mt-3">
           <ApprovalModeSelector
@@ -196,10 +199,10 @@ function OutboundControl({ bot, onChange }: { bot: Bot; onChange: (policy: Outbo
 
   return (
     <div className="rounded-xl bg-card p-4">
-      <div className="text-[15px] font-medium text-ink">{t("permissions.outbound.title")}</div>
-      <div className="mt-0.5 text-[13px] text-ink-secondary">
-        {t("permissions.outbound.help")}
+      <div className="flex items-center gap-1 text-[15px] font-medium text-ink">{t("permissions.outbound.title")}
+        <SettingsHelp label={t("permissions.outbound.title")}>{t("permissions.outbound.help")}</SettingsHelp>
       </div>
+      <div className="mt-0.5 text-[13px] text-ink-secondary">{t(policy.policy === "ask" ? "permissions.outbound.askSummary" : "permissions.outbound.allowSummary")}</div>
       <div className="mt-3 flex gap-1 rounded-lg bg-inset p-0.5">
         {(
           [

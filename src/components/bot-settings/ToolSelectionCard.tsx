@@ -6,6 +6,7 @@ import { TOOL_SCOPE_SUPPORT } from "../../../shared/tool-scope-support";
 import { useBotEditor } from "./BotEditorContext";
 import { inputCls } from "./field";
 import { Select } from "../Select";
+import { SettingsHelp } from "../SettingsHelp";
 
 type Draft = { custom: boolean; onlyListed: boolean; allow: string; deny: string };
 const lines = (text: string) => text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
@@ -52,8 +53,14 @@ export function ToolSelectionCard({ bot, engineKind }: { bot: Bot; engineKind?: 
       : support === "mcp" ? "native:*\nmcp:mail:read_notes" : "native:ask_user\nmcp:mail:read_notes";
 
   return <div className="rounded-xl bg-card p-4">
-    <div className="text-[15px] font-medium text-ink">{t("botAccess.tools.title")}</div>
-    <p className="mt-0.5 text-[13px] text-ink-secondary">{t("botAccess.tools.description")}</p>
+    <div className="flex items-center gap-1 text-[15px] font-medium text-ink">{t("botAccess.tools.title")}
+      <SettingsHelp label={t("botAccess.tools.title")}><div className="space-y-2">
+        <p>{t("botAccess.tools.description")}</p>
+        <p>{t("botAccess.tools.syntax")}</p>
+        {engineKind === "grokAgent" && <p>{t("botAccess.tools.grok")}</p>}
+      </div></SettingsHelp>
+    </div>
+    <p className="mt-0.5 text-[13px] text-ink-secondary">{t("botAccess.tools.summary")}</p>
     <p role={saved.ok ? "status" : "alert"} className={`mt-2 text-[12px] ${saved.ok ? "text-ink-secondary" : "text-danger"}`}>
       {!saved.ok ? t("botAccess.tools.corrupt") : scope?.allow?.length === 0 ? t("botAccess.tools.none")
         : scope === undefined ? t("botAccess.tools.all") : t("botAccess.tools.customSaved")}
@@ -80,8 +87,6 @@ export function ToolSelectionCard({ bot, engineKind }: { bot: Bot; engineKind?: 
         <textarea aria-label={t("botAccess.tools.exclude")} rows={2} spellCheck={false} className={`${inputCls} mt-1 font-mono text-[12px]`}
           placeholder="mcp:mail:send" value={fields.deny} onChange={event => change({ deny: event.target.value })} />
       </label>
-      <p className="text-[12px] text-ink-secondary">{t("botAccess.tools.syntax")}</p>
-      {engineKind === "grokAgent" && <p className="text-[12px] text-ink-secondary">{t("botAccess.tools.grok")}</p>}
     </fieldset>}
     {unavailable && <p role="alert" className="mt-2 text-[12px] text-danger">
       {t(support === "mcp" ? "botAccess.tools.nativeUnsupported" : "botAccess.tools.unsupported")}

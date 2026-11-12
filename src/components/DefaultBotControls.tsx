@@ -37,7 +37,8 @@ export function DefaultBotSidebarRow({ simple = false }: { simple?: boolean }) {
   if (!bot) return null;
   const shown = !bot.sidebarHidden;
   return (
-    <SettingRow title={t("defaultBot.show.title", { name: bot.name || DEFAULT_BOT_NAME })} subtitle={t(simple ? "settings.simple.defaultBot" : "defaultBot.show.subtitle")}>
+    <SettingRow title={t("defaultBot.show.title", { name: bot.name || DEFAULT_BOT_NAME })} subtitle={t("settings.simple.defaultBot")}
+      help={simple ? undefined : t("defaultBot.show.subtitle")}>
       <Switch
         checked={shown}
         data-default-bot-shown=""

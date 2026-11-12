@@ -12,6 +12,7 @@ import {
 import { api, useStore, type ConfigStatus } from "@/state/store";
 import { t } from "@/lib/i18n";
 import { Switch } from "./SettingsPrimitives";
+import { SettingsHelp } from "./SettingsHelp";
 
 export function SkillReviewSettings() {
   const { state, dispatch } = useStore();
@@ -64,9 +65,11 @@ export function SkillReviewSettings() {
     <div className="mt-4 border-t border-hairline/30 pt-4" data-testid="skill-review-settings">
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <div className="text-[14px] font-medium text-ink">{t("settings.experimental.skillReview")}</div>
+          <div className="flex items-center gap-1 text-[14px] font-medium text-ink">{t("settings.experimental.skillReview")}
+            <SettingsHelp label={t("settings.experimental.skillReview")}>{t(authoring ? "settings.experimental.skillReviewDetail" : "settings.experimental.skillReviewNeedsAuthoring")}</SettingsHelp>
+          </div>
           <div className="mt-0.5 text-[12px] leading-relaxed text-ink-secondary">
-            {t(authoring ? "settings.experimental.skillReviewDetail" : "settings.experimental.skillReviewNeedsAuthoring")}
+            {t(authoring ? "settings.experimental.skillReviewSummary" : "settings.experimental.skillReviewNeedsAuthoring")}
           </div>
         </div>
         <Switch

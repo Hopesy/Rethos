@@ -38,16 +38,19 @@ export function AutomaticRecoverySettings() {
     }
   };
   return (
-    <Card title={t("settings.recovery.title")}>
+    <Card title={t("settings.recovery.title")} help={<div className="space-y-2">
+      <p>{t("settings.recovery.help")}</p>
+      <p>{t("settings.recovery.scopeHanded")}</p>
+      <p>{t("settings.recovery.ownBackups")}</p>
+      <p>{t("settings.recovery.charges")}</p>
+    </div>}>
       <div className="flex items-center justify-between gap-4">
         <label htmlFor="automatic-recovery-enabled" className="text-[13px] font-medium text-ink">{t("settings.recovery.enable")}</label>
         <Switch id="automatic-recovery-enabled" checked={value.enabled} disabled={saving || !state.config}
-          aria-describedby="automatic-recovery-help automatic-recovery-scope automatic-recovery-own"
+          aria-describedby="automatic-recovery-help"
           onClick={() => change({ ...value, enabled: !value.enabled })} />
       </div>
-      <p id="automatic-recovery-help" className="mt-2 text-[12px] leading-relaxed text-ink-secondary">{t("settings.recovery.help")}</p>
-      <p id="automatic-recovery-scope" className="mt-2 text-[12px] leading-relaxed text-ink-secondary">{t("settings.recovery.scopeHanded")}</p>
-      <p id="automatic-recovery-own" className="mt-2 text-[12px] leading-relaxed text-ink-secondary">{t("settings.recovery.ownBackups")}</p>
+      <p id="automatic-recovery-help" className="mt-2 text-[12px] text-ink-secondary">{t("settings.recovery.summary")}</p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <div className="min-w-0">
           <label htmlFor="automatic-recovery-engine" className="block text-[13px] font-medium text-ink">{t("settings.recovery.engine")}</label>
@@ -69,7 +72,7 @@ export function AutomaticRecoverySettings() {
           </Select>
         </div>
       </div>
-      <p className="mt-2 text-[12px] leading-relaxed text-ink-secondary">{t("settings.recovery.charges")}</p>
+      {value.enabled && <p className="mt-2 text-[12px] text-ink-secondary">{t("settings.recovery.chargesShort")}</p>}
       {value.enabled && !ready && <p className="mt-2 text-[12px] text-ink-secondary">{t("settings.recovery.required")}</p>}
       <button type="button" disabled={!draft || saving || (value.enabled && !ready)} onClick={() => void save()}
         className="mt-3 cursor-pointer rounded-lg bg-accent px-3 py-2 text-[13px] font-medium text-white disabled:opacity-50">{saving ? t("settings.threads.saving") : t("common.save")}</button>

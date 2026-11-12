@@ -9,14 +9,14 @@ export function AnalyticsRow({ simple = false }: { simple?: boolean }) {
   const [on, setOn] = useState(analyticsEnabled);
   const subtitle = (
     <>
-      {t(simple ? "settings.simple.analytics" : "settings.analytics.subtitle")}{" "}
+      {t(simple ? "settings.simple.analytics" : "settings.analytics.summary")}{" "}
       <a href={ANALYTICS_DOC_URL} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
         {t(simple ? "settings.simple.analyticsLink" : "settings.analytics.link")}
       </a>
     </>
   );
   return (
-    <SettingRow title={t("settings.analytics.title")} subtitle={subtitle}>
+    <SettingRow title={t("settings.analytics.title")} subtitle={subtitle} help={simple ? undefined : t("settings.analytics.subtitle")}>
       <Switch
         checked={on}
         aria-label={t("settings.analytics.aria")}

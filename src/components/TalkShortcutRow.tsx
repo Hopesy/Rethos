@@ -43,7 +43,7 @@ export function TalkShortcutRow() {
     </>
   );
   return (
-    <SettingRow title={t("settings.talk.title")} subtitle={t("settings.talk.subtitle", { key: label })} message={state.enabled || problem ? message : null}>
+    <SettingRow title={t("settings.talk.title")} subtitle={t("settings.talk.summary", { key: label })} help={t("settings.talk.subtitle", { key: label })} message={state.enabled || problem ? message : null}>
       <Switch checked={state.enabled} disabled={busy} aria-label={t("settings.talk.aria")} onClick={() => change({ enabled: !state.enabled })} />
     </SettingRow>
   );

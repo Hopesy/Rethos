@@ -1,6 +1,7 @@
 import { t } from "@/lib/i18n";
 import { useStore, type Bot } from "@/state/store";
 import { useBotEditor } from "./BotEditorContext";
+import { SettingsHelp } from "../SettingsHelp";
 
 const sectionKey = (section?: string | null) => (section ?? "").trim();
 
@@ -20,8 +21,11 @@ export function ProposalStatus({ bot, kind }: { bot: Bot; kind: "chief" | "owner
   const { state } = useStore();
   if (draft || !chiefCovers(bot, state.bots)) return null;
   return (
-    <div className="mt-1 text-[12px] leading-snug text-ink-secondary">
-      {t(kind === "chief" ? "botSettings.proposal.chief" : "botSettings.proposal.owner")}
+    <div className="mt-1 flex items-center gap-1 text-[11px] text-ink-secondary">
+      <span className="rounded bg-control/60 px-1.5 py-0.5">{t(kind === "chief" ? "botSettings.proposal.chiefShort" : "botSettings.proposal.ownerShort")}</span>
+      <SettingsHelp label={t(kind === "chief" ? "botSettings.proposal.chiefShort" : "botSettings.proposal.ownerShort")}>
+        {t(kind === "chief" ? "botSettings.proposal.chief" : "botSettings.proposal.owner")}
+      </SettingsHelp>
     </div>
   );
 }

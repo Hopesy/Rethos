@@ -1,7 +1,7 @@
 {
   "name": "rethos",
   "private": true,
-  "version": "0.1.156",
+  "version": "0.1.157",
   "description": "Rethos — a self-hosted workspace for AI agents and desktop task control.",
   "homepage": "https://github.com/Hopesy/Rethos",
   "repository": {

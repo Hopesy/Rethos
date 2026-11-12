@@ -35,6 +35,7 @@ import { activeLocale, t } from "@/lib/i18n";
 import { roomMemoryCaptureEnabled } from "@/lib/feature-flags";
 import { api, ApiError, useStore, type Bot, type ConfigStatus } from "@/state/store";
 import { Switch } from "../SettingsPrimitives";
+import { SettingsHelp } from "../SettingsHelp";
 import { useDesktopCapabilities } from "../DesktopCapabilities";
 import { inputCls } from "./field";
 
@@ -292,7 +293,9 @@ export function MemorySection({ bot, active = true, onToggle }: { bot: Bot; acti
   return (
     <div className="flex flex-col gap-4">
       <div className="rounded-xl bg-card p-4">
-        <div className="text-[15px] font-medium text-ink">{t("memory.title")}</div>
+        <div className="flex items-center gap-1 text-[15px] font-medium text-ink">{t("memory.title")}
+          <SettingsHelp label={t("memory.title")}>{t("memory.notesHelp")}</SettingsHelp>
+        </div>
         <label className="mt-3 flex items-center gap-2 text-[13px] text-ink">
           <input type="checkbox" checked={bot.memoryEnabled !== false} disabled={bot.busy} onChange={(event) => onToggle(event.target.checked)} />
           {t("memory.enable")}
@@ -302,7 +305,7 @@ export function MemorySection({ bot, active = true, onToggle }: { bot: Bot; acti
           {bot.busy ? ` ${t("memory.busyHelp")}` : ""}
         </p>
         <p className="mt-1 text-[13px] leading-relaxed text-ink-secondary">
-          {t("memory.notesHelp")}
+          {t("memory.notesSummary")}
         </p>
         {overview && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -491,16 +494,20 @@ export function MemoryUpkeepCard({
     <div className="rounded-xl bg-card p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-[15px] font-medium text-ink">{t("memory.upkeep.title")}</div>
-          <p className="mt-1 text-[13px] leading-relaxed text-ink-secondary">{t("memory.upkeep.help")}</p>
+          <div className="flex items-center gap-1 text-[15px] font-medium text-ink">{t("memory.upkeep.title")}
+            <SettingsHelp label={t("memory.upkeep.title")}>{t("memory.upkeep.help")}</SettingsHelp>
+          </div>
+          <p className="mt-1 text-[13px] text-ink-secondary">{t("memory.upkeep.shortHelp")}</p>
         </div>
         <Switch checked={enabled} aria-label={t("memory.upkeep.title")} onClick={onToggle} />
       </div>
       {enabled && rooms && (
         <div className="mt-3 flex items-start justify-between gap-3 border-t border-hairline/40 pt-3">
           <div className="min-w-0">
-            <div className="text-[13px] font-medium text-ink">{t("memory.learnFromRooms.title")}</div>
-            <p className="mt-0.5 text-[13px] leading-relaxed text-ink-secondary">{t("memory.learnFromRooms.subtitle")}</p>
+            <div className="flex items-center gap-1 text-[13px] font-medium text-ink">{t("memory.learnFromRooms.title")}
+              <SettingsHelp label={t("memory.learnFromRooms.title")}>{t("memory.learnFromRooms.subtitle")}</SettingsHelp>
+            </div>
+            <p className="mt-0.5 text-[13px] text-ink-secondary">{t("memory.learnFromRooms.summary")}</p>
             {status && !status.modelSteps && (
               <p className="mt-1 text-[13px] leading-relaxed text-ink-secondary">{t("memory.learnFromRooms.noModelSteps")}</p>
             )}
@@ -539,7 +546,9 @@ export function MemoryGauge({ index }: { index: MemoryCapacity }) {
   return (
     <div className={cn("rounded-xl p-4", status.level === "over" ? "border border-danger/30 bg-danger/10" : "bg-card")}>
       <div className="flex items-center justify-between gap-3 text-[13px]">
-        <span className="font-medium text-ink">{t("memory.capacity.title")}</span>
+        <span className="inline-flex items-center gap-1 font-medium text-ink">{t("memory.capacity.title")}
+          <SettingsHelp label={t("memory.capacity.title")}>{t("memory.capacity.sentence", { lines: index.lines, maxLines: index.maxLines, bytes: formatBytes(index.bytes), maxBytes: formatBytes(index.maxBytes), maxLoaded: index.maxLines })}</SettingsHelp>
+        </span>
         <span className={cn("text-[12px]", status.level === "over" ? "text-danger" : "text-ink-secondary")}>
           {t("memory.capacity.summary", { lines: index.lines, maxLines: index.maxLines, bytes: formatBytes(index.bytes), maxBytes: formatBytes(index.maxBytes) })}
         </span>
@@ -547,9 +556,9 @@ export function MemoryGauge({ index }: { index: MemoryCapacity }) {
       <GaugeBar label={t("memory.capacity.lines")} share={status.lineShare} fill={fill} />
       <GaugeBar label={t("memory.capacity.size")} share={status.byteShare} fill={fill} />
       <p className={cn("mt-2 text-[13px] leading-relaxed", status.level === "over" ? "text-danger" : "text-ink-secondary")}>
-          {status.warning ?? t("memory.capacity.sentence", { lines: index.lines, maxLines: index.maxLines, bytes: formatBytes(index.bytes), maxBytes: formatBytes(index.maxBytes), maxLoaded: index.maxLines })}
+          {status.warning ?? t("memory.capacity.loadedSummary", { maxLoaded: index.maxLines })}
       </p>
-      {status.warning && <p className="mt-1 text-[12px] text-ink-secondary">{t("memory.capacity.sentence", { lines: index.lines, maxLines: index.maxLines, bytes: formatBytes(index.bytes), maxBytes: formatBytes(index.maxBytes), maxLoaded: index.maxLines })}</p>}
+      {status.warning && <p className="mt-1 text-[12px] text-ink-secondary">{t("memory.capacity.loadedSummary", { maxLoaded: index.maxLines })}</p>}
     </div>
   );
 }

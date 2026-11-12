@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { browserAvailable, browserUnavailableReason, builtInBrowserEnabled } from "@/lib/feature-flags";
 import { t } from "@/lib/i18n";
+import { SettingsHelp } from "./SettingsHelp";
 import { useOwnerOrAdmin } from "@/lib/use-owner-or-admin";
 import { api, useStore, type ConfigStatus } from "@/state/store";
 import { SettingRow, Switch } from "./SettingsPrimitives";
@@ -97,8 +98,10 @@ export function NewBrowserSettings() {
     <div className="mt-4 border-t border-hairline/30 pt-4" data-testid="new-browser-settings">
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <div className="text-[14px] font-medium text-ink">{t("settings.experimental.newBrowser")}</div>
-          <div className="mt-0.5 text-[12px] leading-relaxed text-ink-secondary">{t("settings.experimental.newBrowserDetail")}</div>
+          <div className="flex items-center gap-1 text-[14px] font-medium text-ink">{t("settings.experimental.newBrowser")}
+            <SettingsHelp label={t("settings.experimental.newBrowser")}>{t("settings.experimental.newBrowserDetail")}</SettingsHelp>
+          </div>
+          <div className="mt-0.5 text-[12px] text-ink-secondary">{t("settings.experimental.newBrowserSummary")}</div>
         </div>
         <Switch
           checked={on}

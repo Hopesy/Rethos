@@ -2,6 +2,7 @@ import type { CloudBackend } from "../../shared/wire";
 import { cn } from "@/lib/cn";
 import { useStore } from "@/state/store";
 import { t } from "@/lib/i18n";
+import { SettingsHelp } from "./SettingsHelp";
 
 export function CloudBackendPicker({
   value,
@@ -16,13 +17,11 @@ export function CloudBackendPicker({
   if (state.config?.cloudHome) return null;
   return (
     <div className="mt-3 rounded-lg bg-inset p-3">
-      <div className="text-[12px] font-medium text-ink">{compact ? t("botAccess.cloud.provider") : t("botAccess.cloud.backend")}</div>
+      <div className="flex items-center gap-1 text-[12px] font-medium text-ink">{compact ? t("botAccess.cloud.provider") : t("botAccess.cloud.backend")}
+        <SettingsHelp label={t("botAccess.cloud.backend")}>{t(value === "vps" ? "botAccess.cloud.vpsAutoDescription" : "botAccess.cloud.hostedBackendDescription")}</SettingsHelp>
+      </div>
       <div className="mt-0.5 text-[12px] text-ink-secondary">
-        {compact
-          ? value === "vps" ? t("botAccess.cloud.vpsDescription") : t("botAccess.cloud.hostedDescription")
-          : value === "vps"
-          ? t("botAccess.cloud.vpsAutoDescription")
-          : t("botAccess.cloud.hostedBackendDescription")}
+        {t(value === "vps" ? "botAccess.cloud.vpsSummary" : "botAccess.cloud.hostedSummary")}
       </div>
       <div className="mt-2 flex overflow-hidden rounded-lg border border-hairline/40">
         {(["box", "vps"] as const).map((backend, i) => (

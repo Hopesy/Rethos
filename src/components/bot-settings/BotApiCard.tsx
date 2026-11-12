@@ -4,6 +4,7 @@ import { Copy } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { copyText } from "@/lib/copy-text";
 import { t } from "@/lib/i18n";
+import { SettingsHelp } from "../SettingsHelp";
 import { relativeTime } from "@/lib/memory";
 import { api, useStore, type Bot } from "@/state/store";
 import { BOT_API_KEY_PLACEHOLDER, BOT_API_UPGRADE, botApiCurl } from "../../../shared/bot-api";
@@ -134,9 +135,10 @@ function BotApiSection({ bot, webhooksLink = false, className }: { bot: Bot; web
     <div className={cn("rounded-xl bg-card p-4", className)} data-testid="bot-api">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <div className="text-[15px] font-medium text-ink">{t("botApi.title")}</div>
-          <div className="mt-0.5 text-[14px] text-ink">{t("botApi.switch")}</div>
-          <div className="mt-0.5 text-[13px] text-ink-secondary">{canManage || !view ? t("botApi.hint", { name: bot.name }) : t("botApi.notAllowed", { name: bot.name })}</div>
+          <div className="flex items-center gap-1 text-[15px] font-medium text-ink">{t("botApi.title")}
+            <SettingsHelp label={t("botApi.title")}>{t("botApi.hint", { name: bot.name })}</SettingsHelp>
+          </div>
+          <div className="mt-0.5 text-[13px] text-ink-secondary">{canManage || !view ? t("botApi.switch") : t("botApi.notAllowed", { name: bot.name })}</div>
         </div>
         <Switch
           aria-label={t("botApi.switch")}

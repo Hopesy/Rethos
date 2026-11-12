@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { t } from "@/lib/i18n";
+import { SettingsHelp } from "../SettingsHelp";
 
 export function ManagedTeamsSettings({
   name, ownTeam, teams, allowed, onSave,
@@ -16,9 +17,10 @@ export function ManagedTeamsSettings({
   return (
     <details className="mt-3 border-t border-hairline/40 pt-3">
       <summary className="cursor-pointer text-[13px] font-medium text-ink">{t("botAccess.teams.title")}</summary>
-      <p className="mt-2 text-[13px] leading-relaxed text-ink-secondary">
-        {t("botAccess.teams.description", { name })}
-      </p>
+      <div className="mt-2 flex items-center gap-1 text-[13px] text-ink-secondary">
+        {t("botAccess.teams.summary")}
+        <SettingsHelp label={t("botAccess.teams.title")}>{t("botAccess.teams.description", { name })}</SettingsHelp>
+      </div>
       <fieldset className="mt-3 flex max-h-52 flex-col gap-2 overflow-y-auto">
         <legend className="sr-only">{t("botAccess.teams.legend", { name })}</legend>
         {choices.map(team => (

@@ -10,6 +10,7 @@ import { productName } from "../lib/brand";
 import { BrowserProfilesManager } from "./BrowserProfilesManager";
 import { NewBrowserSettings } from "./BrowserSettingsRows";
 import { Card, SettingRow, Switch } from "./SettingsPrimitives";
+import { SettingsHelp } from "./SettingsHelp";
 import { LearnedSkillsSettings } from "./ShareLearnedSkillsSettings";
 import { effortLabel } from "./ModelPicker";
 import { EFFORT_LEVELS, isEffortLevel } from "../../shared/wire";
@@ -107,7 +108,7 @@ export function NewBotEffortRow() {
   return (
     <SettingRow
       title={t("settings.newBotEffort.title")}
-      subtitle={t("settings.newBotEffort.subtitle")}
+      subtitle={t("settings.newBotEffort.summary")} help={t("settings.newBotEffort.subtitle")}
       message={error ? <p role="alert" className="text-danger">{error}</p> : null}
     >
       <Select size="sm" className="w-full max-w-[240px]"
@@ -186,7 +187,8 @@ export function LanguageRow({ simple = false }: { simple?: boolean }) {
   return (
     <SettingRow
       title={t("settings.language.title")}
-      subtitle={activePackComplete() ? t("settings.language.subtitleComplete") : simple ? activeLocale() === "en" ? undefined : t("settings.simple.language.partial") : t("settings.language.subtitle")}
+      subtitle={activePackComplete() ? t("settings.language.subtitleComplete") : activeLocale() === "en" ? undefined : t("settings.simple.language.partial")}
+      help={t("settings.language.subtitle")}
     >
       <Select size="sm" variant={simple ? "ghost" : "field"} className={simple ? undefined : "w-full max-w-[240px]"}
         value={current}
@@ -207,7 +209,7 @@ export function LanguageRow({ simple = false }: { simple?: boolean }) {
 export function SendKeyRow({ simple = false }: { simple?: boolean }) {
   const sendKey = useSendKey();
   return (
-    <SettingRow title={t("settings.sendKey.title")} subtitle={t(simple ? "settings.simple.sendKey" : "settings.sendKey.subtitle", { key: sendKeyLabel("mod-enter") })}>
+    <SettingRow title={t("settings.sendKey.title")} subtitle={t("settings.sendKey.summary")} help={t("settings.sendKey.subtitle", { key: sendKeyLabel("mod-enter") })}>
       <Select size="sm" variant={simple ? "ghost" : "field"} className={simple ? undefined : "w-full max-w-[240px]"}
         value={sendKey}
         aria-label={t("settings.sendKey.title")}
@@ -226,7 +228,7 @@ export function FollowUpRow({ simple = false }: { simple?: boolean }) {
   const followUp = useFollowUpDefault();
   const key = alternateSendLabel(useSendKey());
   return (
-    <SettingRow title={t("settings.followUp.title")} subtitle={t(simple ? "settings.simple.followUp" : "settings.followUp.subtitle", { key })}>
+    <SettingRow title={t("settings.followUp.title")} subtitle={t("settings.followUp.summary")} help={t("settings.followUp.subtitle", { key })}>
       <Select size="sm" variant={simple ? "ghost" : "field"} className={simple ? undefined : "w-full max-w-[240px]"}
         value={followUp}
         aria-label={t("settings.followUp.title")}
@@ -242,7 +244,7 @@ export function FollowUpRow({ simple = false }: { simple?: boolean }) {
 export function ColorUserBubblesRow({ simple = false }: { simple?: boolean }) {
   const enabled = useColorUserBubbles();
   return (
-    <SettingRow title={t("settings.userBubbles.title")} subtitle={simple ? undefined : t("settings.userBubbles.subtitle")}>
+    <SettingRow title={t("settings.userBubbles.title")} subtitle={simple ? undefined : t("settings.userBubbles.summary")} help={t("settings.userBubbles.subtitle")}>
       <Switch
         checked={enabled}
         aria-label={t("settings.userBubbles.aria")}
@@ -256,7 +258,7 @@ export function AdvancedModeRow({ simple = false }: { simple?: boolean }) {
   const enabled = useAdvancedMode();
   return (
     <SettingRow className={simple ? undefined : "rounded-2xl border border-accent-border/40 bg-raised-hover/40 py-4"} title={t("settings.advancedMode.title")}
-      subtitle={t(simple ? "settings.simple.advancedMode" : "settings.advancedMode.subtitle")}>
+      subtitle={t("settings.simple.advancedMode")} help={t("settings.advancedMode.subtitle")}>
       <Switch
         checked={enabled}
         aria-label={t("settings.advancedMode.title")}
@@ -269,7 +271,7 @@ export function AdvancedModeRow({ simple = false }: { simple?: boolean }) {
 export function ShowThreadsRow() {
   const enabled = useShowThreadsChoice();
   return (
-    <SettingRow title={t("settings.threadDisplay.title")} subtitle={t("settings.threadDisplay.subtitle")}>
+    <SettingRow title={t("settings.threadDisplay.title")} subtitle={t("settings.threadDisplay.summary")} help={t("settings.threadDisplay.subtitle")}>
       <Switch
         checked={enabled}
         aria-label={t("settings.threadDisplay.show")}
@@ -282,7 +284,7 @@ export function ShowThreadsRow() {
 export function PinnedCirclesRow() {
   const enabled = usePinnedCircles();
   return (
-    <SettingRow title={t("settings.pinnedCircles.title")} subtitle={t("settings.pinnedCircles.subtitle")}>
+    <SettingRow title={t("settings.pinnedCircles.title")} subtitle={t("settings.pinnedCircles.summary")} help={t("settings.pinnedCircles.subtitle")}>
       <Switch
         checked={enabled}
         aria-label={t("settings.pinnedCircles.title")}
@@ -295,7 +297,7 @@ export function PinnedCirclesRow() {
 export function RunCardRow() {
   const enabled = useShowRunCard();
   return (
-    <SettingRow title={t("settings.runCard.title")} subtitle={t("settings.runCard.subtitle")}>
+    <SettingRow title={t("settings.runCard.title")} subtitle={t("settings.runCard.summary")} help={t("settings.runCard.subtitle")}>
       <Switch
         checked={enabled}
         aria-label={t("settings.runCard.show")}
@@ -308,7 +310,7 @@ export function RunCardRow() {
 export function UniversalPinsRow() {
   const enabled = useUniversalPins();
   return (
-    <SettingRow title={t("settings.universalPins.title")} subtitle={t("settings.universalPins.subtitle")}>
+    <SettingRow title={t("settings.universalPins.title")} subtitle={t("settings.universalPins.summary")} help={t("settings.universalPins.subtitle")}>
       <Switch
         checked={enabled}
         aria-label={t("settings.universalPins.title")}
@@ -344,7 +346,8 @@ export function ToolCallsRow() {
   return (
     <SettingRow
       title={t("settings.toolCalls.title")}
-      subtitle={<>{t("settings.toolCalls.subtitle")} {t("settings.toolCalls.detail")}</>}
+      subtitle={t("settings.toolCalls.summary")}
+      help={<>{t("settings.toolCalls.subtitle")} {t("settings.toolCalls.detail")}</>}
       message={error ? <p role="alert" className="text-danger">{error}</p> : null}
     >
       <Switch
@@ -385,9 +388,11 @@ export function ExperimentalFeaturesRow() {
     <Card title={t("settings.experimental.title")} subtitle={t("settings.experimental.subtitle")}>
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <div className="text-[14px] font-medium text-ink">{t("settings.experimental.skillAuthoring")}</div>
+          <div className="flex items-center gap-1 text-[14px] font-medium text-ink">{t("settings.experimental.skillAuthoring")}
+            <SettingsHelp label={t("settings.experimental.skillAuthoring")}>{t("settings.experimental.skillAuthoringDetail")}</SettingsHelp>
+          </div>
           <div className="mt-0.5 text-[12px] leading-relaxed text-ink-secondary">
-            {t("settings.experimental.skillAuthoringDetail")}
+            {t("settings.experimental.skillAuthoringSummary")}
           </div>
         </div>
         <Switch

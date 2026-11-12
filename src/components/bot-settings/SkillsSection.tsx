@@ -12,6 +12,7 @@ import { inputCls } from "./field";
 import { OrgSkillsCard } from "./OrgSkillsCard";
 import { WriteCommandCard } from "./WriteCommandCard";
 import { Select } from "../Select";
+import { SettingsHelp } from "../SettingsHelp";
 
 export interface ManagedSkill {
   name: string;
@@ -387,9 +388,10 @@ export function SkillsSection({ bot }: { bot: Bot }) {
         <div className="flex items-center gap-2">
           <BookOpen size={16} className="text-ink-secondary" />
           <div className="text-[15px] font-medium text-ink">{t("skills.learned.title")}</div>
+          {featureEnabled && <SettingsHelp label={t("skills.learned.title")}>{t("skills.learned.hintOn")}</SettingsHelp>}
         </div>
         <div className="mt-1 text-[12px] leading-relaxed text-ink-secondary">
-          {featureEnabled ? t("skills.learned.hintOn") : t("skills.learned.hintOff")}
+          {featureEnabled ? t("skills.learned.summary") : t("skills.learned.hintOff")}
         </div>
 
         {libraryOn ? (

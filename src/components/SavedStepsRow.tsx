@@ -27,7 +27,7 @@ export function SavedStepsRow() {
   };
 
   return (
-    <SettingRow title={t("settings.savedSteps.title")} subtitle={t("settings.savedSteps.subtitle")}>
+    <SettingRow title={t("settings.savedSteps.title")} subtitle={t("settings.savedSteps.summary")} help={t("settings.savedSteps.subtitle")}>
       <div className="flex flex-col items-end gap-1">
         <Switch checked={on} disabled={saving} aria-label={t("settings.savedSteps.aria")} onClick={toggle} />
         {error && <span role="alert" className="text-[12px] text-danger">{error}</span>}

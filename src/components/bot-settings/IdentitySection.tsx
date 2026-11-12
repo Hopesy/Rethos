@@ -15,6 +15,7 @@ import { PackageProvenance } from "./PackageProvenance";
 import { ProposalStatus } from "./ProposalStatus";
 import { randomBotName } from "@/lib/random-bot-name";
 import { intlLocale, t } from "@/lib/i18n";
+import { SettingsHelp } from "../SettingsHelp";
 
 export type IdentityPart = "avatar" | "provenance" | "name" | "title" | "blurb";
 
@@ -77,9 +78,12 @@ export function IdentitySection({
       </Field>}
       {shows("blurb") && <div className="block">
         <div className="mb-1.5 flex items-center justify-between gap-3">
-          <label htmlFor={`bot-instructions-${bot.id}`} className="text-[13px] text-ink-secondary">
-            {t("botSettings.identity.blurb")}
-          </label>
+          <div className="flex items-center gap-1">
+            <label htmlFor={`bot-instructions-${bot.id}`} className="text-[13px] text-ink-secondary">
+              {t("botSettings.identity.blurb")}
+            </label>
+            <SettingsHelp label={t("botSettings.identity.blurb")}>{t("botSettings.identity.blurbHelp")}</SettingsHelp>
+          </div>
           <button
             type="button"
             onClick={() => setInstructionsOpen(true)}
@@ -99,7 +103,7 @@ export function IdentitySection({
           onChange={(e) => patch({ description: e.target.value })}
         />
         <div className="mt-1.5 flex items-start justify-between gap-3 text-[11px] text-ink-secondary">
-          <span>{t("botSettings.identity.blurbHelp")}</span>
+          <span>{t("botSettings.identity.blurbSummary")}</span>
           {bot.description.length > 3_000 && (
             <span className="shrink-0 tabular-nums">
               {bot.description.length.toLocaleString(intlLocale())} / {BOT_PROFILE_LIMITS.description.toLocaleString(intlLocale())}

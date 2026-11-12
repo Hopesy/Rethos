@@ -352,7 +352,9 @@ describe("Settings in Advanced mode", () => {
     expect(html).not.toContain("data-settings-page=");
     expect([...html.matchAll(/data-settings-group="([^"]+)"/g)].map((match) => match[1])).toEqual(["you", "ai", "computers", "account"]);
     expect(html.indexOf('aria-label="Advanced mode"')).toBeLessThan(html.indexOf("Language"));
-    expect(html).toContain("Show every technical control on this device");
+    expect(html).toContain("Show every control, including tools for builders.");
+    expect(html).toContain('aria-label="Help for Advanced mode"');
+    expect(html).not.toContain("Show every technical control on this device");
     expect(html).not.toContain("More settings");
     for (const kept of ["Group turns", 'aria-label="Effort for new bots"', 'aria-label="Send usage analytics"', "Diagnostics"]) {
       expect(placement(html, kept), kept).toBe("shown");

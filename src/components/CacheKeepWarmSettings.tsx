@@ -37,15 +37,16 @@ export function CacheKeepWarmSettings() {
   const windows: number[] = KEEP_WARM_WINDOWS.includes(current.windowMinutes as typeof KEEP_WARM_WINDOWS[number])
     ? [...KEEP_WARM_WINDOWS] : [...KEEP_WARM_WINDOWS, current.windowMinutes].sort((a, b) => a - b);
   return (
-    <Card title={t("settings.keepWarm.title")} subtitle={t("settings.keepWarm.subtitle")}>
+    <Card title={t("settings.keepWarm.title")} subtitle={t("settings.keepWarm.summary")} help={<div className="space-y-2"><p>{t("settings.keepWarm.subtitle")}</p><p>{t("settings.keepWarm.help")}</p><p>{t("settings.keepWarm.cost")}</p></div>}>
       <div className="mt-3 flex items-center justify-between gap-4">
         <label htmlFor="cache-keepwarm-enabled" className="text-[13px] font-medium text-ink">{t("settings.keepWarm.enable")}</label>
         <Switch id="cache-keepwarm-enabled" checked={current.enabled} disabled={saving}
           aria-describedby="cache-keepwarm-help cache-keepwarm-cost"
           onClick={() => void save({ ...current, enabled: !current.enabled })} />
       </div>
-      <p id="cache-keepwarm-help" className="mt-2 text-[12px] leading-relaxed text-ink-secondary">{t("settings.keepWarm.help")}</p>
-      <p id="cache-keepwarm-cost" className="mt-2 text-[12px] leading-relaxed text-ink-secondary">{t("settings.keepWarm.cost")}</p>
+      <p id="cache-keepwarm-help" className="sr-only">{t("settings.keepWarm.help")}</p>
+      <p id="cache-keepwarm-cost" className="sr-only">{t("settings.keepWarm.cost")}</p>
+      {current.enabled && <p className="mt-2 text-[12px] text-ink-secondary">{t("settings.keepWarm.costSummary")}</p>}
       <div className="mt-3 flex items-center justify-between gap-4">
         <label htmlFor="cache-keepwarm-window" className="text-[13px] font-medium text-ink">{t("settings.keepWarm.window")}</label>
         <Select id="cache-keepwarm-window" value={current.windowMinutes} disabled={saving || !current.enabled}

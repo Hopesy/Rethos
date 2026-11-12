@@ -16,7 +16,7 @@ describe("ThreadConcurrencySettings", () => {
     expect(markup).toContain('value="3" selected=""');
     expect(markup.match(/<option /g)).toHaveLength(16);
     expect(markup).toContain('value="16"');
-    expect(markup).toContain("Extra messages queue until a slot opens.");
+    expect(markup).toContain('aria-label="Help for Parallel threads"');
     expect(markup).toContain("Maximum running threads per bot");
   });
   it("shows Starter's one thread per bot as a plan limit it cannot raise", () => {

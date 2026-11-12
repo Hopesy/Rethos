@@ -7,6 +7,7 @@ import {
 } from "@/lib/room-turn-timeout";
 import { api, useStore, type ConfigStatus } from "@/state/store";
 import { t } from "@/lib/i18n";
+import { SettingsHelp } from "./SettingsHelp";
 
 export function RoomTurnTimeoutSettings() {
   const { state, dispatch } = useStore();
@@ -49,9 +50,10 @@ export function RoomTurnTimeoutSettings() {
 
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor="room-turn-timeout" className="text-[13px] font-medium text-ink">
-        {t("settings.roomTurns.label")}
-      </label>
+      <div className="flex items-center gap-1">
+        <label htmlFor="room-turn-timeout" className="text-[13px] font-medium text-ink">{t("settings.roomTurns.label")}</label>
+        <SettingsHelp label={t("settings.roomTurns.title")}>{t("settings.roomTurns.help")}</SettingsHelp>
+      </div>
       <div
         className={`flex max-w-[220px] items-center rounded-lg border bg-inset ${
           error ? "border-danger/60" : "border-hairline/40 focus-within:border-focus"
@@ -81,9 +83,7 @@ export function RoomTurnTimeoutSettings() {
         />
         <span className="pr-3 text-[13px] text-ink-secondary">{t("settings.roomTurns.minutes")}</span>
       </div>
-      <p id="room-turn-timeout-help" className="text-[12px] leading-relaxed text-ink-secondary">
-        {t("settings.roomTurns.help")}
-      </p>
+      <p id="room-turn-timeout-help" className="sr-only">{t("settings.roomTurns.help")}</p>
       {error ? (
         <p id="room-turn-timeout-error" role="alert" className="text-[12px] text-danger">
           {error}

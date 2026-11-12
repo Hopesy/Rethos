@@ -1,5 +1,6 @@
 import { createElement, isValidElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { en } from "@/locales";
 import { describe, expect, it, vi } from "vitest";
 
 import type { Bot, InstanceInfo } from "@/state/store";
@@ -15,6 +16,16 @@ vi.mock("../ModelPicker", () => ({
   ModelPicker: ({ label }: { label: ReactNode }) => label,
   EffortRow: () => null,
 }));
+
+const help = vi.hoisted(() => new Map<string, ReactNode>());
+vi.mock("../SettingsHelp", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../SettingsHelp")>();
+  return { ...actual, SettingsHelp: (props: { label: string; children: ReactNode }) => {
+    help.set(props.label, props.children);
+    return createElement(actual.SettingsHelp, props);
+  } };
+});
+const helpMarkup = (key: keyof typeof en) => renderToStaticMarkup(createElement("div", null, help.get(en[key])));
 
 const { FallbackChain, ModelSection } = await import("./ModelSection");
 const { BotEditorContext } = await import("./BotEditorContext");
@@ -57,7 +68,8 @@ describe("a bot's backup models", () => {
     for (const enabled of [true, false]) {
       recovery.enabled = enabled;
       const markup = renderToStaticMarkup(createElement(FallbackChain, { bot: bot([{ instanceId: "codex", model: "gpt-a" }]), onChange: vi.fn() }));
-      expect(markup).toContain("Used in order, with no other setting, when this bot&#x27;s AI is at its usage limit or the provider proves a request never started.");
+      expect(markup).toContain("Try backups in order on startup failure or usage limits; charges may apply.");
+      expect(helpMarkup("model.fallback.title")).toContain("Used in order, with no other setting, when this bot&#x27;s AI is at its usage limit or the provider proves a request never started.");
       expect(markup).not.toMatch(/Automatic recovery|inactive/);
     }
     recovery.enabled = true;
@@ -128,10 +140,12 @@ describe("the bot's model in Bot settings", () => {
     createElement(ModelSection, { bot: bot(undefined) })));
 
   it("says where a new bot's model comes from and points to backup models", () => {
-    expect(render(false)).toContain(hint);
+    expect(render(false)).not.toContain(hint);
+    expect(helpMarkup("model.section.default")).toContain(hint);
   });
 
   it("leaves the hint out while a bot is still being made", () => {
     expect(render(true)).not.toContain(hint);
+    expect(helpMarkup("model.section.default")).not.toContain(hint);
   });
 });

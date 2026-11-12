@@ -3,6 +3,8 @@ import { createPortal } from "react-dom";
 import { CircleHelp } from "lucide-react";
 import { t } from "@/lib/i18n";
 
+const HELP_OPENED = "rethos:settings-help-opened";
+
 export function SettingsHelp({ label, children }: { label: string; children: ReactNode }) {
   const id = useId();
   const trigger = useRef<HTMLButtonElement>(null);
@@ -11,8 +13,18 @@ export function SettingsHelp({ label, children }: { label: string; children: Rea
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState({ left: 0, top: 0 });
   const cancelClose = () => { if (timer.current) clearTimeout(timer.current); };
-  const show = () => { cancelClose(); setOpen(true); };
-  const hide = () => { cancelClose(); timer.current = setTimeout(() => setOpen(false), 160); };
+  const show = () => {
+    cancelClose();
+    document.dispatchEvent(new CustomEvent(HELP_OPENED, { detail: id }));
+    setOpen(true);
+  };
+  const hide = () => {
+    cancelClose();
+    timer.current = setTimeout(() => {
+      if (trigger.current === document.activeElement || popup.current?.contains(document.activeElement)) return;
+      setOpen(false);
+    }, 160);
+  };
 
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
   useEffect(() => {
@@ -31,18 +43,23 @@ export function SettingsHelp({ label, children }: { label: string; children: Rea
     const escape = (event: KeyboardEvent) => {
       if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); setOpen(false); }
     };
+    const anotherHelp = (event: Event) => {
+      if ((event as CustomEvent<string>).detail !== id) setOpen(false);
+    };
     place();
     window.addEventListener("resize", place);
     document.addEventListener("scroll", place, true);
     document.addEventListener("pointerdown", outside);
     document.addEventListener("keydown", escape, true);
+    document.addEventListener(HELP_OPENED, anotherHelp);
     return () => {
       window.removeEventListener("resize", place);
       document.removeEventListener("scroll", place, true);
       document.removeEventListener("pointerdown", outside);
       document.removeEventListener("keydown", escape, true);
+      document.removeEventListener(HELP_OPENED, anotherHelp);
     };
-  }, [open]);
+  }, [open, id]);
 
   return <>
     <button ref={trigger} type="button" aria-label={t("settings.helpFor", { title: label })}

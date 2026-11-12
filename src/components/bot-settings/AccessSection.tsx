@@ -6,6 +6,7 @@ import { api, useStore, type Bot } from "@/state/store";
 import { useBotEditor } from "./BotEditorContext";
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
+import { SettingsHelp } from "../SettingsHelp";
 import type { LocaleKey } from "@/locales";
 import { mcpServersForBot, mcpServersOfBot, mcpSwitch, useMcpServers } from "@/lib/mcp-servers";
 import { placeFacts, placeViewFor, usePlaceSeat } from "@/lib/place-view";
@@ -145,9 +146,11 @@ export function McpServersCard({ bot, patch }: { bot: Bot; patch: (patch: { mcpS
     <div className="rounded-xl bg-card p-4">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <div className="text-[15px] font-medium text-ink">{t("connectors.tab.mcp")}</div>
+          <div className="flex items-center gap-1 text-[15px] font-medium text-ink">{t("connectors.tab.mcp")}
+            <SettingsHelp label={t("connectors.tab.mcp")}>{t("botAccess.mcpDescription")}</SettingsHelp>
+          </div>
           <div className="mt-0.5 text-[13px] text-ink-secondary">
-            {t("botAccess.mcpDescription")}
+            {t("botAccess.mcpSummary")}
           </div>
           <ProposalStatus bot={bot} kind="owner" />
         </div>
@@ -480,12 +483,14 @@ function ResearchCard({ bot, patch }: { bot: Bot; patch: (patch: { xResearch: bo
   const ownKey = state.config?.treg?.configured === true, included = state.config?.xResearch?.included === true;
   const available = ownKey || included;
   const on = bot.xResearch !== false;
-  const line = !available ? t(connecting ? "research.connecting" : "research.addKey")
+  const line = !available ? t(connecting ? "research.connecting" : "research.addKeyShort")
     : !on ? t("research.off") : t(ownKey ? "research.ownOn" : "research.planOn");
   return (
     <div className="flex items-center justify-between gap-4 rounded-xl bg-card p-4" data-testid="access-x-research">
       <div>
-        <div className="text-[15px] font-medium text-ink">{t("research.title")}</div>
+        <div className="flex items-center gap-1 text-[15px] font-medium text-ink">{t("research.title")}
+          {!available && !connecting && <SettingsHelp label={t("research.title")}>{t("research.addKey")}</SettingsHelp>}
+        </div>
         <div className="mt-0.5 text-[13px] text-ink-secondary">{line}</div>
         {!available && !connecting && (
           <button type="button" className="ui-button mt-2" onClick={() => dispatch(openKeySettings("treg"))}>
@@ -508,10 +513,12 @@ function RecordStepsRow({ on, browserOn, myChrome, onChange }: { on: boolean; br
   return (
     <div className="mt-3 flex items-center justify-between gap-4 border-t border-hairline/40 pt-3">
       <div>
-        <div className="text-[14px] font-medium text-ink">{t("botAccess.recordSteps.title")}</div>
+        <div className="flex items-center gap-1 text-[14px] font-medium text-ink">{t("botAccess.recordSteps.title")}
+          <SettingsHelp label={t("botAccess.recordSteps.title")}>{t("botAccess.recordSteps.on")} {myChrome && t("botAccess.recordSteps.myChrome")}</SettingsHelp>
+        </div>
         <div className="mt-0.5 text-[13px] text-ink-secondary">
-          {!browserOn ? t("botAccess.recordSteps.needsBrowser") : on ? t("botAccess.recordSteps.on") : t("botAccess.recordSteps.off")}
-          {browserOn && on && myChrome ? ` ${t("botAccess.recordSteps.myChrome")}` : ""}
+          {!browserOn ? t("botAccess.recordSteps.needsBrowser") : on ? t("botAccess.recordSteps.onShort") : t("botAccess.recordSteps.off")}
+          {browserOn && on && myChrome ? ` ${t("botAccess.recordSteps.myChromeShort")}` : ""}
         </div>
       </div>
       <Switch
@@ -601,8 +608,9 @@ export function CloudPreference({ bot, patch }: { bot: Bot; patch: ReturnType<ty
     <>
       {!bot.computer && (
         <div className="mt-3 rounded-lg bg-inset px-3 py-2.5 text-[12px] leading-relaxed text-ink-secondary">
-          <span className="font-medium text-ink">{t("botAccess.cloud.autoTitle")}</span>{" "}
-          {t("botAccess.cloud.autoDescription")}
+          <span className="inline-flex items-center gap-1 font-medium text-ink">{t("botAccess.cloud.autoTitle")}
+            <SettingsHelp label={t("botAccess.cloud.autoTitle")}>{t("botAccess.cloud.autoDescription")}</SettingsHelp>
+          </span>
         </div>
       )}
       <CloudBackendPicker
@@ -614,9 +622,11 @@ export function CloudPreference({ bot, patch }: { bot: Bot; patch: ReturnType<ty
       {!bot.computer && bot.cloudBackend === "vps" && (
         <div className="mt-3 flex items-center justify-between gap-4 rounded-lg bg-inset px-3 py-2.5">
           <div className="min-w-0">
-            <div className="text-[13px] text-ink">{t("botAccess.cloud.startVps")}</div>
+            <div className="flex items-center gap-1 text-[13px] text-ink">{t("botAccess.cloud.startVps")}
+              <SettingsHelp label={t("botAccess.cloud.startVps")}>{t("botAccess.cloud.startVpsDescription")}</SettingsHelp>
+            </div>
             <div className="mt-0.5 text-[12px] text-ink-secondary">
-              {t("botAccess.cloud.startVpsDescription")}
+              {t("botAccess.cloud.startVpsSummary")}
             </div>
           </div>
           <Switch
@@ -657,6 +667,12 @@ export function AccessSection({
     browserEnabled,
   } = derived;
   const browserInstallable = state.config?.browserEngine?.installable === true;
+  const browserHelp = !desktopBrowser
+    ? browserBlockedOnWindows && !browserInstallable ? t("botAccess.browser.windowsUnavailable") : browserUnavailableReason(state.config)
+    : !browserFeature ? t("botAccess.browser.disabledInSettings")
+      : !canUseBrowser ? t("botAccess.browser.modelUnsupported")
+        : bot.computer === "off" ? t("botAccess.browser.off")
+          : t(browserEnabled ? "botAccess.browser.enabled" : "botAccess.browser.disabled");
   const { capabilities } = useDesktopCapabilities();
   const placeSeat = usePlaceSeat(state.config, capabilities);
   const worksOn = placeViewFor(placeFacts({
@@ -755,22 +771,19 @@ export function AccessSection({
       {shows("browser") && <div className="rounded-xl bg-card p-4">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <div className="text-[15px] font-medium text-ink">{t("botAccess.browser.title")}</div>
+            <div className="flex items-center gap-1 text-[15px] font-medium text-ink">{t("botAccess.browser.title")}
+              <SettingsHelp label={t("botAccess.browser.title")}>{browserHelp}</SettingsHelp>
+            </div>
             <div className="mt-0.5 text-[13px] text-ink-secondary">
               {!desktopBrowser
-                ? browserBlockedOnWindows && !browserInstallable
-                  ? t("botAccess.browser.windowsUnavailable")
-                  : browserUnavailableReason(state.config)
-                : !browserFeature
-                  ? t("botAccess.browser.disabledInSettings")
-                  : !canUseBrowser
-                    ? t("botAccess.browser.modelUnsupported")
-                    : bot.computer === "off"
-                      ? t("botAccess.browser.off")
-                      : browserEnabled
-                        ? t("botAccess.browser.enabled")
-                        : t("botAccess.browser.disabled")}
+                ? t(browserBlockedOnWindows && !browserInstallable ? "botAccess.browser.unsupportedShort" : "botAccess.browser.setupShort")
+                : browserHelp}
             </div>
+            {!desktopBrowser && !(browserBlockedOnWindows && !browserInstallable) && <button type="button"
+              className="mt-2 text-[13px] text-accent hover:underline" onClick={() => {
+                dispatch({ type: "toggleSettings", open: false });
+                dispatch({ type: "toggleAppSettings", open: true, section: "computer" });
+              }}>{t("botAccess.browser.openSettings")}</button>}
             <ProposalStatus bot={bot} kind="owner" />
           </div>
           <Switch

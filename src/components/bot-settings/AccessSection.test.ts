@@ -3,9 +3,11 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { StoreProvider, type Bot, type ConfigStatus } from "@/state/store";
+import { t } from "@/lib/i18n";
 import type { useBotSettingsDerived } from "./useBotSettingsDerived";
 
 const fixture = vi.hoisted(() => ({
+  help: [] as ReactNode[],
   dispatch: vi.fn(),
   mcpError: false,
   servers: null as null | Array<{ name: string; enabled: boolean }>,
@@ -88,7 +90,17 @@ function makeDerived(overrides: Partial<ReturnType<typeof useBotSettingsDerived>
   } as ReturnType<typeof useBotSettingsDerived>;
 }
 
+vi.mock("../SettingsHelp", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../SettingsHelp")>();
+  return { ...actual, SettingsHelp: (props: { label: string; children: ReactNode }) => {
+    fixture.help.push(props.children);
+    return createElement(actual.SettingsHelp, props);
+  } };
+});
+const helpMarkup = () => renderToStaticMarkup(createElement("div", null, ...fixture.help));
+
 function render(bot: Bot, derived = makeDerived()) {
+  fixture.help = [];
   return renderToStaticMarkup(
     createElement(StoreProvider, null, createElement(AccessSection, { bot, derived })),
   );
@@ -100,7 +112,7 @@ describe("owner tool selection status", () => {
     const empty = render(makeBot({ toolScope: { allow: [] } } as Partial<Bot>));
     expect(empty).toContain("No tools selected");
     expect(empty).not.toContain("All current tools</p>");
-    expect(empty).toContain("Existing approvals still apply");
+    expect(helpMarkup()).toContain("Existing approvals still apply");
   });
 
   it("shows corrupt saved restrictions as a blocked setup, never all tools", () => {
@@ -132,7 +144,7 @@ describe("AccessSection always-allowed list", () => {
     expect(markup).toContain('disabled="" aria-label="Let this bot use offline"');
     expect(markup).toMatch(/<button type="button" disabled=""[^>]*>Use every enabled server<\/button>/);
     expect(markup).toContain("finishes all active tasks");
-    expect(markup).toContain("Individual tool approvals depend on the model provider and approval mode.");
+    expect(helpMarkup()).toContain("Individual tool approvals depend on the model provider and approval mode.");
     const idle = render(makeBot({ mcpServers: ["notes"] }));
     expect(idle).not.toContain('disabled="" aria-label="Let this bot use notes"');
     expect(idle).toContain('disabled="" aria-label="Let this bot use offline"');
@@ -239,7 +251,7 @@ describe("Research (treg) card", () => {
   it("with neither a treg key nor a plan, asks for a treg key, opens API keys, and offers no switch", () => {
     fixture.config = { xResearch: { included: false }, treg: { configured: false } } as Partial<ConfigStatus>;
     const html = render(makeBot());
-    expect(html).toContain("Add your treg key in Settings → API keys to let bots research X, companies, people and more.");
+    expect(helpMarkup()).toContain("Add your treg key in Settings → API keys to let bots research X, companies, people and more.");
     expect(html).toMatch(new RegExp(`${SWITCH}[^>]* disabled=""`));
     expect(html).toMatch(new RegExp(`${SWITCH}[^>]*aria-checked="false"`));
     const open = capture(makeBot()).card.find((node) => node.type === "button" && typeof node.props.onClick === "function")!;
@@ -305,12 +317,20 @@ describe("AccessSection Record browser steps", () => {
   };
   const browserOn = () => makeDerived({ browserEnabled: true, desktopBrowser: true, canUseBrowser: true });
 
+  it("describes the current browser state in help as well as beside the switch", () => {
+    render(makeBot(), makeDerived({ desktopBrowser: true, browserFeature: false, canUseBrowser: true }));
+    expect(fixture.help).toContain(t("botAccess.browser.disabledInSettings"));
+    expect(fixture.help).not.toContain(t("botAccess.browser.enabled"));
+    render(makeBot({ computer: "off" }), browserOn());
+    expect(fixture.help).toContain(t("botAccess.browser.off"));
+  });
+
   it("asks for the browser first, then says what it saves and for how long, with no prompt", () => {
     expect(render(makeBot())).toContain("Turn on the browser first.");
     expect(render(makeBot(), browserOn())).toContain("Browser steps are not saved.");
     const on = render(makeBot({ recordBrowserSteps: true }), browserOn());
-    expect(on).toContain("Saves a screenshot and a short note of each click, typing and page change");
-    expect(on).toContain("Kept with this conversation for 30 days.");
+    expect(helpMarkup()).toContain("Saves a screenshot and a short note of each click, typing and page change");
+    expect(on).toContain("Save screenshots and step notes for 30 days.");
     expect(on).toContain('aria-label="Record browser steps"');
   });
 
@@ -326,7 +346,8 @@ describe("AccessSection Record browser steps", () => {
 
   it("says the screenshots show the person's own Chrome when the bot uses it", () => {
     fixture.config = { browserEngine: { myChrome: true }, browserProfiles: [{ id: "mine", browser: "chrome" }] } as unknown as Partial<ConfigStatus>;
-    expect(render(makeBot({ recordBrowserSteps: true, browserProfile: "mine" }), browserOn())).toContain("This bot uses your own Chrome, so the screenshots show your Chrome.");
+    expect(render(makeBot({ recordBrowserSteps: true, browserProfile: "mine" }), browserOn())).toContain("Records your own Chrome.");
+    expect(helpMarkup()).toContain("This bot uses your own Chrome, so the screenshots show your Chrome.");
     expect(render(makeBot({ recordBrowserSteps: true }), browserOn())).not.toContain("your own Chrome");
   });
 });

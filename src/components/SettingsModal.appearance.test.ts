@@ -1,4 +1,4 @@
-import { createElement, type ComponentProps } from "react";
+import { createElement, type ComponentProps, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setLocale } from "@/lib/i18n";
@@ -27,6 +27,7 @@ const fixture = vi.hoisted(() => ({
   setAdvancedMode: vi.fn(),
   api: vi.fn(),
   dispatch: vi.fn(),
+  help: [] as ReactNode[],
   switches: [] as ComponentProps<typeof Switch>[],
   rail: null as { available: boolean; hidden: boolean } | null,
   railHidden: [] as boolean[],
@@ -112,7 +113,15 @@ afterEach(() => {
   setLocale("en");
 });
 
-const render = () => renderToStaticMarkup(createElement(SettingsModal));
+vi.mock("./SettingsHelp", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./SettingsHelp")>();
+  return { ...actual, SettingsHelp: (props: ComponentProps<typeof actual.SettingsHelp>) => {
+    fixture.help.push(props.children);
+    return createElement(actual.SettingsHelp, props);
+  } };
+});
+const helpMarkup = () => renderToStaticMarkup(createElement("div", null, ...fixture.help));
+const render = () => { fixture.help = []; return renderToStaticMarkup(createElement(SettingsModal)); };
 
 describe("Settings → Appearance", () => {
   it.each([true, false])("flips Advanced mode from General, first in Advanced and last in Simple, when the switch is %s", (enabled) => {
@@ -161,13 +170,15 @@ describe("Settings → Appearance", () => {
     expect(html).toContain('aria-label="Show threads"');
     expect(html).toContain('aria-label="Pinned bots as circles"');
     expect(html).toContain('aria-label="Universal pins"');
-    expect(html).toContain("from every group");
-    expect(html).toContain("like Grok Bot");
+    expect(helpMarkup()).toContain("from every group");
+    expect(helpMarkup()).toContain("like Grok Bot");
     expect(html).toContain('aria-label="Show tool calls in chat"');
-    expect(html).toContain("on this device only");
-    expect(html).toContain("all conversation history and running work");
-    expect(html).toContain("channels are unchanged");
-    expect(html).toContain("Turn this back on");
+    expect(helpMarkup()).toContain("on this device only");
+    expect(helpMarkup()).toContain("all conversation history and running work");
+    expect(helpMarkup()).toContain("channels are unchanged");
+    expect(helpMarkup()).toContain("Turn this back on");
+    expect(html).not.toContain("all conversation history and running work");
+    expect(html).toContain("Show conversations in the sidebar.");
     expect(html).not.toContain("Stop after no progress for");
   });
 
@@ -199,7 +210,7 @@ describe("Settings → Appearance", () => {
     fixture.notificationSounds = enabled;
     const html = render();
     expect(html).toContain('aria-label="Notification sounds"');
-    expect(html).toContain("keep the banners but lose the chime");
+    expect(helpMarkup()).toContain("keep the banners but lose the chime");
     const toggle = fixture.switches.find((props) => props["aria-label"] === "Notification sounds")!;
     expect(toggle.checked).toBe(enabled);
     toggle.onClick!({} as never);
@@ -219,7 +230,7 @@ describe("Settings → Appearance", () => {
     const html = render();
     expect(html).toContain('aria-label="Choose tools layout"');
     expect(html).toContain("Tools layout");
-    expect(html).toContain("As a column of avatars, the sidebar always shows icons.");
+    expect(helpMarkup()).toContain("As a column of avatars, the sidebar always shows icons.");
     expect(html).toContain('<option value="rows" selected="">Rows</option>');
     expect(html).toContain('<option value="toolbar">Toolbar</option>');
     expect(fixture.setSidebarToolsLayout).not.toHaveBeenCalled();
@@ -241,8 +252,8 @@ describe("Settings → Appearance", () => {
     const html = render();
     expect(html).toContain("Send messages with");
     expect(html).toContain('aria-label="Send messages with"');
-    expect(html).toContain("Choose Shift+Enter or Ctrl+Enter so Enter starts a new line");
-    expect(html).toContain("as Japanese input does. Ctrl+Enter sends whichever you choose.");
+    expect(helpMarkup()).toContain("Choose Shift+Enter or Ctrl+Enter so Enter starts a new line");
+    expect(helpMarkup()).toContain("as Japanese input does. Ctrl+Enter sends whichever you choose.");
     expect(html).toContain(`<option value="${sendKey}" selected="">${label}</option>`);
     const options = [...html.matchAll(/<option value="(enter|shift-enter|mod-enter)"[^>]*>([^<]*)</g)].map((match) => [match[1], match[2]]);
     expect(options).toEqual([["enter", "Enter"], ["shift-enter", "Shift+Enter"], ["mod-enter", "Ctrl+Enter"]]);
@@ -256,7 +267,7 @@ describe("Settings → Appearance", () => {
     fixture.sendKey = "shift-enter";
     const html = render();
     expect(html).toContain("メッセージの送信キー");
-    expect(html).toContain("日本語入力のように Enter で変換を確定する場合は、Shift+Enter か Ctrl+Enter を選ぶと Enter で改行できます。");
+    expect(helpMarkup()).toContain("日本語入力のように Enter で変換を確定する場合は、Shift+Enter か Ctrl+Enter を選ぶと Enter で改行できます。");
     expect(html).toContain('<option value="enter">Enter</option>');
     expect(html).toContain('<option value="shift-enter" selected="">Shift+Enter</option>');
     expect(html).toContain('<option value="mod-enter">Ctrl+Enter</option>');
@@ -283,7 +294,7 @@ describe("Settings → Appearance", () => {
     const html = render();
     expect(html).toContain("Color my messages");
     expect(html).toContain("bot&#x27;s color");
-    expect(html).toContain("Rooms keep the neutral bubble");
+    expect(helpMarkup()).toContain("Rooms keep the neutral bubble");
     const toggle = fixture.switches.find((props) => props["aria-label"] === "Color my messages with the bot's color")!;
     expect(toggle.checked).toBe(false);
     toggle.onClick!({} as never);
@@ -318,7 +329,7 @@ describe("Settings → Appearance", () => {
     const html = render();
     expect(html).toContain('aria-label="Show the run card"');
     expect(html).toContain("This run");
-    expect(html).toContain("saving the run as a skill");
+    expect(helpMarkup()).toContain("saving the run as a skill");
     const toggle = fixture.switches.find((props) => props["aria-label"] === "Show the run card")!;
     expect(toggle.checked).toBe(true);
     toggle.onClick!({} as never);
@@ -385,7 +396,7 @@ describe("Settings → Appearance", () => {
     ] as const) {
       expect(locales.ja[key], key).toBeTruthy();
       expect(locales.ja[key], key).not.toBe(en[key]);
-      expect(html, key).toContain(locales.ja[key]!);
+      expect(key.endsWith(".subtitle") ? helpMarkup() : html, key).toContain(locales.ja[key]!);
     }
   });
 
@@ -398,9 +409,9 @@ describe("Settings → Appearance", () => {
       expect(html).toContain('aria-label="Show threads"');
       expect(html).toContain('aria-label="Pinned bots as circles"');
       expect(html).toContain('aria-label="Universal pins"');
-      expect(html).toContain("from every group");
-      expect(html).toContain("like Grok Bot");
-      expect(html).toContain("all conversation history and running work");
+      expect(helpMarkup()).toContain("from every group");
+      expect(helpMarkup()).toContain("like Grok Bot");
+      expect(helpMarkup()).toContain("all conversation history and running work");
       expect(html).not.toContain("settings.threadDisplay");
     } finally {
       delete locales.zz;

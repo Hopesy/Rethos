@@ -6,6 +6,7 @@ import { useBotEditor } from "./BotEditorContext";
 import { ProposalStatus } from "./ProposalStatus";
 import { ThreadModelsLine } from "../ThreadModelsLine";
 import { t } from "@/lib/i18n";
+import { SettingsHelp } from "../SettingsHelp";
 import { Select } from "../Select";
 
 export function ModelSection({ bot }: { bot: Bot }) {
@@ -20,16 +21,22 @@ export function ModelSection({ bot }: { bot: Bot }) {
           contained
           label={
             <div>
-              <div className="text-[15px] font-medium text-ink">{t("model.section.default")}</div>
+              <div className="flex items-center gap-1 text-[15px] font-medium text-ink">{t("model.section.default")}
+                <SettingsHelp label={t("model.section.default")}>
+                  <div className="space-y-2">
+                    <p>{t(draft ? "model.section.starting" : "model.section.threads")}</p>
+                    {!draft && <p>{t("model.section.installationDefault")}</p>}
+                  </div>
+                </SettingsHelp>
+              </div>
               <div className="mt-0.5 text-[13px] text-ink-secondary">
-                {draft ? t("model.section.starting") : t("model.section.threads")}
+                {draft ? t("model.section.starting") : t("model.section.threadsShort")}
               </div>
               <ProposalStatus bot={bot} kind="chief" />
             </div>
           }
         />
         {!draft && <ThreadModelsLine bot={bot} className="mt-3" />}
-        {!draft && <div className="mt-3 text-[13px] text-ink-secondary">{t("model.section.installationDefault")}</div>}
       </div>
 
       <EffortRow
@@ -37,10 +44,12 @@ export function ModelSection({ bot }: { bot: Bot }) {
         className="rounded-xl bg-card p-4"
         label={
           <div>
-            <div className="text-[15px] font-medium text-ink">{modelVariants ? t("model.simple.reasoning") : t("model.section.effort")}</div>
+            <div className="flex items-center gap-1 text-[15px] font-medium text-ink">{modelVariants ? t("model.simple.reasoning") : t("model.section.effort")}
+              <SettingsHelp label={t(modelVariants ? "model.simple.reasoning" : "model.section.effort")}>{t("model.section.threads")}</SettingsHelp>
+            </div>
             {/* Codex applies a level to the whole thread and cannot take one back, so this says what the app sends, not where the engine ends up. */}
             <div className="mt-0.5 text-[13px] text-ink-secondary">
-              {modelVariants ? (draft ? t("model.section.startingReasoning") : t("model.section.threads")) : t(bot.modelSelection.effort ? "model.section.effortHelp" : "model.section.effortHelpDefault")}
+              {modelVariants ? (draft ? t("model.section.startingReasoning") : t("model.section.threadsShort")) : t(bot.modelSelection.effort ? "model.section.effortHelp" : "model.section.effortHelpDefault")}
             </div>
             <ProposalStatus bot={bot} kind="chief" />
           </div>
@@ -59,8 +68,11 @@ function KeepWarmRow({ bot, workspaceOn, onChange }: { bot: Bot; workspaceOn: bo
   const value = bot.cacheKeepWarm === true ? "on" : bot.cacheKeepWarm === false ? "off" : "follow";
   return (
     <div className="rounded-xl bg-card p-4">
-      <label htmlFor="bot-cache-keepwarm" className="text-[15px] font-medium text-ink">{t("bot.keepWarm.title")}</label>
-      <div className="mt-0.5 text-[13px] text-ink-secondary">{t("bot.keepWarm.help")}</div>
+      <div className="flex items-center gap-1">
+        <label htmlFor="bot-cache-keepwarm" className="text-[15px] font-medium text-ink">{t("bot.keepWarm.title")}</label>
+        <SettingsHelp label={t("bot.keepWarm.title")}>{t("bot.keepWarm.help")}</SettingsHelp>
+      </div>
+      <div className="mt-0.5 text-[13px] text-ink-secondary">{t("bot.keepWarm.summary")}</div>
       <Select className="mt-3 max-w-full" id="bot-cache-keepwarm" value={value}
         onChange={(event) => onChange(event.target.value === "on" ? true : event.target.value === "off" ? false : null)}>
         <option value="follow">{t("bot.keepWarm.follow", { state: t(workspaceOn ? "bot.keepWarm.on" : "bot.keepWarm.off") })}</option>
@@ -105,9 +117,11 @@ export function FallbackChain({ bot, onChange }: { bot: Bot; onChange: (fallback
 
   return (
     <div className="rounded-xl bg-card p-4">
-      <div className="text-[15px] font-medium text-ink">{t("model.fallback.title")}</div>
+      <div className="flex items-center gap-1 text-[15px] font-medium text-ink">{t("model.fallback.title")}
+        <SettingsHelp label={t("model.fallback.title")}>{t("model.fallback.uses")}</SettingsHelp>
+      </div>
       <div className="mt-0.5 text-[13px] text-ink-secondary">
-        {t("model.fallback.uses")}
+        {t("model.fallback.summary")}
       </div>
       {chain.length > 0 && (
         <ol className="mt-3 flex flex-col gap-1">

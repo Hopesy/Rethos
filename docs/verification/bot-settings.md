@@ -72,6 +72,32 @@ This browser fixture verifies renderer interaction and persistence, not
 packaged Electron privileges, actual operating-system access, or the
 provider-specific execution of elevated approval modes.
 
+## Concise settings explanations
+
+In Advanced mode, review General, Appearance, Experimental, and the bot's
+Identity, Skills, Memory, Model, Access and Permissions sections in English
+and Chinese. Include saved steps and the talk shortcut on supported desktop
+platforms, browser recording while enabled, and phone apps with default
+permissions. Each setting keeps a short
+summary; its help icon opens the full explanation on hover, focus, or click.
+Owner and Chief proposal markers use short labels with help of their own.
+
+Check that the recovery and tool-selection details open in full, stay open
+while the pointer enters the explanation, and remain within the viewport at
+desktop and 390px widths. Escape closes the explanation while keeping the
+settings panel open; moving keyboard focus away closes it. Focus one help
+button, then hover another: only the second explanation stays open. Browser
+help must reflect the current enabled, disabled or unavailable state.
+Save a fixture
+setting and read it back through the fixture API. Save errors, missing
+configuration, plan limits, and permission changes with immediate effects
+stay visible beside their controls. Keep the cost notice, screenshot retention,
+and sharing of personal facts visible in the short summaries.
+
+```sh
+pnpm exec vitest run src/components/SettingsHelp.test.ts src/components/SettingsModal.appearance.test.ts src/components/AutomaticRecoverySettings.test.ts src/components/DiagnosticsRow.test.ts src/components/bot-settings/AccessSection.test.ts src/components/bot-settings/ProposalStatus.test.ts
+```
+
 The [hosted Slack management fixture](hosted-slack-management.md) separately
 checks Slack → Manage in Admin: the row exists only on a hosted workspace,
 admins and members read the same link, and switching agents during a pending

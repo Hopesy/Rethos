@@ -1,5 +1,6 @@
-import { createElement } from "react";
+import { createElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { en } from "@/locales";
 import { describe, expect, it, vi } from "vitest";
 
 import type { MemoryCapacity, MemoryFileInfo, MemoryJournalRow } from "@/lib/memory";
@@ -8,6 +9,16 @@ import type { MemoryCapacity, MemoryFileInfo, MemoryJournalRow } from "@/lib/mem
 vi.mock("../DesktopCapabilities", () => ({
   useDesktopCapabilities: () => ({ capabilities: { host: { homeDir: undefined, platform: "other" } } }),
 }));
+
+const help = vi.hoisted(() => new Map<string, ReactNode>());
+vi.mock("../SettingsHelp", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../SettingsHelp")>();
+  return { ...actual, SettingsHelp: (props: { label: string; children: ReactNode }) => {
+    help.set(props.label, props.children);
+    return createElement(actual.SettingsHelp, props);
+  } };
+});
+const helpMarkup = (key: keyof typeof en) => renderToStaticMarkup(createElement("div", null, help.get(en[key])));
 
 const { ConflictNotice, LendingReviewNotice, MemoryFileRows, MemoryGauge, MemoryJournalList, MemoryUpkeepCard } = await import("./MemorySection");
 
@@ -142,7 +153,8 @@ describe("MemoryUpkeepCard", () => {
   it("explains the switch and hides the tidy button while off", () => {
     const markup = render(createElement(MemoryUpkeepCard, { enabled: false, status: null, tidying: false, onToggle: noop, onTidy: noop }));
     expect(markup).toContain("Memory upkeep");
-    expect(markup).toContain("you can remove any");
+    expect(markup).toContain("Organize memory automatically; personal facts are shared with your bots.");
+    expect(helpMarkup("memory.upkeep.title")).toContain("you can remove any");
     expect(markup).not.toContain("Tidy up now");
   });
 
@@ -165,7 +177,7 @@ describe("MemoryUpkeepCard", () => {
     const rooms = { enabled: false, saving: false, error: "", onToggle: noop };
     const on = render(createElement(MemoryUpkeepCard, { enabled: true, status: null, tidying: false, onToggle: noop, onTidy: noop, rooms }));
     expect(on).toContain("Learn from group chats");
-    expect(on).toContain("fewer people can see than the bot never feeds its memory");
+    expect(helpMarkup("memory.learnFromRooms.title")).toContain("fewer people can see than the bot never feeds its memory");
     expect(on).toContain('aria-label="Learn from group chats"');
     const failed = render(createElement(MemoryUpkeepCard, { enabled: true, status: null, tidying: false, onToggle: noop, onTidy: noop, rooms: { ...rooms, error: "Could not save the group chat setting." } }));
     expect(failed).toContain('role="alert"');

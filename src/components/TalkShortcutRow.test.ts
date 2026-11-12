@@ -58,7 +58,9 @@ describe("TalkShortcutRow", () => {
   it("shows the switch on with the key in its subtitle, and turns it off", async () => {
     await show();
     expect(host.textContent).toContain("Talk to Rethos from any app");
-    expect(host.textContent).toContain("Hold ⌃⌥Space, speak, let go");
+    expect(host.textContent).toContain("Hold ⌃⌥Space to talk, then release to send.");
+    await click(host.querySelector<HTMLButtonElement>('[aria-label="Help for Talk to Rethos from any app"]')!);
+    expect(document.querySelector('[role="tooltip"]')!.textContent).toContain("Hold ⌃⌥Space, speak, let go");
     await click(toggle());
     expect(bridge.set).toHaveBeenCalledWith({ enabled: false });
     expect(toggle().getAttribute("aria-checked")).toBe("false");

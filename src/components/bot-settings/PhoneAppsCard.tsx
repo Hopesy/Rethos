@@ -1,5 +1,6 @@
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
+import { SettingsHelp } from "../SettingsHelp";
 import type { LocaleKey } from "@/locales";
 import { nextPhoneApps, phoneAppRows, phoneNames, usePhones } from "@/lib/phones";
 import type { Bot } from "@/state/store";
@@ -10,9 +11,11 @@ export function PhoneAppsCard({ bot, patch }: { bot: Bot; patch: (patch: BotPatc
   if (phones.length === 0) return null;
   const rows = phoneAppRows(bot, phones);
   return <div className="rounded-xl bg-card p-4" data-testid="access-phone-apps">
-    <div className="text-[15px] font-medium text-ink">{t("botAccess.phone.title")}</div>
+    <div className="flex items-center gap-1 text-[15px] font-medium text-ink">{t("botAccess.phone.title")}
+      {bot.phoneApps === undefined && <SettingsHelp label={t("botAccess.phone.title")}>{t("botAccess.phone.default")}</SettingsHelp>}
+    </div>
     <div className="mt-0.5 text-[13px] text-ink-secondary">{t("botAccess.phone.subtitle", { phone: phoneNames(phones) })}</div>
-    {bot.phoneApps === undefined && <div className="mt-1 text-[12px] text-ink-secondary">{t("botAccess.phone.default")}</div>}
+    {bot.phoneApps === undefined && <div className="mt-1 text-[12px] text-ink-secondary">{t("botAccess.phone.defaultShort")}</div>}
     <div className="mt-3 flex flex-col divide-y divide-hairline/20 rounded-lg bg-inset">
       {rows.map(({ cap, grant, onPhone }) => {
         const label = t(`botAccess.phone.cap.${cap}` as LocaleKey);

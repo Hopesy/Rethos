@@ -141,7 +141,10 @@ export function ThreadCleanupSettings() {
   };
 
   return (
-    <Card title={t("settings.threadCleanup.title")} subtitle={t("settings.threadCleanup.subtitle")}>
+    <Card title={t("settings.threadCleanup.title")} subtitle={t("settings.threadCleanup.subtitle")} help={<div className="space-y-2">
+      <p>{t("settings.threadCleanup.retention.help")}</p>
+      <p>{t("settings.threadCleanup.cap.help")}</p>
+    </div>}>
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <input
@@ -156,6 +159,7 @@ export function ThreadCleanupSettings() {
           <div className={`flex max-w-[160px] items-center rounded-lg border bg-inset ${errorKnob === "retention" ? "border-danger/60" : "border-hairline/40 focus-within:border-focus"}`}>
             <input
               id="thread-log-retention-days"
+              aria-describedby="thread-log-retention-help"
               type="number"
               min={MIN_RETENTION_DAYS}
               max={MAX_RETENTION_DAYS}
@@ -164,7 +168,6 @@ export function ThreadCleanupSettings() {
               value={retentionValue}
               disabled={confirmedRetentionDays === null || pending !== null}
               aria-invalid={errorKnob === "retention"}
-              aria-describedby="thread-log-retention-help"
               onChange={(event) => {
                 setRetentionDraft(event.target.value);
                 setError("");
@@ -179,7 +182,6 @@ export function ThreadCleanupSettings() {
             <span className="pr-3 text-[13px] text-ink-secondary">{t("settings.threadCleanup.retention.unit")}</span>
           </div>
         </div>
-        <p id="thread-log-retention-help" className="text-[12px] leading-relaxed text-ink-secondary">{t("settings.threadCleanup.retention.help")}</p>
       </div>
       <div className="mt-4 flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-2">
@@ -195,6 +197,7 @@ export function ThreadCleanupSettings() {
           <div className={`flex max-w-[160px] items-center rounded-lg border bg-inset ${errorKnob === "cap" ? "border-danger/60" : "border-hairline/40 focus-within:border-focus"}`}>
             <input
               id="thread-log-cap-mib"
+              aria-describedby="thread-log-cap-help"
               type="number"
               min={MIN_CAP_BYTES / MIB}
               max={MAX_CAP_BYTES / MIB}
@@ -203,7 +206,6 @@ export function ThreadCleanupSettings() {
               value={capValue}
               disabled={confirmedCapBytes === null || pending !== null}
               aria-invalid={errorKnob === "cap"}
-              aria-describedby="thread-log-cap-help"
               onChange={(event) => {
                 setCapDraft(event.target.value);
                 setError("");
@@ -218,8 +220,9 @@ export function ThreadCleanupSettings() {
             <span className="pr-3 text-[13px] text-ink-secondary">{t("settings.threadCleanup.cap.unit")}</span>
           </div>
         </div>
-        <p id="thread-log-cap-help" className="text-[12px] leading-relaxed text-ink-secondary">{t("settings.threadCleanup.cap.help")}</p>
       </div>
+      <p id="thread-log-retention-help" className="sr-only">{t("settings.threadCleanup.retention.help")}</p>
+      <p id="thread-log-cap-help" className="sr-only">{t("settings.threadCleanup.cap.help")}</p>
       {pending !== null && <p role="status" className="mt-2 text-[12px] text-ink-secondary">{t("settings.threadCleanup.saving")}</p>}
       {error && <p role="alert" className="mt-2 text-[12px] text-danger">{error}</p>}
     </Card>
