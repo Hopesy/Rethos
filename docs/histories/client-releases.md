@@ -1,5 +1,15 @@
 # 客户端发布记录
 
+### Windows 与 Android 0.1.157
+
+2026-11-12 已发布 [Rethos 0.1.157](https://github.com/Hopesy/Rethos/releases/tag/v0.1.157)，Windows 与 Android 均来自提交 `2cde7d971ad447aa5df4c7614a163d7bc72b7ac9`。本次精简高级设置说明，补齐条件设置，修复帮助浮层重叠及浏览器状态说明。
+
+- [联合发布](https://github.com/Hopesy/Rethos/actions/runs/43201956413)通过，包含 Windows 实际安装启动、Android 模拟器验收及正式签名；[源码 CI](https://github.com/Hopesy/Rethos/actions/runs/43201954132)通过。
+- 五个公开文件完整下载后，GitHub 摘要与 SHA256SUMS 逐项一致。Windows PE 产品和文件版本为 0.1.157；APK 为 0.1.157 / 1157，应用 ID 与原签名证书保持一致。两个 Latest 下载入口均已核对。
+- Windows 安装程序为 267670422 字节，SHA256 `b6edba1493ff53d17b78c89e045e13d00652f735f1a0cad96760ba60a18885c8`；APK 为 2006675 字节，SHA256 `0ea69e4b6128d89499a1611bfe929c5a3e134ab66dc542a8e67560546fd85431`。
+- [双架构镜像构建与验收](https://github.com/Hopesy/Rethos/actions/runs/43201954029)通过，VPS 已固定镜像摘要 `sha256:adfe95607b2c8e061532abc752db41c60fb9b326813930a58c5fc0ce2ac6d15d`。公网版本、新帮助组件与说明资源核对通过，原 Token、Bot 模型与工具白名单、模型列表和桌面 MCP 配置保留。
+- 发布前 351 项设置及默认 Bot 相关测试通过，桌面与 390px 帮助交互在隔离浏览器验证。发布证据位于 `.Rethos-temp/release-0.1.157/`，界面复核证据见 `.Rethos-temp/settings-recheck-verification.json`。
+
 ### Windows 与 Android 0.1.156
 
 2026-11-11 已发布 [Rethos 0.1.156](https://github.com/Hopesy/Rethos/releases/tag/v0.1.156)，两端来源提交均为 `3568771184cb7bee88b748747c7d6770ec6da534`。版本由 `package.json` 统一提供；联合发布等待两端验收完成，再将同一 Release 设置为 Latest。

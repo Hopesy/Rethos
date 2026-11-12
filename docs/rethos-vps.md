@@ -160,6 +160,10 @@ Android 8.0+ 可安装 [Rethos Android](https://github.com/Hopesy/Rethos/release
 
 ## 当前部署记录
 
+2026-11-12 已同步部署 0.1.157 的高级设置说明与帮助交互修复。更新前确认 Bot 空闲，备份数据卷、Compose、覆盖配置与环境文件；更新后容器健康，公网版本、静态资源及配置保留校验通过。Windows 与 Android 0.1.157 已统一发布。
+
+本次备份：`/home/zhouhl/rethos-backups/rethos-before-clients-0.1.157-20261112-110124`。验收证据：`.Rethos-temp/release-0.1.157/`。
+
 2026-11-11 核对的部署位于 `/home/zhouhl/rethos`，当前入口为 `https://rethos.hopesy.cc`，产品显示 Rethos。主机 Caddy 与 Compose 已使用新域名，旧 `hermes.hopesy.cc` 的 DNS 记录已移除。GitHub 仓库地址继续使用 `Hopesy/Rethos`。
 
 - 服务为 `rethos-rethos-1` 与 `rethos-caddy-1`，主机入口 `127.0.0.1:8790`。
@@ -172,8 +176,8 @@ Android 8.0+ 可安装 [Rethos Android](https://github.com/Hopesy/Rethos/release
 - VPS 桌面转发入口：`/home/zhouhl/rethos-desktop/cua-driver-desktop`。
 - SSH 配置启用了连接复用；新 MCP 会话可以复用已验证的桌面 SSH 连接。
 - 自定义 MCP 启动等待调整为 30 秒，适应跨 SSH 的初始化；内置工具维持 8 秒。
-- 已部署版本 `0.1.155`，源码提交 `b2b9eea5a0563be2842aa9cc7b3d2df08dd4eecd`；镜像摘要 `sha256:1dfa6e8f6c5842cf99050f9e355ddb7e8750bdd198a7950b9906ef8cb2e1aaec`。
-- 发布记录：[Android 0.1.3 配套镜像构建与验收](https://github.com/Hopesy/Rethos/actions/runs/42985614500)。部署使用来源提交对应的不可变镜像摘要。
+- 已部署版本 `0.1.157`，源码提交 `2cde7d971ad447aa5df4c7614a163d7bc72b7ac9`；镜像摘要 `sha256:adfe95607b2c8e061532abc752db41c60fb9b326813930a58c5fc0ce2ac6d15d`。
+- 发布记录：[0.1.157 镜像构建与验收](https://github.com/Hopesy/Rethos/actions/runs/43201954029)。部署使用来源提交对应的不可变镜像摘要。
 - 正式机器人说明与工具选择保存在 `/home/zhouhl/rethos/production-desktop-monitor.md`、`desktop-team.yaml`，已通过 `rethos team apply` 写入持久化配置。
 - Hermes 迁移备份：`/home/zhouhl/rethos-backups/hermes-before-rethos-20261108-115245/`。
 - 首次 Rethos 升级备份：`/home/zhouhl/rethos-backups/rethos-before-update-20261108-162452/`。
