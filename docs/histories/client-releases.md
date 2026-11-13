@@ -1,5 +1,15 @@
 # 客户端发布记录
 
+### Windows 与 Android 0.1.160
+
+2026-11-13 已发布 [Rethos 0.1.160](https://github.com/Hopesy/Rethos/releases/tag/v0.1.160)，两端和 VPS 均来自提交 `6bdd48a6684fb413ce78a28a74a0f6655cc0a7db`。共享 API 运行时每轮额度提高到 1,024 步和 10,000 次工具调用；MCP 响应帧保护按请求计数，正常工具搜索保持安静。
+
+- [源码 CI](https://github.com/Hopesy/Rethos/actions/runs/43416075239) 的 29 项检查通过；[联合构建与发布](https://github.com/Hopesy/Rethos/actions/runs/43418833645)通过 Windows 实际安装启动、Android 模拟器及正式签名验证。原有 64 步的端到端断言已同步，长任务达到额度后的原地续接和停滞处理通过复核。
+- 五个公开文件已完整下载，GitHub 摘要及 SHA256SUMS 逐项一致。Windows 内部版本为 0.1.160；APK 为 0.1.160 / 1160，原应用 ID 和签名证书验证通过；两个 Latest 下载入口均指向本版本。
+- Windows 安装程序为 267679185 字节，SHA256 `1f7afa204cfe14e6d10ed4d3a93f7cf583dd10ac1a2789a5bdfccf84838ea00a`；APK 为 2006675 字节，SHA256 `b70c9d09442f1358c075409978bf57afcc45812991009dba0da4075c6a073f68`。
+- [双架构镜像构建与验收](https://github.com/Hopesy/Rethos/actions/runs/43416075082)通过，VPS 固定镜像摘要 `sha256:2986093541332b13af5d7ece7ae42802209b8910c39bbc98330e162ea793e6ce`。运行中的服务包直接核验新版额度、按请求计数及重复提示移除；公网资源和原 Token、6 个 Bot 配置、1 个 MCP、2 个监控的计划与启用状态保留。
+- 本地长任务相关回归 182 项通过，MCP 回归 115 项通过，发布预检 63 项通过。隔离服务完成 300 次工具调用，并在另一轮执行 225 次调用后正常取消；连续两轮搜索与调用 160 个工具目录的验收通过。证据位于 `.Rethos-temp/release-0.1.160/`、`.Rethos-temp/long-task-limits/` 和 `.Rethos-temp/tool-search-notice/`。
+
 ### Windows 与 Android 0.1.159
 
 2026-11-13 已发布 [Rethos 0.1.159](https://github.com/Hopesy/Rethos/releases/tag/v0.1.159)，两端和 VPS 均来自提交 `8a5ea8d1f7f8013170aa2630bc9281dee2f1637c`。本次补齐默认主 Bot 全部可用工具与记忆规则，修复复制 Bot 能力限制、工具保存时序、迟到响应、外层保存、跨模式记忆草稿及保存期间继续输入的七项问题。

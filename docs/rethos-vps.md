@@ -160,6 +160,10 @@ Android 8.0+ 可安装 [Rethos Android](https://github.com/Hopesy/Rethos/release
 
 ## 当前部署记录
 
+2026-11-13 北京时间 19:40 已部署 0.1.160。共享 API 运行时每轮额度提高到 1,024 步和 10,000 次工具调用；MCP 响应帧保护按请求计数，正常工具搜索保持安静。源码 CI 的 29 项检查及双架构镜像验收通过。运行中的服务包已直接核验新版额度、按请求计数和提示移除，原 Token、6 个 Bot 的模型与能力配置、1 个 MCP 及 2 个监控的计划和启用状态保留。
+
+本次备份：`/home/zhouhl/rethos-backups/rethos-before-clients-0.1.160-20261113-113947`。验收证据：`.Rethos-temp/release-0.1.160/`。
+
 2026-11-13 北京时间 17:17 已部署 0.1.159，补齐默认主 Bot 全部可用工具和记忆规则，并修复复制 Bot、工具保存与记忆草稿的七项问题。源码 CI 的 29 项检查及双架构镜像验收通过。更新前确认 Bot 空闲并备份数据卷、Compose、覆盖配置和环境；更新后容器健康、公网版本与新版资源检查通过，原管理员 Token、模型选择、MCP、模型目录及监控计划和启用状态保留。
 
 本次备份：`/home/zhouhl/rethos-backups/rethos-before-clients-0.1.159-20261113-091729`。验收证据：`.Rethos-temp/release-0.1.159/`。
@@ -186,8 +190,8 @@ Android 8.0+ 可安装 [Rethos Android](https://github.com/Hopesy/Rethos/release
 - VPS 桌面转发入口：`/home/zhouhl/rethos-desktop/cua-driver-desktop`。
 - SSH 配置启用了连接复用；新 MCP 会话可以复用已验证的桌面 SSH 连接。
 - 自定义 MCP 启动等待调整为 30 秒，适应跨 SSH 的初始化；内置工具维持 8 秒。
-- 已部署版本 `0.1.159`，源码提交 `8a5ea8d1f7f8013170aa2630bc9281dee2f1637c`；镜像摘要 `sha256:9f4c326c612630cbfd6f146ff300fdd79a69a7b9ff02942ad84fb88e2c8e4b9b`。
-- 发布记录：[0.1.159 镜像构建与验收](https://github.com/Hopesy/Rethos/actions/runs/43396037979)。部署使用来源提交对应的不可变镜像摘要。
+- 已部署版本 `0.1.160`，源码提交 `6bdd48a6684fb413ce78a28a74a0f6655cc0a7db`；镜像摘要 `sha256:2986093541332b13af5d7ece7ae42802209b8910c39bbc98330e162ea793e6ce`。
+- 发布记录：[0.1.160 镜像构建与验收](https://github.com/Hopesy/Rethos/actions/runs/43416075082)。部署使用来源提交对应的不可变镜像摘要。
 - 正式机器人说明与工具选择保存在 `/home/zhouhl/rethos/production-desktop-monitor.md`、`desktop-team.yaml`，已通过 `rethos team apply` 写入持久化配置。
 - Hermes 迁移备份：`/home/zhouhl/rethos-backups/hermes-before-rethos-20261108-115245/`。
 - 首次 Rethos 升级备份：`/home/zhouhl/rethos-backups/rethos-before-update-20261108-162452/`。
