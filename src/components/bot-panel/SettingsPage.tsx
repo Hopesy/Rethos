@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AppWindow, AudioLines, ChevronRight, FileText, ShieldCheck, Tag } from "lucide-react";
+import { AppWindow, AudioLines, ChevronRight, FileText, ShieldCheck, Tag, Wrench } from "lucide-react";
 
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
@@ -11,6 +11,7 @@ import { firstSentence } from "@/lib/soul";
 import { currentTaskBot, useStore, type Bot } from "@/state/store";
 import type { ApprovalMode } from "../../../shared/approval-mode";
 import { BOT_PROFILE_LIMITS } from "../../../shared/bot-profile";
+import { hasDefaultBotCapabilities } from "../../../shared/default-bot-capabilities";
 import { ApprovalChip } from "../ComposerPlusMenu";
 import { useDesktopCapabilities } from "../DesktopCapabilities";
 import { DefaultBotHideRow } from "../DefaultBotControls";
@@ -165,6 +166,9 @@ export function SettingsPage({ bot, derived, onOpen, editingInstructions = false
       </Card>
 
       <Card anchor="uses">
+        <NavRow data-panel-page="tools" icon={Wrench} title={t("botAccess.tools.title")}
+          value={t(hasDefaultBotCapabilities(bot) || bot.toolScope === undefined ? "botAccess.tools.all" : "botAccess.tools.custom")}
+          onClick={() => onOpen?.("tools")} />
         <NavRow
           data-panel-page="apps"
           icon={AppWindow}

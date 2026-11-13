@@ -17,6 +17,8 @@ import { ServiceIcon } from "../ServiceIcon";
 import { RoutineEditor } from "../RoutinesPage";
 import { useWorkingFolder } from "../bot-settings/AccessSection";
 import { useBotEditor } from "../bot-settings/BotEditorContext";
+import { ToolSelectionCard } from "../bot-settings/ToolSelectionCard";
+import { MemoryEnabledControl } from "../bot-settings/MemoryEnabledControl";
 import { SkillReviewDialog, useManagedSkills, type ManagedSkill } from "../bot-settings/SkillsSection";
 import { useBotApps, type BotApp } from "../bot-settings/useBotApps";
 import type { useBotSettingsDerived } from "../bot-settings/useBotSettingsDerived";
@@ -160,7 +162,7 @@ export function RoutinesPage({ bot, derived }: PageContext) {
 
 /** MEMORY.md's bullets, and on a Team Cloud the person's own notes. Every write goes through the memory file route with
  * the hash it was read at, so a note the bot added meanwhile is never lost: a conflict re-reads and asks again. */
-export function MemoryPage({ bot }: PageContext) {
+export function MemoryPage({ bot, derived }: PageContext) {
   const memory = useMemoryDoc(bot);
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
@@ -209,6 +211,7 @@ export function MemoryPage({ bot }: PageContext) {
 
   return (
     <>
+      <Card><div className="p-3"><MemoryEnabledControl bot={bot} onToggle={memoryEnabled => derived.patch({ memoryEnabled })} /></div></Card>
       <Card>
         {!memoryOn ? (
           <NoteRow>{t("botPanel.library.memoryOff", { name: bot.name })}</NoteRow>
@@ -442,6 +445,8 @@ export function PageBody({ page, onOpen, editingInstructions, onEditInstructions
       return <WherePage {...context} />;
     case "apps":
       return <AppsPage {...context} />;
+    case "tools":
+      return <ToolSelectionCard bot={context.bot} engineKind={context.derived.engine?.driverKind} />;
     case "routines":
       return <RoutinesPage {...context} />;
     case "memory":

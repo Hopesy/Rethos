@@ -160,6 +160,8 @@ Android 8.0+ 可安装 [Rethos Android](https://github.com/Hopesy/Rethos/release
 
 ## 当前部署记录
 
+2026-11-13 已按用户要求将默认主 Bot Rethos 的工具选择恢复为全部可用工具，开启记忆，随后通过配置读取确认。模型与执行审批设置保留。`desktop-team.yaml` 的 `tools` 同步为 `null`，原文件备份于 `/home/zhouhl/.Rethos-temp/main-bot-capabilities-20261113-023143/desktop-team.yaml.before`。本次操作沿用运行中的 0.1.157；设置草稿、失败提示与主 Bot 能力规则的源码修复等待下一版发布。配置操作证据位于 `.Rethos-temp/main-bot-capabilities-before.json` 和 `.Rethos-temp/main-bot-capabilities-after.json`。
+
 2026-11-12 已同步部署 0.1.157 的高级设置说明与帮助交互修复。更新前确认 Bot 空闲，备份数据卷、Compose、覆盖配置与环境文件；更新后容器健康，公网版本、静态资源及配置保留校验通过。Windows 与 Android 0.1.157 已统一发布。
 
 本次备份：`/home/zhouhl/rethos-backups/rethos-before-clients-0.1.157-20261112-110124`。验收证据：`.Rethos-temp/release-0.1.157/`。

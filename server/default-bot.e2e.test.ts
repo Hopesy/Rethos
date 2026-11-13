@@ -43,6 +43,10 @@ it("makes Rethos a new install's first bot, never deleted, hidden by its switch,
     const [maus] = await bots();
     // The fixture renames its starter; it is still the new install's MausBot.
     expect(maus).toMatchObject({ color: "chrome", chiefOfStaff: true, defaultBot: {} });
+    expect(maus.memoryEnabled).toBe(true);
+    expect(maus.toolScope).toBeUndefined();
+    expect((await api("PATCH", `/api/bots/${maus.id}`, { toolScope: { allow: [] } })).status).toBe(400);
+    expect((await api("PATCH", `/api/bots/${maus.id}`, { memoryEnabled: false })).status).toBe(400);
     expect(maus.messages.map((message: any) => [message.kind, message.helperIntro])).toEqual([["options", true]]);
 
     const refused = await api("DELETE", `/api/bots/${maus.id}`);

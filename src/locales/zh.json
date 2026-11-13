@@ -9974,5 +9974,10 @@
   "skills.learned.summary": "导入技能或保存已验证的操作，支持撤销。",
   "skills.write.summary": "用 /name 保存可重复使用的聊天命令。",
   "settings.profile.learned.summary": "从你的消息中学到的信息，供所有机器人读取；可移除错误内容。",
-  "settings.experimental.skillReviewSummary": "回顾对话并改进技能，会使用 AI 并计入支出上限。"
+  "settings.experimental.skillReviewSummary": "回顾对话并改进技能，会使用 AI 并计入支出上限。",
+  "botAccess.tools.defaultAlwaysOn": "主机器人始终开放全部可用工具，包括创建机器人和团队管理。",
+  "memory.defaultAlwaysOn": "主机器人的记忆始终开启。",
+  "botAccess.tools.unsaved": "工具选择有尚未保存的修改。",
+  "botAccess.tools.failed": "工具选择保存失败：{error}",
+  "botAccess.tools.discard": "放弃修改"
 }

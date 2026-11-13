@@ -41149,7 +41149,12 @@
       "skills.learned.summary": "9d6b61a6ad93e2e65407edec99dfb2ce4c0c1a15f3ae7e04b192e46b06021863",
       "skills.write.summary": "cf266877876ca25054747b330050a96d983cd4d12a1963b43b7affb22104034c",
       "settings.profile.learned.summary": "c977e99740870e1d680c9c630a2cb5289015f035eed786c24e705582c3bb07f3",
-      "settings.experimental.skillReviewSummary": "582a7616b3fcca55058c24edcfe7ce1bc9dbbf208abf8a9375a273095d74618b"
+      "settings.experimental.skillReviewSummary": "582a7616b3fcca55058c24edcfe7ce1bc9dbbf208abf8a9375a273095d74618b",
+      "botAccess.tools.defaultAlwaysOn": "84e046869a9de828bcb8402930af716415822a1519888c20b3ff2c1be9b00b4b",
+      "memory.defaultAlwaysOn": "abdcb1c8c984f946657e5039ea1c7a248000b53f0c009cb0f3f111986c40655f",
+      "botAccess.tools.unsaved": "785d3f77385f7e0b197db58e756422472211e4c5494ed1bf70cca12501c96ca6",
+      "botAccess.tools.failed": "050f06b32a5af6948e3426bca74e67f3ec8b964d277f62897e871be4951f809b",
+      "botAccess.tools.discard": "f9bfa3dc7c8fcdea10ec324b8f3a6876f76fc8f541aa41b2e1da20979064dc0b"
     },
     "zh-tw": {
       "whop.description": "1a07cf04ef17029448d3781415cbac16d54e66b821907a40d94e0e6349710e70",
@@ -51006,7 +51011,12 @@
       "skills.learned.summary": "9d6b61a6ad93e2e65407edec99dfb2ce4c0c1a15f3ae7e04b192e46b06021863",
       "skills.write.summary": "cf266877876ca25054747b330050a96d983cd4d12a1963b43b7affb22104034c",
       "settings.profile.learned.summary": "c977e99740870e1d680c9c630a2cb5289015f035eed786c24e705582c3bb07f3",
-      "settings.experimental.skillReviewSummary": "582a7616b3fcca55058c24edcfe7ce1bc9dbbf208abf8a9375a273095d74618b"
+      "settings.experimental.skillReviewSummary": "582a7616b3fcca55058c24edcfe7ce1bc9dbbf208abf8a9375a273095d74618b",
+      "botAccess.tools.defaultAlwaysOn": "84e046869a9de828bcb8402930af716415822a1519888c20b3ff2c1be9b00b4b",
+      "memory.defaultAlwaysOn": "abdcb1c8c984f946657e5039ea1c7a248000b53f0c009cb0f3f111986c40655f",
+      "botAccess.tools.unsaved": "785d3f77385f7e0b197db58e756422472211e4c5494ed1bf70cca12501c96ca6",
+      "botAccess.tools.failed": "050f06b32a5af6948e3426bca74e67f3ec8b964d277f62897e871be4951f809b",
+      "botAccess.tools.discard": "f9bfa3dc7c8fcdea10ec324b8f3a6876f76fc8f541aa41b2e1da20979064dc0b"
     },
     "uk": {
       "pro.fromPrice": "a48a04a457d60b08b54fc83e7a6c4584ffedb1e23621859084900c8521a3af7b",

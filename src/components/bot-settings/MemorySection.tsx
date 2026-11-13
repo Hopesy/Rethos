@@ -36,6 +36,7 @@ import { roomMemoryCaptureEnabled } from "@/lib/feature-flags";
 import { api, ApiError, useStore, type Bot, type ConfigStatus } from "@/state/store";
 import { Switch } from "../SettingsPrimitives";
 import { SettingsHelp } from "../SettingsHelp";
+import { MemoryEnabledControl } from "./MemoryEnabledControl";
 import { useDesktopCapabilities } from "../DesktopCapabilities";
 import { inputCls } from "./field";
 
@@ -296,14 +297,7 @@ export function MemorySection({ bot, active = true, onToggle }: { bot: Bot; acti
         <div className="flex items-center gap-1 text-[15px] font-medium text-ink">{t("memory.title")}
           <SettingsHelp label={t("memory.title")}>{t("memory.notesHelp")}</SettingsHelp>
         </div>
-        <label className="mt-3 flex items-center gap-2 text-[13px] text-ink">
-          <input type="checkbox" checked={bot.memoryEnabled !== false} disabled={bot.busy} onChange={(event) => onToggle(event.target.checked)} />
-          {t("memory.enable")}
-        </label>
-        <p className="mt-1 text-[13px] text-ink-secondary">
-          {t("memory.enableHelp")}
-          {bot.busy ? ` ${t("memory.busyHelp")}` : ""}
-        </p>
+        <div className="mt-3"><MemoryEnabledControl bot={bot} onToggle={onToggle} /></div>
         <p className="mt-1 text-[13px] leading-relaxed text-ink-secondary">
           {t("memory.notesSummary")}
         </p>

@@ -9906,5 +9906,10 @@
   "skills.learned.summary": "匯入技能或儲存已驗證的操作，支援復原。",
   "skills.write.summary": "用 /name 儲存可重複使用的聊天命令。",
   "settings.profile.learned.summary": "從你的訊息中學到的資訊，供所有機器人讀取；可移除錯誤內容。",
-  "settings.experimental.skillReviewSummary": "回顧對話並改進技能，會使用 AI 並計入支出上限。"
+  "settings.experimental.skillReviewSummary": "回顧對話並改進技能，會使用 AI 並計入支出上限。",
+  "botAccess.tools.defaultAlwaysOn": "主機器人始終開放全部可用工具，包括建立機器人和團隊管理。",
+  "memory.defaultAlwaysOn": "主機器人的記憶始終開啟。",
+  "botAccess.tools.unsaved": "工具選擇有尚未儲存的修改。",
+  "botAccess.tools.failed": "工具選擇儲存失敗：{error}",
+  "botAccess.tools.discard": "放棄修改"
 }

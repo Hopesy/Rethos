@@ -4,6 +4,8 @@ import { join } from "node:path";
 import { writeFileAtomic } from "./atomic.ts";
 import { DEFAULT_BOT_COLOR, DEFAULT_BOT_NAME, defaultBotPerson } from "../shared/default-bot.ts";
 import { takeImportName } from "../shared/import-name.ts";
+import { hasDefaultBotCapabilities } from "../shared/default-bot-capabilities.ts";
+import { parseToolScope } from "../shared/tool-scope.ts";
 import type { BotRecord, Message, Store } from "./store.ts";
 
 export type DefaultBotStore = Pick<Store, "bots" | "bot" | "createBot" | "patchBot" | "appendMessage" | "messagesFor" | "createTask" | "setChiefOfStaff">;
@@ -23,6 +25,13 @@ export function defaultBotRefusal(name: string): string {
 
 /** Why a PATCH may not change this bot so, or null. */
 export function defaultBotPatchRefusal(bot: BotRecord | null, body: Record<string, unknown>): string | null {
+  if (bot && hasDefaultBotCapabilities(bot)) {
+    if (body.memoryEnabled === false) return "Rethos keeps memory enabled as the workspace's main bot.";
+    if (body.toolScope != null) {
+      const parsed = parseToolScope(body.toolScope);
+      if (parsed.ok && (parsed.scope?.allow !== undefined || parsed.scope?.deny?.length)) return "Rethos uses all available tools as the workspace's main bot.";
+    }
+  }
   for (const key of ["sidebarHidden", "welcomed"]) if (body[key] !== undefined && typeof body[key] !== "boolean") return `${key} must be true or false`;
   if ((body.sidebarHidden !== undefined || body.welcomed !== undefined) && !bot?.defaultBot) return "Only Rethos is hidden this way; archive or delete other bots.";
   return body.hidden === true && bot?.defaultBot ? defaultBotRefusal(bot.name) : null;

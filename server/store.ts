@@ -39,6 +39,7 @@ import { movesThreadToTop, nextOpenThread } from "../shared/wire.ts";
 import { parseConnectorTools } from "./connector-tools.ts";
 import { sameModelSelection } from "../shared/thread-model.ts";
 import { initialGreetingMessage } from "./initial-greeting.ts"; import { createDefaultBot, defaultBotRefusal, type DefaultBotIntro } from "./default-bot.ts";
+import { defaultBotCapabilityPatch } from "../shared/default-bot-capabilities.ts";
 import { appsFromCreator } from "./inherited-apps.ts";
 import { ThreadCache, type ThreadState } from "./thread-cache.ts";
 export type {
@@ -334,6 +335,7 @@ export class Store {
     const chiefSectionsSeen = new Set<string>();
     let groupsMigrated = false;
     for (const b of this.bots) {
+      const capabilities = defaultBotCapabilityPatch(b); if (capabilities) { Object.assign(b, capabilities); botsMigrated = true; }
       if (b.busy || (b.activity !== undefined && b.activity !== "idle")) botsMigrated = true;
       b.busy = false;
       b.activity = "idle"; if (dropRetiredApps(b)) botsMigrated = true; if (grantScopedApps(b)) botsMigrated = true; if (trimOutboundPolicy(b)) botsMigrated = true;
@@ -591,10 +593,8 @@ export class Store {
       const legacyFile = messagesFile(threadId);
       if (existsSync(legacyFile)) mdb.readThread(threadId, legacyFile);
     }
-    // After the transcript migration, so each stamp sees its thread's newest message.
     this.repairThreadUpdatedAts();
     if (fillAskedAts) this.fillTaskAskedAts();
-    // After the roster loads, so identity resolution sees which opener ids are live.
     this.repairDuplicatePairConversations();
     this.registeringInitialSections = false;
   }
@@ -1363,7 +1363,6 @@ export class Store {
     } catch (e) {
       console.warn(`[bot-folder] could not write SOUL.md mirror for ${bot.id}: ${(e as Error).message}`);
     }
-    // Before its transcript: clients need the bot/thread mapping to place either message.
     this.emit({ type: "bot", botId: bot.id });
     if (opts.seedMessages !== false) {
       this.appendMessage(bot.threadId, initialGreetingMessage(name, this.initialLanguage, !bot.soul?.trim() && !bot.description.trim(), this.personName()));
@@ -1521,6 +1520,7 @@ export class Store {
       if (!parsed.ok) throw new Error(parsed.error);
       patch = { ...patch, toolScope: parsed.scope };
     }
+    patch = { ...patch, ...defaultBotCapabilityPatch({ ...bot, ...patch }) };
     const wideningToolScope = Object.hasOwn(patch, "toolScope") && toolScopeWidens(bot.toolScope, patch.toolScope);
     const nextToolScope = patch.toolScope;
     if (wideningToolScope) {

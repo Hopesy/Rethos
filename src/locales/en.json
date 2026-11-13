@@ -9974,5 +9974,10 @@
   "skills.learned.summary": "Import skills or save verified work. Changes can be undone.",
   "skills.write.summary": "Save a reusable chat command with /name.",
   "settings.profile.learned.summary": "Facts learned from your messages, shared with every bot. Remove any mistakes.",
-  "settings.experimental.skillReviewSummary": "Review conversations to improve skills. Uses AI and counts toward spend limits."
+  "settings.experimental.skillReviewSummary": "Review conversations to improve skills. Uses AI and counts toward spend limits.",
+  "botAccess.tools.defaultAlwaysOn": "The main bot always has all available tools, including bot creation and team management.",
+  "memory.defaultAlwaysOn": "Memory stays enabled for the main bot.",
+  "botAccess.tools.unsaved": "Tool selection has unsaved changes.",
+  "botAccess.tools.failed": "Tool selection was not saved: {error}",
+  "botAccess.tools.discard": "Discard changes"
 }

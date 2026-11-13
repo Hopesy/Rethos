@@ -15,6 +15,7 @@ import { SkillsSection } from "./bot-settings/SkillsSection";
 import { MemorySection } from "./bot-settings/MemorySection";
 import { RoutinesSection } from "./bot-settings/RoutinesSection";
 import { AccessSection } from "./bot-settings/AccessSection";
+import { ToolSelectionNotice } from "./bot-settings/ToolSelectionNotice";
 import { ModelSection } from "./bot-settings/ModelSection";
 import { PermissionsSection } from "./bot-settings/PermissionsSection";
 import { VoiceSection } from "./bot-settings/VoiceSection";
@@ -179,6 +180,7 @@ export function BotSettingsDialog({ bot, overlay = false }: {
         tabIndex={-1}
         className={sidePanelCls(overlay, simpleView)}
       >
+        <ToolSelectionNotice bot={bot} />
         {simpleView ? (
           <BotPanel
             bot={bot}

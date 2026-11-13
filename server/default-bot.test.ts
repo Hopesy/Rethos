@@ -32,6 +32,26 @@ describe("Rethos, every person's helper", () => {
   beforeEach(() => rmSync(DATA_DIR, { recursive: true, force: true }));
   afterEach(() => readTeamRolesWith(() => null));
 
+  it("restores the workspace main bot's tools and memory from an old saved restriction and keeps ordinary bots scoped", () => {
+    const store = new Store(selection);
+    store.seedIfEmpty();
+    const main = placeMausBots(store)[0]!;
+    const other = store.createBot({ name: "Restricted specialist", toolScope: { allow: [] } });
+    store.patchBot(other.id, { memoryEnabled: false });
+    const file = join(DATA_DIR, "bots.json");
+    const records = JSON.parse(readFileSync(file, "utf8"));
+    Object.assign(records.find((bot: BotRecord) => bot.id === main.id), { toolScope: { allow: ["mcp:agents:memory_update"] }, memoryEnabled: false });
+    writeFileSync(file, JSON.stringify(records));
+    const restored = new Store(selection);
+    expect(restored.bot(main.id)).toMatchObject({ memoryEnabled: true });
+    expect(restored.bot(main.id)?.toolScope).toBeUndefined();
+    expect(new Store(selection).bot(main.id)?.toolScope).toBeUndefined();
+    expect(restored.bot(other.id)).toMatchObject({ toolScope: { allow: [] }, memoryEnabled: false });
+    expect(defaultBotPatchRefusal(restored.bot(main.id), { memoryEnabled: false })).toContain("memory enabled");
+    expect(defaultBotPatchRefusal(restored.bot(main.id), { toolScope: { allow: [] } })).toContain("all available tools");
+    expect(defaultBotPatchRefusal(restored.bot(main.id), { toolScope: null, memoryEnabled: true })).toBeNull();
+  });
+
   it("gives a fresh install one Rethos, its Chief, in chrome, introduced once", () => {
     const store = new Store(selection);
     store.seedIfEmpty();

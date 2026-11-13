@@ -105,6 +105,24 @@ load never shows another agent's link.
 
 ## Creation drafts and defaults
 
+Tool selection drafts, pending saves and failures survive switching between
+Advanced and Simple modes and closing/reopening the bot panel. In either mode,
+the pending notice opens the same tool editor. Edit a specialist's selection,
+switch modes before saving, then save and read it back through the fixture API.
+Hold a save, switch modes, reject it, and verify the draft and error remain with
+that specialist while another bot's editor stays independent. Retry and verify
+the returned configuration is shown without waiting for a server event.
+
+The workspace's built-in main bot keeps all available tools and memory enabled
+in both modes. Load a fixture registry with its old restricted tool selection
+and disabled memory: startup repairs both and persists the result. The API
+rejects attempts to disable them again. Specialist selections and Team Cloud
+member restrictions keep their existing behavior.
+
+```sh
+pnpm exec vitest run src/components/bot-settings/tool-selection-editor.test.ts server/default-bot.test.ts server/default-bot.e2e.test.ts src/components/BotSettingsDialog.simple.test.ts
+```
+
 The same isolated fixture also exposes **New bot** and **New bot defaults →
 Edit**. **New bot** makes a bot at once from the saved defaults, with no
 dialog. The defaults editor must open immediately, keep a fixed size while

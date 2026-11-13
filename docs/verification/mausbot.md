@@ -6,6 +6,13 @@ bots, a helper beside them. It is never deleted or archived; the person takes it
 off the sidebar with "Show MausBot in the sidebar" in Settings → General, which
 its menu's **Hide from sidebar** also turns off.
 
+The workspace's built-in main bot keeps all available tools and memory enabled
+across Simple and Advanced modes. Startup upgrades an old restricted selection
+and disabled memory in its saved record. The same shared capability rule drives
+both settings panels and server persistence; API edits that would restrict its
+tool list or disable memory receive a clear error. Team Cloud members continue
+to use their existing role and access rules.
+
 ## Automated checks
 
 ```sh
