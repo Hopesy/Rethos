@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import { removeTempDir, waitForExit } from "./testing/cleanup.ts";
 import { readHandoffs } from "./testing/handoff-rows.ts";
@@ -234,6 +234,15 @@ beforeAll(async () => {
   }
 
 }, 60_000);
+
+afterEach(async () => {
+  await expect.poll(async () => {
+    const { status, body } = await api("GET", "/api/bots?messages=0");
+    expect(status).toBe(200);
+    const bots = field(body, "bots");
+    return Array.isArray(bots) ? bots.filter((bot) => field(bot as Record<string, unknown>, "busy")) : undefined;
+  }, { timeout: 10_000 }).toEqual([]);
+});
 
 afterAll(async () => {
   await waitForExit(child, { signal: "SIGTERM" });
