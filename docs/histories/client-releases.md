@@ -1,5 +1,15 @@
 # 客户端发布记录
 
+### Windows 与 Android 0.1.159
+
+2026-11-13 已发布 [Rethos 0.1.159](https://github.com/Hopesy/Rethos/releases/tag/v0.1.159)，两端和 VPS 均来自提交 `8a5ea8d1f7f8013170aa2630bc9281dee2f1637c`。本次补齐默认主 Bot 全部可用工具与记忆规则，修复复制 Bot 能力限制、工具保存时序、迟到响应、外层保存、跨模式记忆草稿及保存期间继续输入的七项问题。
+
+- [源码 CI](https://github.com/Hopesy/Rethos/actions/runs/43396037989) 的 29 项检查通过；[联合构建与发布](https://github.com/Hopesy/Rethos/actions/runs/43398573263)通过 Windows 实际安装启动、Android 7 项模拟器测试及正式签名验证。Android 首轮输入焦点错误在新的模拟器验收中通过。
+- 五个公开文件已完整下载，GitHub 摘要及 SHA256SUMS 逐项一致。Windows 内部版本为 0.1.159；APK 为 0.1.159 / 1159，原应用 ID 和签名证书验证通过；两个 Latest 下载入口均指向本版本。
+- Windows 安装程序为 267679061 字节，SHA256 `d95d7f12a4c7f4d44ec1a45cb5dc46027af92d7af854f2b7ac65be3bb396df41`；APK 为 2006675 字节，SHA256 `c7c256715bc056cea5872d66f1c50dc6b378b09ad99e0d8daf4c0f8d2d2b25f4`。
+- [双架构镜像构建与验收](https://github.com/Hopesy/Rethos/actions/runs/43396037979)通过，VPS 固定镜像摘要 `sha256:9f4c326c612630cbfd6f146ff300fdd79a69a7b9ff02942ad84fb88e2c8e4b9b`。公网版本、新版工具和记忆设置资源、原 Token、Bot 模型与审批、MCP、模型目录、监控计划和启用状态均通过检查。升级前完整备份位于 `/home/zhouhl/rethos-backups/rethos-before-clients-0.1.159-20261113-091729`。
+- 发布预检 63 项通过；模块抽取后相关回归 448 项通过、1 项平台相关跳过。发布过程中修正 MCP 测试对主 Bot 的旧配置假设，以及房间测试和页面高度测试的等待逻辑；三类模型的 25 个隔离场景与另外 39 项测试通过。证据位于 `.Rethos-temp/release-0.1.159/`。
+
 ### Windows 与 Android 0.1.158
 
 2026-11-13 已发布 [Rethos 0.1.158](https://github.com/Hopesy/Rethos/releases/tag/v0.1.158)，两端来源提交均为 `8ff70261bebaa7c4052b5b660e6461053492cfc2`。默认主 Bot 保持全部可用工具和记忆，设置草稿及保存错误在模式切换后继续保留，简易模式增加工具与记忆状态入口。
