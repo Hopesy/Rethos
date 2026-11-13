@@ -1,5 +1,15 @@
 # 客户端发布记录
 
+### Windows 与 Android 0.1.158
+
+2026-11-13 已发布 [Rethos 0.1.158](https://github.com/Hopesy/Rethos/releases/tag/v0.1.158)，两端来源提交均为 `8ff70261bebaa7c4052b5b660e6461053492cfc2`。默认主 Bot 保持全部可用工具和记忆，设置草稿及保存错误在模式切换后继续保留，简易模式增加工具与记忆状态入口。
+
+- [联合构建与发布](https://github.com/Hopesy/Rethos/actions/runs/43356989048)通过，包含 Windows 实际安装启动、Android 模拟器及签名验证；[源码 CI](https://github.com/Hopesy/Rethos/actions/runs/43354019118)的 29 项检查通过。此前同一提交的[候选构建验收](https://github.com/Hopesy/Rethos/actions/runs/43354020769)也已通过。
+- 五个公开文件已完整下载，GitHub 摘要及 SHA256SUMS 逐项一致。Windows 内部版本为 0.1.158；APK 为 0.1.158 / 1158，原应用 ID 和签名证书验证通过；两个 Latest 下载入口均指向本版本。
+- Windows 安装程序为 267671865 字节，SHA256 `a5ead8f8f16833aaeb194a55ef58b72ec9c1ab7bff637ae3eeace1991ddb45b0`；APK 为 2006675 字节，SHA256 `300cb56f71821053ee76a7b7f978fd6380ea0849d85117a8cc49de9702926a76`。
+- [双架构镜像构建与验收](https://github.com/Hopesy/Rethos/actions/runs/43354019064)通过，VPS 固定镜像摘要 `sha256:0de3a7d90743ffd9478bf49e1f829c79df75309a82e69971d8d603821de50993`。公网版本、新版工具和记忆设置资源通过检查，原 Token、模型选择、工具设置、记忆状态和桌面 MCP 配置保留。
+- 发布前相关回归共 466 次通过、0 失败，1 项平台相关跳过、3 项原有待办。隔离浏览器覆盖草稿、跨模式失败重试、主 Bot 工具与 390px 记忆页。证据位于 `.Rethos-temp/release-0.1.158/` 和 `.Rethos-temp/default-bot-fix-verification.json`。
+
 ### Windows 与 Android 0.1.157
 
 2026-11-12 已发布 [Rethos 0.1.157](https://github.com/Hopesy/Rethos/releases/tag/v0.1.157)，Windows 与 Android 均来自提交 `2cde7d971ad447aa5df4c7614a163d7bc72b7ac9`。本次精简高级设置说明，补齐条件设置，修复帮助浮层重叠及浏览器状态说明。

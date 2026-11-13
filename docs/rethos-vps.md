@@ -160,7 +160,11 @@ Android 8.0+ 可安装 [Rethos Android](https://github.com/Hopesy/Rethos/release
 
 ## 当前部署记录
 
-2026-11-13 已按用户要求将默认主 Bot Rethos 的工具选择恢复为全部可用工具，开启记忆，随后通过配置读取确认。模型与执行审批设置保留。`desktop-team.yaml` 的 `tools` 同步为 `null`，原文件备份于 `/home/zhouhl/.Rethos-temp/main-bot-capabilities-20261113-023143/desktop-team.yaml.before`。本次操作沿用运行中的 0.1.157；设置草稿、失败提示与主 Bot 能力规则的源码修复等待下一版发布。配置操作证据位于 `.Rethos-temp/main-bot-capabilities-before.json` 和 `.Rethos-temp/main-bot-capabilities-after.json`。
+2026-11-13 已部署 0.1.158，默认主 Bot 工具与记忆的持久规则、跨模式设置保存修复均已上线。更新前确认 Bot 空闲并备份数据卷、Compose、覆盖配置和环境；更新后容器健康、公网版本、新资源及配置保留检查通过。
+
+本次备份：`/home/zhouhl/rethos-backups/rethos-before-clients-0.1.158-20261113-031038`。验收证据：`.Rethos-temp/release-0.1.158/`。
+
+2026-11-13 已按用户要求将默认主 Bot Rethos 的工具选择恢复为全部可用工具，开启记忆，随后通过配置读取确认。模型与执行审批设置保留。`desktop-team.yaml` 的 `tools` 同步为 `null`，原文件备份于 `/home/zhouhl/.Rethos-temp/main-bot-capabilities-20261113-023143/desktop-team.yaml.before`。本次操作沿用运行中的 0.1.157；设置草稿、失败提示与主 Bot 能力规则的源码修复已随后随 0.1.158 部署。配置操作证据位于 `.Rethos-temp/main-bot-capabilities-before.json` 和 `.Rethos-temp/main-bot-capabilities-after.json`。
 
 2026-11-12 已同步部署 0.1.157 的高级设置说明与帮助交互修复。更新前确认 Bot 空闲，备份数据卷、Compose、覆盖配置与环境文件；更新后容器健康，公网版本、静态资源及配置保留校验通过。Windows 与 Android 0.1.157 已统一发布。
 
@@ -178,8 +182,8 @@ Android 8.0+ 可安装 [Rethos Android](https://github.com/Hopesy/Rethos/release
 - VPS 桌面转发入口：`/home/zhouhl/rethos-desktop/cua-driver-desktop`。
 - SSH 配置启用了连接复用；新 MCP 会话可以复用已验证的桌面 SSH 连接。
 - 自定义 MCP 启动等待调整为 30 秒，适应跨 SSH 的初始化；内置工具维持 8 秒。
-- 已部署版本 `0.1.157`，源码提交 `2cde7d971ad447aa5df4c7614a163d7bc72b7ac9`；镜像摘要 `sha256:adfe95607b2c8e061532abc752db41c60fb9b326813930a58c5fc0ce2ac6d15d`。
-- 发布记录：[0.1.157 镜像构建与验收](https://github.com/Hopesy/Rethos/actions/runs/43201954029)。部署使用来源提交对应的不可变镜像摘要。
+- 已部署版本 `0.1.158`，源码提交 `8ff70261bebaa7c4052b5b660e6461053492cfc2`；镜像摘要 `sha256:0de3a7d90743ffd9478bf49e1f829c79df75309a82e69971d8d603821de50993`。
+- 发布记录：[0.1.158 镜像构建与验收](https://github.com/Hopesy/Rethos/actions/runs/43354019064)。部署使用来源提交对应的不可变镜像摘要。
 - 正式机器人说明与工具选择保存在 `/home/zhouhl/rethos/production-desktop-monitor.md`、`desktop-team.yaml`，已通过 `rethos team apply` 写入持久化配置。
 - Hermes 迁移备份：`/home/zhouhl/rethos-backups/hermes-before-rethos-20261108-115245/`。
 - 首次 Rethos 升级备份：`/home/zhouhl/rethos-backups/rethos-before-update-20261108-162452/`。
