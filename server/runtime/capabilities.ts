@@ -1,5 +1,6 @@
 // No import from server/drivers: they pull in the whole provider stack.
 import { hasNativeAutoReview, supportsApprovalMode } from "../../shared/approval-mode.ts";
+import { CHAT_TURN_LIMITS } from "../chat-turn-limits.ts";
 
 export interface EngineCapabilities {
   resume: boolean;
@@ -10,12 +11,10 @@ export interface EngineCapabilities {
   subagents: boolean;
 }
 
-const CHAT_STEP_CAP = 64;
-
 // transcript: the engine sends the thread as SendTurnInput.transcript messages, so the turn text must not replay it inline too.
 type EngineRow = Pick<EngineCapabilities, "resume" | "stepCap"> & { transcript?: true };
 
-const CHAT_ROW: EngineRow = { resume: false, stepCap: CHAT_STEP_CAP, transcript: true };
+const CHAT_ROW: EngineRow = { resume: false, stepCap: CHAT_TURN_LIMITS.steps, transcript: true };
 
 const ENGINES: Readonly<Record<string, EngineRow>> = {
   claudeAgent: { resume: true },

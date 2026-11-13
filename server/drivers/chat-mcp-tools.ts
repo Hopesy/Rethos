@@ -271,15 +271,10 @@ export function mergedServersNotice({ server, same }: MergedChatMcpServers): str
   return `MCP ${same.length === 1 ? "server" : "servers"} ${quotedList(same)} ${same.length === 1 ? "connects" : "connect"} to the same address with the same sign-in as "${server}", so their tools are listed once, under "${server}".`;
 }
 
-export function searchedServersNotice(budget: ToolBudget): string | undefined {
-  const names = budget.servers.filter((server) => !server.direct).map((server) => server.name);
-  if (!names.length) return undefined;
-  return `To fit the model's ${budget.limit}-tool limit, the tools of ${quotedList(names)} are reached through the tool search this turn.`;
-}
-
 /** What the tool limit did to a turn's servers, one line each. */
 export function toolLimitNotices(session: Pick<ChatToolSession, "trimmed" | "budget">): string[] {
-  return [trimmedToolsNotice(session.trimmed, session.budget.limit), searchedServersNotice(session.budget)].filter((line): line is string => line !== undefined);
+  const notice = trimmedToolsNotice(session.trimmed, session.budget.limit);
+  return notice ? [notice] : [];
 }
 
 /** After a provider refused a request for the limit its `error` names, learns that limit under `key` and lists the turn's

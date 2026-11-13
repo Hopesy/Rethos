@@ -5,7 +5,7 @@ import { createServer, type ServerResponse } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ensureDirs, NATIVE_DIR } from "../config.ts";
 import { BUILT_IN_DATA_SYSTEM_PROMPT } from "../data/instructions.ts";
@@ -16,10 +16,17 @@ import { catalogServer, CUA_DRIVER_WINDOWS_TOOLS, syntheticToolNames } from "../
 import { startFakeHttpMcp } from "../testing/fake-http-mcp-server.ts";
 import { whopLikeCatalog } from "../testing/whop-like-catalog.ts";
 import { toolBudgetOf } from "../tool-budgets.ts";
+import { CHAT_TURN_LIMITS } from "../chat-turn-limits.ts";
 import { GrokDriver } from "./grok.ts";
 import { CerebrasDriver } from "./cerebras.ts";
 import { MinimaxDriver } from "./minimax.ts";
 import { OpenAICompatDriver } from "./openai-compat.ts";
+
+vi.mock("../chat-turn-limits.ts", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../chat-turn-limits.ts")>();
+  return { ...original, CHAT_TURN_LIMITS: { ...original.CHAT_TURN_LIMITS } };
+});
+const defaultLimits = { ...CHAT_TURN_LIMITS };
 
 interface ChatRequest {
   messages: Array<{
@@ -90,6 +97,7 @@ createInterface({ input: process.stdin }).on("line", async (line) => {
 const cleanups: Array<() => Promise<void>> = [];
 afterEach(async () => {
   for (const cleanup of cleanups.splice(0).reverse()) await cleanup();
+  Object.assign(CHAT_TURN_LIMITS, defaultLimits);
 });
 
 async function fixture(script: Script, provider: Provider = "openai-compat", apiKey = API_KEY_CANARY) {
@@ -1247,18 +1255,21 @@ describe("structured tool execution boundaries", () => {
     expect(f.recorder.events).toContainEqual(expect.objectContaining({ type: "runtime.error", message: expect.stringMatching(/repeat|duplicate/i) }));
   });
 
-  it("finishes a tool-heavy task that needs more than sixteen steps", async () => {
-    const f = await fixture((_body, response, round) => round <= 40
-      ? sse(response, [chunk({ tool_calls: [toolCall("audit_write", `{"name":"step","value":"${round}"}`, `call_${round}`)] }, "tool_calls")])
+  it("finishes a long task with 300 tool calls across 100 steps", async () => {
+    const f = await fixture((_body, response, round) => round <= 100
+      ? sse(response, [chunk({ tool_calls: Array.from({ length: 3 }, (_, index) => ({
+        ...toolCall("audit_write", `{"name":"step","value":"${round}_${index}"}`, `call_${round}_${index}`), index,
+      })) }, "tool_calls")])
       : answer(response));
     await f.start({ approvalMode: "full" });
     expect(await f.completed()).toMatchObject({ ok: true });
-    expect(f.requests).toHaveLength(41);
-    expect(f.effects()).toHaveLength(40);
+    expect(f.requests).toHaveLength(101);
+    expect(f.effects()).toHaveLength(300);
     expect(f.recorder.events.some((event) => event.type === "runtime.error")).toBe(false);
   });
 
-  it("stops a model that keeps requesting tools after 64 steps, with one next action that does not repeat the steps that ran", async () => {
+  it("stops at the step budget with a handoff of the work already performed", async () => {
+    Object.assign(CHAT_TURN_LIMITS, { steps: 4 });
     const f = await fixture((_body, response, round) => sse(response, [
       chunk({ tool_calls: [toolCall("audit_write", '{"name":"receipt","value":"done"}', `call_${round}`)] }, "tool_calls"),
     ]), "grok");
@@ -1268,17 +1279,18 @@ describe("structured tool execution boundaries", () => {
     await f.start();
     expect(await f.completed()).toMatchObject({ ok: false, stopReason: "error" });
     stop();
-    expect(f.requests).toHaveLength(64);
-    expect(f.effects()).toHaveLength(64);
+    expect(f.requests).toHaveLength(4);
+    expect(f.effects()).toHaveLength(4);
     expect(f.recorder.events.filter((event) => event.type === "runtime.error")).toEqual([expect.objectContaining({
-      message: "Stopped after 64 steps without a final answer. The steps so far already ran, so ask only for what's left.",
+      message: "Stopped after 4 steps without a final answer. The steps so far already ran, so ask only for what's left.",
       terminal: true,
     })]);
   });
 
   it("answers in the last allowed step and leaves a message steered during it for the next turn", async () => {
+    Object.assign(CHAT_TURN_LIMITS, { steps: 4 });
     const last = deferred<ServerResponse>();
-    const f = await fixture((_body, response, round) => round < 64
+    const f = await fixture((_body, response, round) => round < 4
       ? sse(response, [chunk({ tool_calls: [toolCall("audit_write", `{"name":"step","value":"${round}"}`, `call_${round}`)] }, "tool_calls")])
       : last.resolve(response));
     await f.start({ approvalMode: "full" });
@@ -1286,35 +1298,39 @@ describe("structured tool execution boundaries", () => {
     await expect(f.instance.adapter.steer!(f.threadId, "One more thing.")).resolves.toBe("refused");
     answer(response);
     expect(await f.completed()).toMatchObject({ ok: true });
-    expect(f.requests).toHaveLength(64);
+    expect(f.requests).toHaveLength(4);
   });
 
   it.each([
     ["a failed tool call", "audit_fail", "The operation is complete.", "tool_error"],
     ["an announced action", "audit_write", "I'll write the next receipt.", "incomplete_action"],
   ])("ends on %s in the last allowed step without asking for another step", async (_, lastTool, text, stopReason) => {
-    const f = await fixture((_body, response, round) => round < 64
-      ? sse(response, [chunk({ tool_calls: [toolCall(round === 63 ? lastTool : "audit_write", `{"name":"step","value":"${round}"}`, `call_${round}`)] }, "tool_calls")])
+    Object.assign(CHAT_TURN_LIMITS, { steps: 4 });
+    const f = await fixture((_body, response, round) => round < 4
+      ? sse(response, [chunk({ tool_calls: [toolCall(round === 3 ? lastTool : "audit_write", `{"name":"step","value":"${round}"}`, `call_${round}`)] }, "tool_calls")])
       : answer(response, text));
     await f.start({ approvalMode: "full", toolErrorCorrectiveRounds: 1 });
     expect(await f.completed()).toMatchObject({ ok: false, stopReason });
-    expect(f.requests).toHaveLength(64);
+    expect(f.requests).toHaveLength(4);
   });
 
-  it("stops at 200 tool calls in one turn without running the batch that crosses it", async () => {
+  it.each([{ batch: 4, admitted: 8 }, { batch: 3, admitted: 6 }])("keeps a batch of $batch calls within the turn budget and records $admitted admitted calls", async ({ batch, admitted }) => {
+    Object.assign(CHAT_TURN_LIMITS, { toolCalls: 8 });
     const f = await fixture((_body, response, round) => sse(response, [chunk({
-      tool_calls: Array.from({ length: 25 }, (_, index) => ({
+      tool_calls: Array.from({ length: batch }, (_, index) => ({
         ...toolCall("audit_write", `{"name":"r${round}","value":"${index}"}`, `call_${round}_${index}`), index,
       })),
     }, "tool_calls")]));
     await f.start({ approvalMode: "full" });
     expect(await f.completed()).toMatchObject({ ok: false, stopReason: "error" });
-    // Eight replies of 25 ran (exactly 200); the ninth would pass 200, so none of it ran.
-    expect(f.requests).toHaveLength(9);
-    expect(f.effects()).toHaveLength(200);
+    expect(f.requests).toHaveLength(3);
+    expect(f.effects()).toHaveLength(admitted);
     expect(f.recorder.events.filter((event) => event.type === "runtime.error")).toEqual([expect.objectContaining({
-      message: "Stopped after 200 tool calls without a final answer. The steps so far already ran, so ask only for what's left.",
+      message: `Stopped after ${admitted} tool calls without a final answer. The steps so far already ran, so ask only for what's left.`,
     })]);
+    const handoff = f.recorder.events.find((event) => event.type === "cap.exhausted");
+    expect(handoff).toBeDefined();
+    if (handoff?.type === "cap.exhausted") expect(readFileSync(handoff.handoffPath, "utf8")).toContain(`- Tool calls used: ${admitted}`);
   });
 
   it("keeps Grok's native log small on a long turn with large tool results", async () => {
@@ -1430,16 +1446,21 @@ describe("a turn with the person's Windows computer, the built-in browser and th
     expect(f.recorder.events.some((event) => event.type === "runtime.error")).toBe(false);
   });
 
-  it("reaches a configured server past the limit through the tool search, says so in one line, and keeps the bot's tool budget", async () => {
+  it("keeps tool search available across turns without chat notices and records its budget", async () => {
     const f = await fixture((_body, response) => answer(response));
-    await f.start({ botId: "mira", integrations: integrations(42, { custom: { notes: catalog(syntheticToolNames("note", 14)) } }) });
-    expect(await f.completed()).toMatchObject({ ok: true });
-    const names = f.requests[0].tools!.map((tool) => tool.function.name);
-    expect(names).toHaveLength(118);
-    expect(names.slice(-4)).toEqual(["mcp_search_tools", "mcp_describe_tool", "mcp_call_tool", "ask_user"]);
-    expect(f.recorder.events.filter((event) => event.type === "runtime.notice").map((event) => (event as { message: string }).message))
-      .toEqual([`To fit the model's 128-tool limit, the tools of "notes" are reached through the tool search this turn.`]);
-    expect(toolBudgetOf("mira")).toEqual({ limit: 128, listed: 117, servers: [{ name: "notes", tools: 14, direct: false }] });
+    const configured = integrations(42, { custom: { notes: catalog(syntheticToolNames("note", 14)) } });
+    for (let turn = 0; turn < 2; turn++) {
+      await f.start({ botId: "mira", integrations: configured });
+      await f.recorder.until(() => f.recorder.events.filter((event) => event.type === "turn.completed").length === turn + 1);
+      const names = f.requests[turn].tools!.map((tool) => tool.function.name);
+      expect(names).toHaveLength(118);
+      expect(names.slice(-4)).toEqual(["mcp_search_tools", "mcp_describe_tool", "mcp_call_tool", "ask_user"]);
+      expect(f.recorder.events.filter((event) => event.type === "runtime.notice" || event.type === "runtime.error")).toEqual([]);
+      expect(toolBudgetOf("mira")).toEqual({ limit: 128, listed: 117, servers: [{ name: "notes", tools: 14, direct: false }] });
+    }
+    expect(f.recorder.events.filter((event) => event.type === "turn.completed")).toEqual([
+      expect.objectContaining({ ok: true }), expect.objectContaining({ ok: true }),
+    ]);
   });
 
   it("lists fewer tools once when the provider names a lower limit, learns it for the next turn, and runs the turn", async () => {
@@ -1456,9 +1477,11 @@ describe("a turn with the person's Windows computer, the built-in browser and th
     } finally { console.warn = warn; }
     expect(f.requests.map((request) => request.tools!.length)).toEqual([118, 110]);
     expect(f.requests[1].tools!.map((tool) => tool.function.name).slice(-4)).toEqual(["mcp_search_tools", "mcp_describe_tool", "mcp_call_tool", "ask_user"]);
-    expect(f.recorder.events).toContainEqual(expect.objectContaining({ type: "runtime.notice",
-      message: `To fit the model's 110-tool limit, the tools of "notes" are reached through the tool search this turn.` }));
+    expect(f.recorder.events.filter((event) => event.type === "runtime.notice")).toEqual([
+      expect.objectContaining({ message: `"composio" listed 4 of 7 tools, "data" listed 0 of 5 tools to fit the model's 110-tool limit; the rest are left out of this turn.` }),
+    ]);
     expect(f.recorder.events.some((event) => event.type === "runtime.error")).toBe(false);
+    expect(f.recorder.events).toContainEqual(expect.objectContaining({ type: "turn.retrying", reason: "tool_limit" }));
     expect(toolBudgetOf("ines")).toMatchObject({ limit: 110, servers: [{ name: "notes", tools: 14, direct: false }] });
 
     await f.start({ botId: "ines", integrations: integrations(42, { custom: { notes: catalog(syntheticToolNames("note", 14)) } }) });

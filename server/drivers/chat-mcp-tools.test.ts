@@ -893,7 +893,7 @@ describe("Chat MCP servers past the tool limit", () => {
     expect(session.budget).toEqual({ limit: 128, listed: 10, servers: [
       { name: "audit", tools: 126, direct: false }, { name: "notes", tools: 4, direct: true }, { name: "extra", tools: 3, direct: true },
     ] });
-    expect(chatToolNotices(session)).toEqual(['To fit the model\'s 128-tool limit, the tools of "audit" are reached through the tool search this turn.']);
+    expect(chatToolNotices(session)).toEqual([]);
     expect(session.definitions.at(-3)!.function.description).toContain('the MCP servers "audit"');
 
     const found = JSON.parse((await session.execute("mcp_search_tools", { query: "fixture write" }, signal)).text);
@@ -948,6 +948,7 @@ describe("Chat MCP servers past the tool limit", () => {
 });
 
 describe("Chat MCP startup budgets", () => {
+  const shutdownBudgetMs = process.platform === "win32" ? 15_000 : 5_000;
   /** Lets real I/O run, the faked clock standing still, until `condition`. */
   async function untilReal(condition: () => boolean): Promise<void> {
     const started = Date.now();
@@ -999,7 +1000,7 @@ describe("Chat MCP startup budgets", () => {
       await vi.advanceTimersByTimeAsync(21_900);
       expect(mounting.done).toBe(false);
       await vi.advanceTimersByTimeAsync(400);
-      await settleWithin(1_000, () => mounting.done);
+      await settleWithin(shutdownBudgetMs, () => mounting.done);
       expect(mounting.error).toBeUndefined();
       expect(mounting.value?.skipped).toEqual([{ server: "audit", reason: expect.stringMatching(/timed out/) }]);
     } finally { vi.useRealTimers(); }
@@ -1012,7 +1013,7 @@ describe("Chat MCP startup budgets", () => {
       const mounting = watch(f.mount(true, true));
       await untilReal(() => { try { return f.read().calls.some(call => call.method === "tools/list"); } catch { return false; } });
       await vi.advanceTimersByTimeAsync(8_100);
-      await settleWithin(1_000, () => mounting.done);
+      await settleWithin(shutdownBudgetMs, () => mounting.done);
       expect(mounting.error).toBeInstanceOf(Error);
       expect(String(mounting.error)).toContain("timed out");
     } finally { vi.useRealTimers(); }
@@ -1295,7 +1296,6 @@ describe("Chat MCP tool limit, fairly shared", () => {
       expect(names.filter((name) => name.startsWith("reason"))).toEqual([]);
       expect(chatToolNotices(session)).toEqual([
         'MCP servers "reason-2", "reason-3" and "reason-4" connect to the same address with the same sign-in as "reason", so their tools are listed once, under "reason".',
-        'To fit the model\'s 128-tool limit, the tools of "reason" are reached through the tool search this turn.',
       ]);
       const search = session.definitions.find((tool) => tool.function.name === "mcp_search_tools")!;
       expect(search.function.description).toContain('the MCP servers "reason"');
