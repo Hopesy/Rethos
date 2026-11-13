@@ -1,4 +1,20 @@
-import type { Bot, BotAnnouncement } from "./store";
+import type { Action, Bot, BotAnnouncement } from "./store";
+import { approvalModeFor } from "../../shared/approval-mode";
+
+export function executionSettingsMatch(persisted: BotAnnouncement, expected: BotAnnouncement): boolean {
+  return approvalModeFor(persisted) === approvalModeFor(expected)
+    && (persisted.memoryEnabled !== false) === (expected.memoryEnabled !== false)
+    && persisted.modelSelection.instanceId === expected.modelSelection.instanceId
+    && persisted.modelSelection.model === expected.modelSelection.model
+    && persisted.modelSelection.effort === expected.modelSelection.effort
+    && persisted.modelSelection.variant === expected.modelSelection.variant;
+}
+
+export function savedBotPatch(bot: BotAnnouncement, written: BotUpdatePatch): Action {
+  return Object.keys(written).length === 1 && Object.hasOwn(written, "toolScope")
+    ? { type: "toolSelectionSaved", botId: bot.id, toolScope: bot.toolScope }
+    : { type: "botPatched", bot };
+}
 
 export type BotUpdatePatch = Partial<
   Pick<

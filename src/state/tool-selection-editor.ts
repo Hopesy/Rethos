@@ -1,4 +1,7 @@
 import { parseToolScope, type ToolScope } from "../../shared/tool-scope";
+import { t } from "@/lib/i18n";
+import type { Action, BotAnnouncement } from "./store";
+import type { BotPatchQueue } from "./bot-patch-queue";
 
 export type ToolSelectionDraft = { custom: boolean; onlyListed: boolean; allow: string; deny: string };
 const lines = (text: string) => text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
@@ -73,4 +76,13 @@ export async function commitToolSelectionDraft(owner: object, id: string) {
   const editor = editors.get(owner)?.get(id);
   editor?.save();
   await editor?.settled();
+}
+
+export async function saveToolSelection(queue: BotPatchQueue, bots: () => readonly BotAnnouncement[], action: Extract<Action, { type: "saveToolSelection" }>) {
+  await queue.flush(action.botId);
+  const bot = bots().find(candidate => candidate.id === action.botId);
+  if (!bot) throw new Error(t("task.threadGone"));
+  queue.enqueue(action.botId, { toolScope: action.toolScope ?? null }, bot);
+  const saved = await queue.flush(action.botId, true);
+  if (!saved || JSON.stringify(saved.toolScope) !== JSON.stringify(action.toolScope)) throw new Error(t("botAccess.tools.unsaved"));
 }

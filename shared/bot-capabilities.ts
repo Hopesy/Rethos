@@ -7,6 +7,11 @@ export const BOT_CAPABILITY_FIELDS = [
 
 export type BotCapabilities = Pick<WireBot, typeof BOT_CAPABILITY_FIELDS[number]>;
 
+export type BotCreationProfile = Partial<Pick<WireBot,
+  "name" | "title" | "description" | "soul" | "color" | "mascotExpression" | "mascotBody" | "mascotFaceColor" |
+  "modelSelection" | "section" | "cwd" | "visibility" | "createdBy" | "reportsTo"
+>> & BotCapabilities;
+
 export function botCapabilities(bot: { [K in keyof BotCapabilities]?: BotCapabilities[K] | null }): BotCapabilities {
   return Object.fromEntries(BOT_CAPABILITY_FIELDS.filter(key => bot[key] != null)
     .map(key => [key, structuredClone(bot[key])])) as BotCapabilities;

@@ -53,7 +53,7 @@ import {
 import type { Routine, RoutineInput, RoutineRun, RoutineRunStatusFilter } from "@/lib/routines";
 import type { WebhookAttempt, WebhookIngressStatus, WebhookTrigger } from "@/lib/webhooks";
 import { duplicateBotProfile, restrictedCopyRequest } from "@/lib/bot-duplicate";
-import { waitForToolSelectionSave } from "./tool-selection-editor";
+import { saveToolSelection, waitForToolSelectionSave } from "./tool-selection-editor";
 import { botShowsUnread } from "@/lib/bot-unread";
 import { firstUnreadMessageId, threadOpensUnread, threadReadCursor } from "@/lib/unread-divider";
 import type { ComputerStart } from "@/lib/computer-start";
@@ -68,7 +68,7 @@ import { useShowThreads } from "@/lib/thread-preferences";
 import { speechOwner, spokenReplyStream } from "@/lib/spoken-reply-stream";
 import { t } from "@/lib/i18n";
 export { formatTime } from "@/lib/clock-time";
-import { createBotPatchQueue, flushWhenLeaving, keepaliveFits, type BotUpdatePatch } from "./bot-patch-queue"; import { createNewTaskOnce } from "./new-task-once";
+import { createBotPatchQueue, executionSettingsMatch, flushWhenLeaving, keepaliveFits, savedBotPatch, type BotUpdatePatch } from "./bot-patch-queue"; import { createNewTaskOnce } from "./new-task-once";
 import { liveCallFromFrame, nextLiveCallLookup } from "./live-call";
 import { isNoAiRefusal, useChatErrorClear } from "./chat-error";
 import { openLiveEvents, publishLiveFrame, publishMissedFrames, withoutScreenPixels } from "@/lib/live-events";
@@ -2139,11 +2139,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const result: { bots: BotAnnouncement[] } = await api(`/api/bots?messages=${MESSAGE_PAGE_SIZE}`, { signal });
           return result.bots.find((candidate) => candidate.id === botId) ?? null;
         },
-        onAuthoritative: (bot, optimisticOverlay, written) => {
-          if (Object.keys(written).length === 1 && Object.hasOwn(written, "toolScope")) {
-            rawDispatch({ type: "toolSelectionSaved", botId: bot.id, toolScope: bot.toolScope });
-          } else rawDispatch({ type: "botPatched", bot: withTaskWrites({ ...bot, ...optimisticOverlay }) });
-        },
+        onAuthoritative: (bot, optimisticOverlay, written) => rawDispatch(savedBotPatch(withTaskWrites({ ...bot, ...optimisticOverlay }), written)),
         onError: (error) => {
           rawDispatch({ type: "error", message: error.message });
         },
@@ -2194,17 +2190,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       await Promise.all([taskWrite, ...defaultWrites.map((write) => write.execution), ...expectedBots.map(bot => waitForToolSelectionSave(wrapped, bot.id)), ...expectedBots.map(async (expected) => {
         const persisted = await botPatchQueue.flush(expected.id);
         if (!persisted) return;
-        const expectedSelection = expected.modelSelection;
-        if (
-          approvalModeFor(persisted) !== approvalModeFor(expected) ||
-          (persisted.memoryEnabled !== false) !== (expected.memoryEnabled !== false) ||
-          persisted.modelSelection.instanceId !== expectedSelection.instanceId ||
-          persisted.modelSelection.model !== expectedSelection.model ||
-          persisted.modelSelection.effort !== expectedSelection.effort ||
-          persisted.modelSelection.variant !== expectedSelection.variant
-        ) {
-          throw new Error(t("approvalMode.settingsNotSaved"));
-        }
+        if (!executionSettingsMatch(persisted, expected)) throw new Error(t("approvalMode.settingsNotSaved"));
       })]);
       if (threadId) await taskWrites.get(threadId)?.execution;
     };
@@ -2748,16 +2734,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         case "deleteGroup":
           api(`/api/groups/${action.groupId}`, { method: "DELETE" }).catch(showError);
           break;
-        case "saveToolSelection": {
-          void botPatchQueue.flush(action.botId).then(async () => {
-            const bot = stateRef.current.bots.find(candidate => candidate.id === action.botId);
-            if (!bot) throw new Error(t("task.threadGone"));
-            botPatchQueue.enqueue(action.botId, { toolScope: action.toolScope ?? null }, bot);
-            const saved = await botPatchQueue.flush(action.botId, true);
-            if (!saved || JSON.stringify(saved.toolScope) !== JSON.stringify(action.toolScope)) throw new Error(t("botAccess.tools.unsaved"));
-          }).then(action.resolve, action.reject);
+        case "saveToolSelection":
+          void saveToolSelection(botPatchQueue, () => stateRef.current.bots, action).then(action.resolve, action.reject);
           break;
-        }
         case "setModel":
           if (action.threadId) {
             persistTaskPatch(action.botId, action.threadId, {

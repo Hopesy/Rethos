@@ -40,7 +40,7 @@ import { parseConnectorTools } from "./connector-tools.ts";
 import { sameModelSelection } from "../shared/thread-model.ts";
 import { initialGreetingMessage } from "./initial-greeting.ts"; import { createDefaultBot, defaultBotRefusal, type DefaultBotIntro } from "./default-bot.ts";
 import { defaultBotCapabilityPatch } from "../shared/default-bot-capabilities.ts";
-import { botCapabilities, type BotCapabilities } from "../shared/bot-capabilities.ts";
+import { botCapabilities, type BotCreationProfile } from "../shared/bot-capabilities.ts";
 import { appsFromCreator } from "./inherited-apps.ts";
 import { ThreadCache, type ThreadState } from "./thread-cache.ts";
 export type {
@@ -1307,12 +1307,7 @@ export class Store {
   }
 
   createBot(
-    profile: Partial<
-      Pick<
-        BotRecord,
-        "name" | "title" | "description" | "soul" | "color" | "mascotExpression" | "mascotBody" | "mascotFaceColor" | "modelSelection" | "section" | "cwd" | "visibility" | "toolScope" | "createdBy" | "reportsTo"
-      >
-    > & BotCapabilities = {},
+    profile: BotCreationProfile = {},
     opts: {
       seedMessages?: boolean; id?: string; threadId?: string;
     } = {},
