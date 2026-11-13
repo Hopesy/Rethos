@@ -40,10 +40,19 @@ describe("Rethos, every person's helper", () => {
     store.patchBot(other.id, { memoryEnabled: false });
     const file = join(DATA_DIR, "bots.json");
     const records = JSON.parse(readFileSync(file, "utf8"));
-    Object.assign(records.find((bot: BotRecord) => bot.id === main.id), { toolScope: { allow: ["mcp:agents:memory_update"] }, memoryEnabled: false });
+    Object.assign(records.find((bot: BotRecord) => bot.id === main.id), { toolScope: { allow: ["mcp:agents:memory_update"] }, memoryEnabled: false,
+      mcpServers: [], composio: false, browser: false, connectorTools: {}, connectorScopes: { apps: {} }, phoneApps: {}, xResearch: false, voiceNotes: false });
     writeFileSync(file, JSON.stringify(records));
     const restored = new Store(selection);
-    expect(restored.bot(main.id)).toMatchObject({ memoryEnabled: true });
+    expect(restored.bot(main.id)).toMatchObject({ memoryEnabled: true, composio: true, browser: true, xResearch: true, voiceNotes: true });
+    for (const field of ["mcpServers", "connectorTools", "connectorScopes", "phoneApps"] as const) {
+      expect(restored.bot(main.id)?.[field], field).toBeUndefined();
+      expect(new Store(selection).bot(main.id)?.[field], `persisted ${field}`).toBeUndefined();
+      expect(defaultBotPatchRefusal(restored.bot(main.id), { [field]: field === "mcpServers" ? [] : {} }), field).toContain("all available tools");
+    }
+    for (const field of ["composio", "browser", "xResearch", "voiceNotes"]) {
+      expect(defaultBotPatchRefusal(restored.bot(main.id), { [field]: false }), field).toContain("all available tools");
+    }
     expect(restored.bot(main.id)?.toolScope).toBeUndefined();
     expect(new Store(selection).bot(main.id)?.toolScope).toBeUndefined();
     expect(restored.bot(other.id)).toMatchObject({ toolScope: { allow: [] }, memoryEnabled: false });

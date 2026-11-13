@@ -61,6 +61,16 @@ pnpm exec vitest run server/default-bot.test.ts server/default-bot.e2e.test.ts \
 
 ## By hand
 
+The workspace's default bot inherits every enabled MCP server and connected
+app, with browser, phone tools, research, voice-note tools and memory available
+under the workspace's configuration. Its bot-level switches cannot narrow
+those capabilities in either interface mode. Startup also repairs old app,
+MCP and phone restrictions. Add a synthetic MCP to an isolated fixture and
+verify it appears in the default bot's actual turn; attempts to switch it off
+for that bot must return 400. Specialist and Team Cloud member permissions
+remain configurable. `server/default-bot.test.ts` checks migration persistence
+and `server/default-bot.e2e.test.ts` checks the API and bot creation tool.
+
 Launch the app against an isolated fixture (`docs/verification/README.md`),
 finish the first-run welcome and its tour, then:
 

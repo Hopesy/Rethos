@@ -60,20 +60,24 @@ it("validates, saves, clears and creates owner tool selections through the isola
 it.each(["explicit", "inherited"] as const)("persists the %s tool selection before creation can be interrupted", async (source) => {
   await withFixture("happy", async ({ api, dataDir }) => {
     const toolScope = { allow: [] };
+    const settings = { toolScope, memoryEnabled: false, memoryUpkeep: false, mcpServers: [], composio: false, browser: false,
+      connectorTools: {}, connectorScopes: { apps: {} }, phoneApps: {}, xResearch: false, voiceNotes: false };
     if (source === "inherited") {
-      expect((await api("PATCH", "/api/config", { newBotDefaults: { profile: { toolScope } } })).status).toBe(200);
+      expect((await api("PATCH", "/api/config", { newBotDefaults: { profile: settings } })).status).toBe(200);
     }
     const database = new DatabaseSync(join(dataDir, "messages.db"));
     try {
       // Interrupt the real creation after its first durable record, before the route applies the remaining settings.
       database.exec("CREATE TRIGGER reject_scope_fixture_greeting BEFORE INSERT ON messages BEGIN SELECT RAISE(ABORT, 'fixture greeting failure'); END");
       const name = `Interrupted ${source} scope fixture`;
-      const result = await api("POST", "/api/bots", { name, ...(source === "explicit" ? { settings: { toolScope } } : {}) });
+      const result = await api("POST", "/api/bots", { name, ...(source === "explicit" ? { settings } : {}) });
       expect(result.status).toBe(500);
       const saved = JSON.parse(readFileSync(join(dataDir, "bots.json"), "utf8"));
       expect(saved.find((bot: { name: string }) => bot.name === name)?.toolScope).toEqual(toolScope);
+      expect(saved.find((bot: { name: string }) => bot.name === name)).toMatchObject(settings);
       const live = await api("GET", "/api/bots?messages=0");
       expect(live.body.bots.find((bot: { name: string }) => bot.name === name)?.toolScope).toEqual(toolScope);
+      expect(live.body.bots.find((bot: { name: string }) => bot.name === name)).toMatchObject(settings);
     } finally {
       database.exec("DROP TRIGGER IF EXISTS reject_scope_fixture_greeting");
       database.close();

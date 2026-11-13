@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { api, persistBotUpdate, type Bot } from "@/state/store";
 import { BotCreationDraft, EMPTY_BOT_DEFAULTS } from "./bot-creation-draft";
-import { createConfiguredBot } from "./create-configured-bot";
+import { createConfiguredBot, preparedBotTemplate } from "./create-configured-bot";
+import { toolSelectionEditor } from "@/state/tool-selection-editor";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -52,6 +53,22 @@ describe("configured bot creation", () => {
     await createConfiguredBot(f.draft, f.request, persistBotUpdate, f.approvals);
     expect(f.bodies[0]).toMatchObject({ settings: { toolScope: { allow: [], deny: ["mcp:mail:send"] } } });
     expect(f.bodies[1]).not.toHaveProperty("toolScope");
+  });
+
+  it("commits the tool subeditor on outer save and keeps invalid drafts available for correction", async () => {
+    const f = fixture("ask");
+    const editor = toolSelectionEditor(f.draft.request, f.draft.id, async scope => {
+      await f.draft.request(`/api/bots/${f.draft.id}`, { method: "PATCH", body: JSON.stringify({ toolScope: scope ?? null }) });
+    });
+    editor.edit({ custom: true, onlyListed: true, allow: "invalid tool", deny: "" });
+    await expect(preparedBotTemplate(f.draft)).rejects.toThrow("valid allow and deny");
+    expect(editor.getSnapshot().draft?.allow).toBe("invalid tool");
+    expect(f.events).toEqual([]);
+    editor.edit({ custom: true, onlyListed: true, allow: "native:*\nmcp:agents:memory_update", deny: "" });
+    f.draft.patch({ memoryEnabled: false, mcpServers: [], composio: false, browser: false, connectorTools: {} });
+    await createConfiguredBot(f.draft, f.request, persistBotUpdate, f.approvals);
+    expect(f.bodies[0]).toMatchObject({ settings: { toolScope: { allow: ["native:*", "mcp:agents:memory_update"] },
+      memoryEnabled: false, mcpServers: [], composio: false, browser: false, connectorTools: {} } });
   });
 
   it("keeps the server-completed workspace effort when applying draft settings", async () => {

@@ -7,6 +7,7 @@ import { useBotEditor } from "./BotEditorContext";
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
 import { SettingsHelp } from "../SettingsHelp";
+import { hasDefaultBotCapabilities } from "../../../shared/default-bot-capabilities";
 import type { LocaleKey } from "@/locales";
 import { mcpServersForBot, mcpServersOfBot, mcpSwitch, useMcpServers } from "@/lib/mcp-servers";
 import { placeFacts, placeViewFor, usePlaceSeat } from "@/lib/place-view";
@@ -127,6 +128,7 @@ export function WorkingFolder({ bot }: { bot: Bot }) {
  * bot.
  */
 export function McpServersCard({ bot, patch }: { bot: Bot; patch: (patch: { mcpServers: string[] | null }) => void }) {
+  const main = hasDefaultBotCapabilities(bot);
   const { dispatch } = useStore();
   const { servers: all, error, refresh } = useMcpServers();
   const servers = all ? mcpServersOfBot(all, bot.id) : null;
@@ -134,7 +136,7 @@ export function McpServersCard({ bot, patch }: { bot: Bot; patch: (patch: { mcpS
   const usesAll = bot.mcpServers == null;
 
   const toggle = (name: string) => {
-    if (!servers || bot.busy || error) return;
+    if (main || !servers || bot.busy || error) return;
     patch({ mcpServers: mcpSwitch(servers, bot.mcpServers, name) });
   };
   const openPlugins = () => {
@@ -175,7 +177,7 @@ export function McpServersCard({ bot, patch }: { bot: Bot; patch: (patch: { mcpS
               </div>
               <Switch
                 checked={mounted.has(server.name)}
-                disabled={!server.enabled || !!bot.busy || error}
+                disabled={main || !server.enabled || !!bot.busy || error}
                 aria-label={t("botAccess.mcpAllow", { name: server.name })}
                 onClick={() => toggle(server.name)}
                 className="disabled:cursor-not-allowed"
@@ -189,7 +191,7 @@ export function McpServersCard({ bot, patch }: { bot: Bot; patch: (patch: { mcpS
         <button type="button" onClick={openPlugins} className="flex items-center gap-1.5 rounded-lg bg-control px-3 py-2 text-[13px] text-ink hover:bg-raised-hover">
           <Plus size={14} /> {t("botAccess.mcpAdd")}
         </button>
-        {!usesAll && servers && servers.length > 0 && (
+        {!main && !usesAll && servers && servers.length > 0 && (
           <button type="button" disabled={!!bot.busy || error} onClick={() => { if (!bot.busy && !error) patch({ mcpServers: null }); }} className="rounded-lg px-2 py-2 text-[13px] text-ink-secondary hover:text-ink disabled:opacity-50">
             {t("botAccess.mcpUseAll")}
           </button>
@@ -501,7 +503,7 @@ function ResearchCard({ bot, patch }: { bot: Bot; patch: (patch: { xResearch: bo
       <Switch
         checked={available && on}
         aria-label={t("research.switch")}
-        disabled={!available}
+        disabled={hasDefaultBotCapabilities(bot) || !available}
         onClick={() => patch({ xResearch: !on })}
         className="disabled:cursor-not-allowed"
       />
@@ -651,6 +653,7 @@ export function AccessSection({
   derived: ReturnType<typeof useBotSettingsDerived>;
   parts?: readonly AccessPart[];
 }) {
+  const main = hasDefaultBotCapabilities(bot);
   const { draft } = useBotEditor();
   const { state, dispatch } = useStore();
   const {
@@ -731,7 +734,7 @@ export function AccessSection({
             checked={connectedAppsEnabled}
             aria-label={t("botAccess.apps.allow")}
             disabled={
-              !connectedAppsEnabled && (!connectedAppsConfigured || !canUseConnectedApps)
+              main || (!connectedAppsEnabled && (!connectedAppsConfigured || !canUseConnectedApps))
             }
             onClick={() => patch({ composio: !connectedAppsEnabled })}
             title={
@@ -744,7 +747,8 @@ export function AccessSection({
             className="disabled:cursor-not-allowed"
           />
         </div>
-        {connectedAppsEnabled && inventoryReady && (
+        {main && <p role="status" className="mt-2 text-[12px] text-ink-secondary">{t("botAccess.tools.defaultAlwaysOn")}</p>}
+        {!main && connectedAppsEnabled && inventoryReady && (
           <>
             {!draft && <ConnectorScopesControl connectedSlugs={connectedSlugs} labels={appLabels} scopes={bot.connectorScopes} onChange={(connectorScopes) => patch({ connectorScopes })} />}
             <ConnectorToolsGrants bot={bot} patch={patch} slugs={connectedSlugs} />
@@ -790,7 +794,7 @@ export function AccessSection({
             checked={browserEnabled && bot.computer !== "off"}
             aria-label={t("botAccess.browser.allow")}
             disabled={
-              bot.computer === "off" ||
+              main || bot.computer === "off" ||
               (!browserEnabled && ((!desktopBrowser && !browserInstallable) || !browserFeature || !canUseBrowser))
             }
             onClick={() => patch({ browser: !browserAllowed })}

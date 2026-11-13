@@ -105,6 +105,31 @@ load never shows another agent's link.
 
 ## Creation drafts and defaults
 
+When a tool save is pending, send a message from that bot: the server must
+receive the message only after the save succeeds. Reject the save and verify
+the message stays unstarted, with the draft and exact error retained across
+mode switches. Retry the save, then send again. Delay a successful tool
+response while a second client enables memory; delivering the old response
+must leave the newer memory state visible.
+
+In the defaults editor, enter a custom tool list and click **Save defaults**
+directly. Read `/api/bot-defaults` to verify the list was included. An invalid
+list must keep the dialog and draft open for correction. Copy a specialist
+with memory, apps and browser off, no MCP servers, and scoped app/phone tools:
+the first durable copy must contain these settings, independent of the
+workspace's New bot defaults. The interrupted-creation fixture in
+`server/tool-scope.e2e.test.ts` checks that first record.
+
+Edit memory, switch modes, close/reopen settings and return to the same file:
+keep the draft, pending save, conflict copy and failure. Hold a save response,
+continue typing, then deliver it: only the submitted version is acknowledged;
+the newer text remains editable and saves on the next click. Check the Simple
+panel's add-note draft independently, including Team Cloud's personal layer.
+
+```sh
+pnpm exec vitest run src/state/memory-editor.test.ts src/state/bot-patch-queue.test.ts src/components/bot-settings/tool-selection-editor.test.ts src/lib/create-configured-bot.test.ts src/lib/bot-duplicate.test.ts server/tool-scope.e2e.test.ts
+```
+
 Tool selection drafts, pending saves and failures survive switching between
 Advanced and Simple modes and closing/reopening the bot panel. In either mode,
 the pending notice opens the same tool editor. Edit a specialist's selection,

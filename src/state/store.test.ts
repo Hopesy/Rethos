@@ -78,6 +78,13 @@ describe("mounted Data view context", () => {
 });
 
 describe("partial profile save responses", () => {
+  it("applies an acknowledged tool selection without reverting independent bot state", () => {
+    const bot = { id: "bot", memoryEnabled: true, name: "Current", busy: true, toolScope: undefined } as Bot;
+    const state = { ...initialState, bots: [bot] };
+    const toolScope = { allow: ["native:*"] };
+    expect(reducer(state, { type: "toolSelectionSaved", botId: bot.id, toolScope }).bots[0])
+      .toEqual({ ...bot, toolScope });
+  });
   it.each([true, false])("preserves independently saved fields with about-me response first: %s", aboutFirst => {
     const config = { ...initialState.config, profile: { name: "Old", email: "old@example.invalid", aboutMe: "Old biography" } } as NonNullable<AppState["config"]>;
     const about: Action = { type: "profileSaved", profile: { aboutMe: "New biography" } };

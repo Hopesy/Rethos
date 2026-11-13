@@ -46,6 +46,7 @@ export type BotUpdatePatch = Partial<
     | "modelSelection"
   >
 > & {
+  toolScope?: Bot["toolScope"] | null;
   computer?: Bot["computer"] | null;
   connectorTools?: Bot["connectorTools"] | null;
   connectorScopes?: Bot["connectorScopes"] | null;
@@ -64,7 +65,7 @@ export type BotUpdatePatch = Partial<
 
 export type BotStatePatch = Omit<
   BotUpdatePatch,
-  "computer" | "connectorTools" | "connectorScopes" | "phoneApps" | "peers" | "acknowledgeLocalAuto" | "applyToAllThreads" | "keepThreadModels" | "threadId" | "mainThreadChoice"
+  "toolScope" | "computer" | "connectorTools" | "connectorScopes" | "phoneApps" | "peers" | "acknowledgeLocalAuto" | "applyToAllThreads" | "keepThreadModels" | "threadId" | "mainThreadChoice"
 > & {
   mainThreadId?: string;
   peers?: string[];
@@ -83,7 +84,8 @@ interface BotPatchQueueEntry {
   running: boolean;
   controller: AbortController | null;
   cancelled: boolean;
-  idleWaiters: Array<(bot: BotAnnouncement | null) => void>;
+  error: Error | null;
+  idleWaiters: Array<{ resolve: (bot: BotAnnouncement | null) => void; reject: (error: Error) => void; requireSuccess: boolean }>;
 }
 
 export interface BotPatchQueueOptions {
@@ -96,13 +98,13 @@ export interface BotPatchQueueOptions {
     leaving: boolean,
   ) => Promise<BotAnnouncement>;
   reconcile: (botId: string, signal: AbortSignal) => Promise<BotAnnouncement | null>;
-  onAuthoritative: (bot: BotAnnouncement, optimisticOverlay: BotStatePatch) => void;
+  onAuthoritative: (bot: BotAnnouncement, optimisticOverlay: BotStatePatch, written: BotUpdatePatch) => void;
   onError: (error: Error) => void;
 }
 
 export interface BotPatchQueue {
   enqueue: (botId: string, patch: BotUpdatePatch, fallback: BotAnnouncement) => void;
-  flush: (botId: string) => Promise<BotAnnouncement | null>;
+  flush: (botId: string, requireSuccess?: boolean) => Promise<BotAnnouncement | null>;
   /** Sends every edit still waiting out its pause now: the page is going away. */
   flushAll: () => void;
   overlayFor: (botId: string) => BotStatePatch;
@@ -131,6 +133,7 @@ const stateOverlay = (patch: BotUpdatePatch): BotStatePatch => {
     connectorScopes,
     phoneApps,
     peers,
+    toolScope: _toolScope,
     ...fields
   } = patch;
   const normalized: BotStatePatch = { ...fields };
@@ -156,7 +159,10 @@ export function createBotPatchQueue(options: BotPatchQueueOptions): BotPatchQueu
   const settleIfIdle = (entry: BotPatchQueueEntry) => {
     if (entry.running || entry.timer !== null || hasFields(entry.pending)) return;
     entries.delete(entry.botId);
-    for (const resolve of entry.idleWaiters.splice(0)) resolve(entry.fallback);
+    for (const waiter of entry.idleWaiters.splice(0)) {
+      if (waiter.requireSuccess && entry.error) waiter.reject(entry.error);
+      else waiter.resolve(entry.fallback);
+    }
   };
 
   const drain = async (entry: BotPatchQueueEntry, leaving = false): Promise<void> => {
@@ -172,7 +178,7 @@ export function createBotPatchQueue(options: BotPatchQueueOptions): BotPatchQueu
       const bot = await options.send(entry.botId, patch, controller.signal, entry.fallback, leaving);
       if (disposed || entry.cancelled) return;
       entry.fallback = bot;
-      options.onAuthoritative(bot, stateOverlay(entry.pending));
+      options.onAuthoritative(bot, stateOverlay(entry.pending), patch);
     } catch (caught) {
       if (!disposed && !entry.cancelled) {
         const supersededApproval = controller.signal.aborted &&
@@ -189,8 +195,9 @@ export function createBotPatchQueue(options: BotPatchQueueOptions): BotPatchQueu
         }
         // Deletion may cancel this lane mid-read; folding the result back would resurrect the bot.
         if (disposed || entry.cancelled) return;
-        if (bot) options.onAuthoritative(bot, stateOverlay(entry.pending));
-        options.onError(caught instanceof Error ? caught : new Error(String(caught)));
+        if (bot) options.onAuthoritative(bot, stateOverlay(entry.pending), patch);
+        entry.error = caught instanceof Error ? caught : new Error(String(caught));
+        options.onError(entry.error);
       }
     } finally {
       entry.controller = null;
@@ -223,6 +230,7 @@ export function createBotPatchQueue(options: BotPatchQueueOptions): BotPatchQueu
         running: false,
         controller: null,
         cancelled: false,
+        error: null,
         idleWaiters: [],
       };
       entries.set(botId, entry);
@@ -251,14 +259,14 @@ export function createBotPatchQueue(options: BotPatchQueueOptions): BotPatchQueu
       }
     },
 
-    flush(botId) {
+    flush(botId, requireSuccess = false) {
       const entry = entries.get(botId);
       if (!entry) return Promise.resolve(null);
       if (entry.timer !== null) {
         clearTimeout(entry.timer);
         entry.timer = null;
       }
-      const idle = new Promise<BotAnnouncement | null>((resolve) => entry.idleWaiters.push(resolve));
+      const idle = new Promise<BotAnnouncement | null>((resolve, reject) => entry.idleWaiters.push({ resolve, reject, requireSuccess }));
       void drain(entry);
       settleIfIdle(entry);
       return idle;
@@ -285,7 +293,7 @@ export function createBotPatchQueue(options: BotPatchQueueOptions): BotPatchQueu
       if (entry.timer !== null) clearTimeout(entry.timer);
       entry.controller?.abort();
       entries.delete(botId);
-      for (const resolve of entry.idleWaiters.splice(0)) resolve(null);
+      for (const waiter of entry.idleWaiters.splice(0)) waiter.resolve(null);
     },
 
     revive() {
@@ -298,7 +306,7 @@ export function createBotPatchQueue(options: BotPatchQueueOptions): BotPatchQueu
         entry.cancelled = true;
         if (entry.timer !== null) clearTimeout(entry.timer);
         entry.controller?.abort();
-        for (const resolve of entry.idleWaiters.splice(0)) resolve(null);
+        for (const waiter of entry.idleWaiters.splice(0)) waiter.resolve(null);
       }
       entries.clear();
     },

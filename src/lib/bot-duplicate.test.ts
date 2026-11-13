@@ -30,10 +30,13 @@ describe("what a duplicated bot is created with", () => {
   });
 
   it("carries every restriction together, in the one request that creates the copy", () => {
-    const source = { visibility: "admins" as const, toolScope: { allow: [] }, helperModel: false };
-    expect(restrictedCopyRequest(source)).toEqual({ visibility: "admins", settings: { toolScope: { allow: [] }, helperModel: false } });
+    const settings = { toolScope: { allow: [] }, helperModel: false, memoryEnabled: false, memoryUpkeep: false,
+      mcpServers: [], browser: false, composio: false, connectorTools: { gmail: { tools: ["GMAIL_LIST_MESSAGES"] } },
+      connectorScopes: { apps: { gmail: "read" as const } }, phoneApps: {}, xResearch: false, voiceNotes: false };
+    const source = { visibility: "admins" as const, ...settings };
+    expect(restrictedCopyRequest(source)).toEqual({ visibility: "admins", settings });
     // what the request body looks like on the wire
-    expect(JSON.parse(JSON.stringify(restrictedCopyRequest(source)))).toEqual({ visibility: "admins", settings: { toolScope: { allow: [] }, helperModel: false } });
+    expect(JSON.parse(JSON.stringify(restrictedCopyRequest(source)))).toEqual({ visibility: "admins", settings });
   });
 
   it("keeps a copy of a VPS bot on its source's own server, and on the default when the source has none", () => {

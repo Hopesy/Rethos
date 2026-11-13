@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { writeFileAtomic } from "./atomic.ts";
 import { DEFAULT_BOT_COLOR, DEFAULT_BOT_NAME, defaultBotPerson } from "../shared/default-bot.ts";
 import { takeImportName } from "../shared/import-name.ts";
-import { hasDefaultBotCapabilities } from "../shared/default-bot-capabilities.ts";
+import { DEFAULT_BOT_CAPABILITIES, hasDefaultBotCapabilities } from "../shared/default-bot-capabilities.ts";
 import { parseToolScope } from "../shared/tool-scope.ts";
 import type { BotRecord, Message, Store } from "./store.ts";
 
@@ -30,6 +30,10 @@ export function defaultBotPatchRefusal(bot: BotRecord | null, body: Record<strin
     if (body.toolScope != null) {
       const parsed = parseToolScope(body.toolScope);
       if (parsed.ok && (parsed.scope?.allow !== undefined || parsed.scope?.deny?.length)) return "Rethos uses all available tools as the workspace's main bot.";
+    }
+    for (const [key, value] of Object.entries(DEFAULT_BOT_CAPABILITIES)) {
+      if (key === "toolScope" || body[key] == null) continue;
+      if (value === undefined || body[key] === false) return "Rethos uses all available tools as the workspace's main bot.";
     }
   }
   for (const key of ["sidebarHidden", "welcomed"]) if (body[key] !== undefined && typeof body[key] !== "boolean") return `${key} must be true or false`;

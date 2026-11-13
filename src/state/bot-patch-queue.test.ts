@@ -37,6 +37,23 @@ describe("bot patch queue", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
+  it("serializes tool saves with profile edits and waits for both without advertising unacknowledged tools", async () => {
+    const first = deferredBot();
+    const scope = { allow: ["native:*"] };
+    const send = vi.fn().mockReturnValueOnce(first.promise).mockResolvedValueOnce(bot({ toolScope: scope, memoryEnabled: true }));
+    const queue = createBotPatchQueue({ send, reconcile: async () => bot(), onAuthoritative: vi.fn(), onError: vi.fn() });
+    queue.enqueue("bot-1", { toolScope: scope }, bot());
+    const pending = queue.flush("bot-1");
+    queue.enqueue("bot-1", { memoryEnabled: true }, bot());
+    const memory = queue.flush("bot-1");
+    expect(queue.overlayFor("bot-1")).toEqual({ memoryEnabled: true });
+    expect(send).toHaveBeenCalledTimes(1);
+    first.resolve(bot({ toolScope: scope }));
+    await Promise.all([pending, memory]);
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(send.mock.calls[1][1]).toEqual({ memoryEnabled: true });
+  });
+
   it("starts approval, model and connector grant changes immediately instead of debouncing execution settings", async () => {
     const send = vi.fn(async () => bot());
     const queue = createBotPatchQueue({
@@ -160,6 +177,7 @@ describe("bot patch queue", () => {
         sent.push(patch);
         return bot({
           ...patch,
+          toolScope: patch.toolScope ?? undefined,
           computer: patch.computer ?? undefined,
           connectorTools: patch.connectorTools ?? undefined,
           connectorScopes: patch.connectorScopes ?? undefined,
@@ -187,6 +205,7 @@ describe("bot patch queue", () => {
     expect(authoritative).toHaveBeenLastCalledWith(
       expect.objectContaining({ avatarUrl: null, avatarCrop: "mascot" }),
       {},
+      { avatarUrl: null, avatarCrop: "mascot" },
     );
   });
 
@@ -228,6 +247,7 @@ describe("bot patch queue", () => {
     expect(authoritative).toHaveBeenLastCalledWith(
       expect.objectContaining({ name: "First" }),
       expect.objectContaining({ name: "Second", voice: "voice-2", speakReplies: true }),
+      { name: "First" },
     );
     expect(sent[1]).toMatchObject({
       name: "Second",
@@ -244,6 +264,7 @@ describe("bot patch queue", () => {
     expect(authoritative).toHaveBeenLastCalledWith(
       expect.objectContaining({ name: "Second", voice: "voice-2", speakReplies: true }),
       {},
+      expect.objectContaining({ name: "Second", voice: "voice-2", speakReplies: true }),
     );
   });
 
@@ -263,7 +284,7 @@ describe("bot patch queue", () => {
     queue.enqueue("bot-1", { name: "x".repeat(101) }, bot());
     await vi.advanceTimersByTimeAsync(400);
 
-    expect(authoritative).toHaveBeenCalledWith(serverBot, {});
+    expect(authoritative).toHaveBeenCalledWith(serverBot, {}, expect.any(Object));
     expect(onError).toHaveBeenCalledWith(
       expect.objectContaining({ message: "name must be at most 100 characters" }),
     );

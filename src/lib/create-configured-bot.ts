@@ -5,8 +5,11 @@ import { imageAttachmentFromFile } from "./composer-attachments";
 import type { BotVisibility } from "../../shared/wire";
 import { botAvatarUrlFromStoredPath } from "../../shared/bot-avatar";
 import { t } from "@/lib/i18n";
+import { commitToolSelectionDraft } from "@/state/tool-selection-editor";
+import { botCapabilities } from "../../shared/bot-capabilities";
 
 export async function preparedBotTemplate(draft: BotCreationDraft) {
+  await commitToolSelectionDraft(draft.request, draft.id);
   const template = draft.export();
   if (template.profile.avatarUrl?.startsWith("blob:")) {
     if (!draft.avatarFile) throw new Error(t("newBot.avatar.chooseAgain"));
@@ -36,7 +39,7 @@ export async function createConfiguredBot(
     method: "POST", body: JSON.stringify({ name: profile.name, title: profile.title,
       description: profile.description, ...chosenAi, section: profile.section,
       useDefaults: false, ...(visibility !== undefined ? { visibility } : {}), ...(reportsTo ? { reportsTo } : {}),
-      ...(Object.hasOwn(template.profile, "toolScope") ? { settings: { toolScope } } : {}),
+      settings: { ...botCapabilities(template.profile), ...(Object.hasOwn(template.profile, "toolScope") ? { toolScope } : {}) },
       ...(preset ? { preset: preset.id } : {}) }),
   });
   let bot = response.bot;

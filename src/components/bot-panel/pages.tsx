@@ -19,6 +19,8 @@ import { useWorkingFolder } from "../bot-settings/AccessSection";
 import { useBotEditor } from "../bot-settings/BotEditorContext";
 import { ToolSelectionCard } from "../bot-settings/ToolSelectionCard";
 import { MemoryEnabledControl } from "../bot-settings/MemoryEnabledControl";
+import { useMemoryEditor } from "../bot-settings/use-memory-editor";
+import { hasDefaultBotCapabilities } from "../../../shared/default-bot-capabilities";
 import { SkillReviewDialog, useManagedSkills, type ManagedSkill } from "../bot-settings/SkillsSection";
 import { useBotApps, type BotApp } from "../bot-settings/useBotApps";
 import type { useBotSettingsDerived } from "../bot-settings/useBotSettingsDerived";
@@ -47,6 +49,7 @@ function errorText(error: unknown, fallback: string): string {
 }
 
 export function AppsPage({ bot, derived }: PageContext) {
+  const main = hasDefaultBotCapabilities(bot);
   const { dispatch } = useStore();
   const apps = useBotApps(bot);
   const { servers: allServers, error: mcpError } = useMcpServers();
@@ -55,11 +58,12 @@ export function AppsPage({ bot, derived }: PageContext) {
   const mounted = new Set(mcpServersForBot(servers, bot.mcpServers, bot.id).map((server) => server.name));
 
   const toggle = (app: BotApp) => {
+    if (main) return;
     const next = appSwitchPatch(bot, apps.connectedSlugs, app.slug, app.scope === null);
     if (Object.keys(next).length > 0) patch(next);
   };
   const toggleServer = (name: string) => {
-    if (bot.busy || mcpError) return;
+    if (main || bot.busy || mcpError) return;
     patch({ mcpServers: mcpSwitch(servers, bot.mcpServers, name) });
   };
   const note = !canUseConnectedApps
@@ -75,6 +79,7 @@ export function AppsPage({ bot, derived }: PageContext) {
   return (
     <>
       <Card>
+        {main && <NoteRow>{t("botAccess.tools.defaultAlwaysOn")}</NoteRow>}
         {note && <NoteRow>{note}</NoteRow>}
         {canUseConnectedApps && apps.apps.map((app) => (
           <div key={app.slug} data-simple-app={app.slug} className={rowCls}>
@@ -84,7 +89,7 @@ export function AppsPage({ bot, derived }: PageContext) {
               color={bot.color}
               checked={app.scope !== null}
               aria-label={t("botSettings.simple.appToggle", { name: bot.name, app: app.label })}
-              disabled={Boolean(bot.busy)}
+              disabled={main || Boolean(bot.busy)}
               onClick={() => toggle(app)}
               className="disabled:cursor-not-allowed"
             />
@@ -105,7 +110,7 @@ export function AppsPage({ bot, derived }: PageContext) {
                 color={bot.color}
                 checked={mounted.has(server.name)}
                 aria-label={t("botSettings.simple.appToggle", { name: bot.name, app: server.name })}
-                disabled={!server.enabled || Boolean(bot.busy) || mcpError}
+                disabled={main || !server.enabled || Boolean(bot.busy) || mcpError}
                 onClick={() => toggleServer(server.name)}
                 className="disabled:cursor-not-allowed"
               />
@@ -164,26 +169,13 @@ export function RoutinesPage({ bot, derived }: PageContext) {
  * the hash it was read at, so a note the bot added meanwhile is never lost: a conflict re-reads and asks again. */
 export function MemoryPage({ bot, derived }: PageContext) {
   const memory = useMemoryDoc(bot);
-  const [draft, setDraft] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { editor, state: draftState } = useMemoryEditor(bot.id, memory.mine);
+  const { noteDraft: draft, noteSaving: saving, noteError: error } = draftState;
   const memoryOn = bot.memoryEnabled !== false;
   const notes = memory.docs ? panelMemoryNotes(memory.docs) : null;
   const index = memory.docs?.find((doc) => doc.path === MEMORY_INDEX) ?? null;
 
-  const change = async (save: () => Promise<boolean>) => {
-    if (saving) return false;
-    setSaving(true);
-    setError(null);
-    try {
-      return await save();
-    } catch (cause) {
-      setError(errorText(cause, t("botPanel.library.memoryError")));
-      return false;
-    } finally {
-      setSaving(false);
-    }
-  };
+  const change = editor.changeNote;
   const write = (doc: MemoryDoc, text: string) => change(async () => {
     const result = await saveMemoryDoc(bot.id, doc.path, text, doc.exists ? doc.hash : undefined, memory.mine);
     if (result.ok) {
@@ -191,7 +183,7 @@ export function MemoryPage({ bot, derived }: PageContext) {
       return true;
     }
     await memory.reload();
-    setError(t("memory.conflict.title", { name: bot.name }));
+    editor.noteError(t("memory.conflict.title", { name: bot.name }));
     return false;
   });
   const forget = (note: PanelMemoryNote) => {
@@ -206,7 +198,7 @@ export function MemoryPage({ bot, derived }: PageContext) {
   };
   const add = async () => {
     if (!index || !draft.trim()) return;
-    if (await write(index, withMemoryNote(index.text, draft))) setDraft("");
+    if (await write(index, withMemoryNote(index.text, draft))) editor.clearNote(draft);
   };
 
   return (
@@ -238,7 +230,7 @@ export function MemoryPage({ bot, derived }: PageContext) {
             label={t("botPanel.memory.addPlaceholder", { name: bot.name })}
             action={t("common.add")}
             disabled={saving || index === null}
-            onChange={setDraft}
+            onChange={editor.editNote}
             onSubmit={() => void add()}
           />
         </Card>

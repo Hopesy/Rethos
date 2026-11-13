@@ -47,6 +47,9 @@ it("makes Rethos a new install's first bot, never deleted, hidden by its switch,
     expect(maus.toolScope).toBeUndefined();
     expect((await api("PATCH", `/api/bots/${maus.id}`, { toolScope: { allow: [] } })).status).toBe(400);
     expect((await api("PATCH", `/api/bots/${maus.id}`, { memoryEnabled: false })).status).toBe(400);
+    for (const patch of [{ mcpServers: [] }, { composio: false }, { browser: false }, { connectorTools: {} }, { connectorScopes: { apps: {} } }, { phoneApps: {} }, { xResearch: false }, { voiceNotes: false }]) {
+      expect((await api("PATCH", `/api/bots/${maus.id}`, patch)).status, JSON.stringify(patch)).toBe(400);
+    }
     expect(maus.messages.map((message: any) => [message.kind, message.helperIntro])).toEqual([["options", true]]);
 
     const refused = await api("DELETE", `/api/bots/${maus.id}`);

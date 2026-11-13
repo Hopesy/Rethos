@@ -53,6 +53,7 @@ import {
 import type { Routine, RoutineInput, RoutineRun, RoutineRunStatusFilter } from "@/lib/routines";
 import type { WebhookAttempt, WebhookIngressStatus, WebhookTrigger } from "@/lib/webhooks";
 import { duplicateBotProfile, restrictedCopyRequest } from "@/lib/bot-duplicate";
+import { waitForToolSelectionSave } from "./tool-selection-editor";
 import { botShowsUnread } from "@/lib/bot-unread";
 import { firstUnreadMessageId, threadOpensUnread, threadReadCursor } from "@/lib/unread-divider";
 import type { ComputerStart } from "@/lib/computer-start";
@@ -770,6 +771,8 @@ export type Action =
   | { type: "duplicateBot"; botId: string }
   | { type: "markUnread"; botId: string }
   | { type: "botPatched"; bot: BotAnnouncement }
+  | { type: "toolSelectionSaved"; botId: string; toolScope: Bot["toolScope"] }
+  | { type: "saveToolSelection"; botId: string; toolScope: Bot["toolScope"]; resolve: () => void; reject: (error: Error) => void }
   | { type: "messageAdded"; threadId: string; message: Message }
   | { type: "messagePatched"; threadId: string; message: Message }
   | { type: "optimisticMessageRemoved"; threadId: string; sendId: string; restoreLeafId?: string | null }
@@ -1167,6 +1170,8 @@ export function reducer(state: AppState, action: Action): AppState {
     }
     case "markUnread":
       return updateBot(withMascotMotion(state, action.botId, "surprise"), action.botId, (b) => ({ ...b, unread: true }));
+    case "toolSelectionSaved":
+      return updateBot(state, action.botId, bot => ({ ...bot, toolScope: action.toolScope }));
     case "botPatched": {
       const before = state.bots.find((b) => b.id === action.bot.id);
       if (!before) {
@@ -1592,7 +1597,7 @@ export function reducer(state: AppState, action: Action): AppState {
         keepThreadModels: _keepThreadModels, threadId: _threadId, mainThreadChoice,
         computer,
         connectorTools,
-        connectorScopes, phoneApps, peers,
+        connectorScopes, phoneApps, peers, toolScope: _toolScope,
         ...rest
       } = action.patch;
       const botPatch: Partial<Bot> = { ...rest, ...(phoneApps !== undefined && { phoneApps: phoneApps ?? undefined }), ...(peers !== undefined && { peers: peers ?? undefined }), ...(typeof mainThreadChoice === "string" && { mainThreadId: mainThreadChoice }) };
@@ -1801,6 +1806,7 @@ export function reducer(state: AppState, action: Action): AppState {
     case "markRoutineRunSeen":
     case "markAllRoutineRunsSeen":
     case "refreshTaskPermissions":
+    case "saveToolSelection":
     case "followBotModel":
     case "loadDataSheet":
       return state;
@@ -2133,8 +2139,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const result: { bots: BotAnnouncement[] } = await api(`/api/bots?messages=${MESSAGE_PAGE_SIZE}`, { signal });
           return result.bots.find((candidate) => candidate.id === botId) ?? null;
         },
-        onAuthoritative: (bot, optimisticOverlay) => {
-          rawDispatch({ type: "botPatched", bot: withTaskWrites({ ...bot, ...optimisticOverlay }) });
+        onAuthoritative: (bot, optimisticOverlay, written) => {
+          if (Object.keys(written).length === 1 && Object.hasOwn(written, "toolScope")) {
+            rawDispatch({ type: "toolSelectionSaved", botId: bot.id, toolScope: bot.toolScope });
+          } else rawDispatch({ type: "botPatched", bot: withTaskWrites({ ...bot, ...optimisticOverlay }) });
         },
         onError: (error) => {
           rawDispatch({ type: "error", message: error.message });
@@ -2183,7 +2191,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       // Capture this send's task save before waiting on slower profile saves.
       const taskWrite = threadId ? taskWrites.get(threadId)?.execution : undefined;
       const defaultWrites = [...taskWrites.values()].filter((write) => write.updatesDefault && expectedBots.some((bot) => bot.id === write.botId));
-      await Promise.all([taskWrite, ...defaultWrites.map((write) => write.execution), ...expectedBots.map(async (expected) => {
+      await Promise.all([taskWrite, ...defaultWrites.map((write) => write.execution), ...expectedBots.map(bot => waitForToolSelectionSave(wrapped, bot.id)), ...expectedBots.map(async (expected) => {
         const persisted = await botPatchQueue.flush(expected.id);
         if (!persisted) return;
         const expectedSelection = expected.modelSelection;
@@ -2619,7 +2627,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           // A copy of a restricted bot is restricted from its first moment.
           api("/api/bots", {
             method: "POST",
-            body: JSON.stringify(restrictedCopyRequest(source)),
+            body: JSON.stringify({ useDefaults: false, ...restrictedCopyRequest(source) }),
           })
             .then(({ bot }) =>
               api(`/api/bots/${bot.id}`, {
@@ -2740,6 +2748,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         case "deleteGroup":
           api(`/api/groups/${action.groupId}`, { method: "DELETE" }).catch(showError);
           break;
+        case "saveToolSelection": {
+          void botPatchQueue.flush(action.botId).then(async () => {
+            const bot = stateRef.current.bots.find(candidate => candidate.id === action.botId);
+            if (!bot) throw new Error(t("task.threadGone"));
+            botPatchQueue.enqueue(action.botId, { toolScope: action.toolScope ?? null }, bot);
+            const saved = await botPatchQueue.flush(action.botId, true);
+            if (!saved || JSON.stringify(saved.toolScope) !== JSON.stringify(action.toolScope)) throw new Error(t("botAccess.tools.unsaved"));
+          }).then(action.resolve, action.reject);
+          break;
+        }
         case "setModel":
           if (action.threadId) {
             persistTaskPatch(action.botId, action.threadId, {

@@ -1,5 +1,6 @@
 // Security: the harness holds the cloud provider keys; the renderer never talks to ElevenLabs or Fish Audio itself.
 import { DEFAULT_OPENAI_VOICE, OPENAI_VOICES } from "../../shared/openai-voice";
+import { hasDefaultBotCapabilities } from "../../shared/default-bot-capabilities";
 import { useEffect, useRef, useState } from "react";
 import { Check, Loader2, Volume2 } from "lucide-react";
 
@@ -585,6 +586,7 @@ export function VoiceSettings({
         </div>
         <Switch
           checked={bot.voiceNotes !== false}
+          disabled={hasDefaultBotCapabilities(bot)}
           aria-label={t("voice.notes")}
           onClick={() => onPatch({ voiceNotes: bot.voiceNotes === false })}
         />

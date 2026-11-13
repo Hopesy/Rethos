@@ -5,6 +5,10 @@ import { EFFORT_LEVELS, MAUS_COLOR_NAMES } from "../shared/wire.ts";
 import { isModelVariant } from "./contracts.ts";
 import { normalizeCronSchedule } from "../shared/routine-schedule.ts";
 import { parseToolScope, type ToolScope } from "../shared/tool-scope.ts";
+import { parseConnectorTools } from "./connector-tools.ts";
+import { normalizeConnectorScopes } from "../shared/connector-scopes.ts";
+import { normalizePhoneApps } from "../shared/phone-apps.ts";
+import type { BotCapabilities } from "../shared/bot-capabilities.ts";
 
 const strings = (max: number, length: number) => z.array(z.string().max(length)).max(max);
 const clock = z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/);
@@ -39,6 +43,18 @@ export const botDefaultsProfileSchema = profilePatchSchema.extend({
   peers: strings(1000, 100).nullable().optional(),
   composio: z.boolean().optional(),
   browser: z.boolean().optional(),
+  memoryEnabled: z.boolean().optional(),
+  memoryUpkeep: z.boolean().optional(),
+  xResearch: z.boolean().optional(),
+  connectorTools: z.custom<NonNullable<BotCapabilities["connectorTools"]>>(value => value !== undefined && parseConnectorTools(value).ok, "Invalid connected-app tools")
+    .transform(value => {
+      const parsed = parseConnectorTools(value);
+      return Object.fromEntries(Object.entries(parsed.ok ? parsed.grants : value).map(([slug, grant]) => [slug, { tools: grant.tools }]));
+    }).nullable().optional(),
+  connectorScopes: z.custom<NonNullable<BotCapabilities["connectorScopes"]>>(value => normalizeConnectorScopes(value) !== null, "Invalid connected-app scopes")
+    .transform(value => ({ apps: normalizeConnectorScopes(value)!.apps })).nullable().optional(),
+  phoneApps: z.custom<NonNullable<BotCapabilities["phoneApps"]>>(value => normalizePhoneApps(value) !== null, "Invalid phone apps")
+    .transform(value => normalizePhoneApps(value)!).nullable().optional(),
   browserProfile: z.string().max(100).nullable().optional(),
   mcpServers: strings(100, 100).nullable().optional(),
   toolScope: z.custom<ToolScope>((value) => value !== undefined && parseToolScope(value).ok, "Invalid tool selection")

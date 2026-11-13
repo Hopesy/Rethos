@@ -5,6 +5,7 @@ import type { LocaleKey } from "@/locales";
 import { nextPhoneApps, phoneAppRows, phoneNames, usePhones } from "@/lib/phones";
 import type { Bot } from "@/state/store";
 import type { BotPatch } from "./useBotSettingsDerived";
+import { hasDefaultBotCapabilities } from "../../../shared/default-bot-capabilities";
 
 export function PhoneAppsCard({ bot, patch }: { bot: Bot; patch: (patch: BotPatch) => void }) {
   const { phones } = usePhones();
@@ -23,7 +24,7 @@ export function PhoneAppsCard({ bot, patch }: { bot: Bot; patch: (patch: BotPatc
           <span className="min-w-0 text-[13px] text-ink">{label}{!onPhone && <span className="ml-2 text-[11px] text-ink-secondary">{t("botAccess.phone.notOnPhone")}</span>}</span>
           <div className="flex shrink-0 gap-0.5 rounded-md bg-card p-0.5" role="group" aria-label={label}>
             {([[null, t("botAccess.scopes.off")], ["read", t("botAccess.scopes.read")], ["write", t("botAccess.scopes.readWrite")]] as const).map(([value, text]) =>
-              <button key={text} type="button" disabled={!onPhone} aria-pressed={grant === value} onClick={() => patch({ phoneApps: nextPhoneApps(bot, cap, value) })}
+              <button key={text} type="button" disabled={hasDefaultBotCapabilities(bot) || !onPhone} aria-pressed={grant === value} onClick={() => patch({ phoneApps: nextPhoneApps(bot, cap, value) })}
                 className={cn("rounded px-2 py-0.5 text-[12px] font-medium", grant === value ? "bg-raised text-ink" : "text-ink-secondary hover:text-ink")}>{text}</button>)}
           </div>
         </div>;

@@ -40,6 +40,7 @@ import { parseConnectorTools } from "./connector-tools.ts";
 import { sameModelSelection } from "../shared/thread-model.ts";
 import { initialGreetingMessage } from "./initial-greeting.ts"; import { createDefaultBot, defaultBotRefusal, type DefaultBotIntro } from "./default-bot.ts";
 import { defaultBotCapabilityPatch } from "../shared/default-bot-capabilities.ts";
+import { botCapabilities, type BotCapabilities } from "../shared/bot-capabilities.ts";
 import { appsFromCreator } from "./inherited-apps.ts";
 import { ThreadCache, type ThreadState } from "./thread-cache.ts";
 export type {
@@ -1311,7 +1312,7 @@ export class Store {
         BotRecord,
         "name" | "title" | "description" | "soul" | "color" | "mascotExpression" | "mascotBody" | "mascotFaceColor" | "modelSelection" | "section" | "cwd" | "visibility" | "toolScope" | "createdBy" | "reportsTo"
       >
-    > = {},
+    > & BotCapabilities = {},
     opts: {
       seedMessages?: boolean; id?: string; threadId?: string;
     } = {},
@@ -1335,7 +1336,7 @@ export class Store {
       ...(profile.mascotBody ? { mascotBody: profile.mascotBody } : {}),
       // Restricted from its first frame: no one else is ever told it exists.
       ...(profile.visibility && profile.visibility !== "everyone" ? { visibility: structuredClone(profile.visibility) } : {}),
-      ...(toolScope.scope ? { toolScope: toolScope.scope } : {}),
+      ...botCapabilities({ ...profile, toolScope: toolScope.scope }),
       unread: false,
       modelSelection: this.newBotSelection(profile.modelSelection),
       resumeCursors: {},

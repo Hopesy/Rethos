@@ -1,17 +1,18 @@
 // A copy's restrictions go in the request that creates it: a later patch that failed would leave it unrestricted.
 import { helperModelAllowed } from "../../shared/wire";
 import type { Bot } from "@/state/store";
+import { botCapabilities, type BotCapabilities } from "../../shared/bot-capabilities";
 
-export type RestrictedSource = Pick<Bot, "visibility" | "toolScope" | "helperModel">;
+export type RestrictedSource = Pick<Bot, "visibility" | "helperModel" | keyof BotCapabilities>;
 
 export interface RestrictedCopyRequest {
   visibility?: Bot["visibility"];
-  settings?: { toolScope?: Bot["toolScope"]; helperModel?: false };
+  settings?: BotCapabilities & { helperModel?: false };
 }
 
 export function restrictedCopyRequest(source: RestrictedSource): RestrictedCopyRequest {
   const settings: NonNullable<RestrictedCopyRequest["settings"]> = {
-    ...(Object.hasOwn(source, "toolScope") ? { toolScope: source.toolScope } : {}),
+    ...botCapabilities(source),
     ...(helperModelAllowed(source) ? {} : { helperModel: false as const }),
   };
   return {

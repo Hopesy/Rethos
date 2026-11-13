@@ -1,6 +1,7 @@
 import type { WireBot } from "./wire";
 import type { RoutineInput } from "./routines";
 import type { ToolScope } from "./tool-scope";
+import type { BotCapabilities } from "./bot-capabilities";
 
 /** Data shared by the default template and an individual creation draft. */
 export type BotDefaultsProfile = Partial<Pick<WireBot,
@@ -8,7 +9,10 @@ export type BotDefaultsProfile = Partial<Pick<WireBot,
   "mascotBody" | "mascotFaceColor" | "color" | "voice" | "speakReplies" | "section" | "modelSelection" |
   "cloudBackend" | "autoStartVps" | "approvalMode" | "alwaysAllow" | "chiefOfStaff" |
   "managedSections" | "approvePeerComms" | "composio" | "browser" | "voiceNotes"
->> & {
+>> & Omit<BotCapabilities, "toolScope" | "mcpServers" | "connectorTools" | "connectorScopes" | "phoneApps"> & {
+  connectorTools?: BotCapabilities["connectorTools"] | null;
+  connectorScopes?: BotCapabilities["connectorScopes"] | null;
+  phoneApps?: BotCapabilities["phoneApps"] | null;
   mascotExpression?: string | null;
   computer?: WireBot["computer"] | null;
   cwd?: string | null;

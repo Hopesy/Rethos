@@ -1,4 +1,5 @@
 import type { WireBot } from "../../shared/wire.ts";
+import { botCapabilities } from "../../shared/bot-capabilities.ts";
 import type { BotLimit } from "../host/starter-bot-limit.ts";
 import { freshLook } from "../bot-look.ts";
 import { validateBotCwd } from "../bot-cwd.ts";
@@ -195,7 +196,8 @@ export function createBotCreateRoutes(deps: BotCreateRouteDeps): RouteHandler {
       // A bot moved in from another computer keeps its own look; a new one named no look starts in a fresh one.
       const look = kept.id || settings.color || settings.mascotBody ? undefined : freshLook(store.bots);
       const bot = store.createBot({ ...profile.patch, soul: settings.soul, section, modelSelection: selection,
-        toolScope: settings.toolScope ?? undefined, color: settings.color ?? look?.color, mascotBody: settings.mascotBody ?? look?.mascotBody,
+        ...botCapabilities({ ...settings, toolScope: settings.toolScope ?? undefined, mcpServers: settings.mcpServers ?? undefined }),
+        color: settings.color ?? look?.color, mascotBody: settings.mascotBody ?? look?.mascotBody,
         ...(deps.team && creator ? { createdBy: creator } : {}), ...(reportsTo ? { reportsTo } : {}),
         ...(created?.ok ? { visibility: created.visibility } : {}) }, kept.id ? { ...kept, seedMessages: false } : {});
       const createdRoutines: Array<{ id: string; enabled: boolean }> = [];
@@ -208,6 +210,7 @@ export function createBotCreateRoutes(deps: BotCreateRouteDeps): RouteHandler {
           avatarUrl: ordinary.avatarUrl || undefined,
           computer: ordinary.computer ?? undefined, cwd: checkedCwd.cwd ?? undefined,
           peers: ordinary.peers ?? undefined, mcpServers: ordinary.mcpServers ?? undefined,
+          connectorTools: ordinary.connectorTools ?? undefined, connectorScopes: ordinary.connectorScopes ?? undefined, phoneApps: ordinary.phoneApps ?? undefined,
           browserProfile: ordinary.browserProfile || undefined,
           voiceNoteEveryReply: ordinary.voiceNoteEveryReply ?? undefined,
           autoApprove: ordinary.approvalMode === "auto",

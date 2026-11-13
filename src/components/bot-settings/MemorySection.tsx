@@ -6,7 +6,6 @@ import {
   MEMORY_INDEX,
   capacityStatus,
   deleteMemoryDoc,
-  fetchMemoryDoc,
   fetchMemoryJournal,
   fetchMemoryOverview,
   formatBytes,
@@ -15,7 +14,6 @@ import {
   fileLabel,
   openMemoryLocation,
   revertMemoryChange,
-  saveMemoryDoc,
   fetchUpkeepStatus,
   tidyMemoryNow,
   tidySummary,
@@ -37,25 +35,12 @@ import { api, ApiError, useStore, type Bot, type ConfigStatus } from "@/state/st
 import { Switch } from "../SettingsPrimitives";
 import { SettingsHelp } from "../SettingsHelp";
 import { MemoryEnabledControl } from "./MemoryEnabledControl";
+import { useMemoryEditor } from "./use-memory-editor";
 import { useDesktopCapabilities } from "../DesktopCapabilities";
 import { inputCls } from "./field";
 
 const buttonCls = "rounded-lg bg-control px-3 py-1.5 text-[13px] text-ink hover:bg-raised-hover disabled:opacity-50";
 const quietButtonCls = "rounded-md px-2 py-1 text-[13px] text-ink-secondary hover:bg-control hover:text-ink disabled:opacity-50";
-
-interface Editing {
-  path: string;
-  text: string;
-  hash: string;
-  dirty: boolean;
-  readOnly: boolean;
-}
-
-interface Conflict {
-  path: string;
-  current: string;
-  currentHash: string;
-}
 
 const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -109,14 +94,17 @@ export function MemorySection({ bot, active = true, onToggle }: { bot: Bot; acti
   const { capabilities } = useDesktopCapabilities();
   const [overview, setOverview] = useState<MemoryOverview | null>(null);
   const [journal, setJournal] = useState<MemoryJournalRow[] | null>(null);
-  const [editing, setEditing] = useState<Editing | null>(null);
-  const [conflict, setConflict] = useState<Conflict | null>(null);
-  const [savedDraft, setSavedDraft] = useState<string | null>(null);
+  const { editor, state: draftState } = useMemoryEditor(bot.id);
+  const file = draftState.files[draftState.path];
+  const editing = file ? { path: file.doc.path, text: file.text, hash: file.doc.hash, dirty: file.text !== file.doc.text, readOnly: file.doc.path.startsWith("memory/log/") } : null;
+  const conflict = file?.conflict;
+  const savedDraft = file?.savedDraft ?? null;
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const saving = file?.saving ?? false;
   const [reverting, setReverting] = useState<string | null>(null);
-  const [newTopic, setNewTopic] = useState("");
+  const newTopic = draftState.newTopic;
+  const setNewTopic = editor.setNewTopic;
   const [upkeep, setUpkeep] = useState<UpkeepStatus | null>(null);
   const [tidying, setTidying] = useState(false);
   const [lendingReview, setLendingReview] = useState<LendingReview | null>(null);
@@ -138,8 +126,7 @@ export function MemorySection({ bot, active = true, onToggle }: { bot: Bot; acti
     setJournal(nextJournal);
     setUpkeep(nextUpkeep);
     if (openPath) {
-      const doc = await fetchMemoryDoc(bot.id, openPath);
-      setEditing({ path: doc.path, text: doc.text, hash: doc.hash, dirty: false, readOnly: openPath.startsWith("memory/log/") });
+      await editor.read(openPath);
     }
   };
 
@@ -148,7 +135,7 @@ export function MemorySection({ bot, active = true, onToggle }: { bot: Bot; acti
     let cancelled = false;
     setError(null);
     const keepDraft = editing?.dirty === true;
-    refresh(keepDraft ? undefined : (editing?.path ?? MEMORY_INDEX)).catch((e: unknown) => {
+    refresh(keepDraft ? undefined : draftState.path).catch((e: unknown) => {
       if (!cancelled) setError(errorText(e));
     });
     return () => {
@@ -158,10 +145,8 @@ export function MemorySection({ bot, active = true, onToggle }: { bot: Bot; acti
 
   const open = async (path: string) => {
     setError(null);
-    setConflict(null);
     try {
-      const doc = await fetchMemoryDoc(bot.id, path);
-      setEditing({ path: doc.path, text: doc.text, hash: doc.hash, dirty: false, readOnly: path.startsWith("memory/log/") });
+      await editor.open(path);
     } catch (e) {
       setError(errorText(e));
     }
@@ -169,31 +154,20 @@ export function MemorySection({ bot, active = true, onToggle }: { bot: Bot; acti
 
   const save = async (expectedHash: string | undefined) => {
     if (!editing) return;
-    setSaving(true);
     setError(null);
     try {
-      const result = await saveMemoryDoc(bot.id, editing.path, editing.text, expectedHash);
-      if (!result.ok) {
-        setConflict({ path: editing.path, current: result.current, currentHash: result.currentHash });
-        return;
-      }
-      setConflict(null);
-      setSavedDraft(null);
-      setEditing({ ...editing, text: result.doc.text, hash: result.doc.hash, dirty: false });
+      const result = await editor.save(editing.path, expectedHash);
+      if (!result?.ok) return;
       setOverview(result.overview);
       setJournal(await fetchMemoryJournal(bot.id));
     } catch (e) {
       setError(errorText(e));
-    } finally {
-      setSaving(false);
     }
   };
 
   const reloadFromConflict = () => {
     if (!conflict || !editing) return;
-    setSavedDraft(editing.text);
-    setEditing({ ...editing, text: conflict.current, hash: conflict.currentHash, dirty: false });
-    setConflict(null);
+    editor.reloadConflict(editing.path);
   };
 
   const remove = async (file: MemoryFileInfo) => {
@@ -203,7 +177,7 @@ export function MemorySection({ bot, active = true, onToggle }: { bot: Bot; acti
       const { overview: next } = await deleteMemoryDoc(bot.id, file.path);
       setOverview(next);
       setJournal(await fetchMemoryJournal(bot.id));
-      if (editing?.path === file.path) setEditing(null);
+      editor.remove(file.path);
     } catch (e) {
       setError(errorText(e));
     }
@@ -216,8 +190,10 @@ export function MemorySection({ bot, active = true, onToggle }: { bot: Bot; acti
       return;
     }
     setNewTopic("");
-    await open(`memory/${name}`);
-    setEditing((current) => (current ? { ...current, dirty: true, text: current.text || topicTemplate(name) } : current));
+    const path = `memory/${name}`;
+    await open(path);
+    const current = editor.getSnapshot().files[path];
+    if (current) editor.edit(path, current.text || topicTemplate(name));
   };
 
   const revert = async (row: MemoryJournalRow) => {
@@ -228,7 +204,7 @@ export function MemorySection({ bot, active = true, onToggle }: { bot: Bot; acti
       setOverview(result.overview);
       setJournal(await fetchMemoryJournal(bot.id));
       if (editing?.path === row.path && !editing.dirty) {
-        setEditing({ ...editing, text: result.text, hash: result.hash });
+        await editor.read(editing.path);
       }
       setNotice(t("memory.restored", { path: row.path }));
     } catch (e) {
@@ -377,7 +353,7 @@ export function MemorySection({ bot, active = true, onToggle }: { bot: Bot; acti
                 : t("memory.notePlaceholder")
             }
             aria-label={editing.path === MEMORY_INDEX ? t("memory.botMemory") : t("memory.fileLabel", { path: editing.path })}
-            onChange={(e) => setEditing({ ...editing, text: e.target.value, dirty: true })}
+            onChange={(e) => editor.edit(editing.path, e.target.value)}
           />
           {editing.readOnly ? (
             <p className="mt-2 text-[12px] text-ink-secondary">{t("memory.logsReadOnly")}</p>
@@ -387,7 +363,7 @@ export function MemorySection({ bot, active = true, onToggle }: { bot: Bot; acti
                 {saving ? t("memory.saving") : t("memory.save")}
               </button>
               {editing.dirty && (
-                <button type="button" className={quietButtonCls} disabled={saving} onClick={() => void open(editing.path)}>
+                <button type="button" className={quietButtonCls} disabled={saving} onClick={() => void editor.discard(editing.path).catch(e => setError(errorText(e)))}>
                   {t("memory.discard")}
                 </button>
               )}
@@ -399,7 +375,7 @@ export function MemorySection({ bot, active = true, onToggle }: { bot: Bot; acti
               <pre className="max-h-[160px] overflow-auto whitespace-pre-wrap rounded-lg border border-hairline/40 bg-inset p-3 font-mono text-[12px] leading-relaxed text-ink">
                 {savedDraft}
               </pre>
-              <button type="button" className={cn(quietButtonCls, "mt-1")} onClick={() => setSavedDraft(null)}>
+              <button type="button" className={cn(quietButtonCls, "mt-1")} onClick={() => editor.dismissSavedDraft(editing.path)}>
                 {t("memory.dismissDraft")}
               </button>
             </div>
@@ -458,7 +434,7 @@ export function MemorySection({ bot, active = true, onToggle }: { bot: Bot; acti
       </div>
 
       {notice && <div className="text-[13px] text-ink-secondary">{notice}</div>}
-      {error && <div className="text-[13px] text-danger">{error}</div>}
+      {(error || file?.error) && <div role="alert" className="text-[13px] text-danger">{error || file?.error}</div>}
     </div>
   );
 }
