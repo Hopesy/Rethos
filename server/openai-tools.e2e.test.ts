@@ -125,13 +125,10 @@ it.each(["openaiCompat", "groq", "meta"] as const)("%s runs structured MCP calls
     await api("POST", `/api/instances/${instanceId}/refresh-models`, {});
     const mcpScript = join(fixture.info.dataDir, "fixture-mcp.mjs");
     writeFileSync(mcpScript, MCP_FIXTURE);
-    // A server is started once to check it starts for the bots that use it; the starter bot uses none of these.
-    for (const starter of (await api("GET", "/api/bots")).bots) await api("PATCH", `/api/bots/${starter.id}`, { mcpServers: [] });
     for (const mode of ["allow", "deny", "cancel", "text", "ordinary", "selected", "scope-empty", ...(instanceId === "openaiCompat" ? ["announced"] : []), "tools-off"]) {
       scenario = mode;
       const artifact = join(fixture.info.dataDir, `${mode}-artifact.txt`);
       const startupMarker = join(fixture.info.dataDir, `${mode}-mcp-started.txt`);
-      await api("POST", "/api/mcp/servers", { name: mode, command: process.execPath, args: [mcpScript], env: { FIXTURE_ARTIFACT: artifact, FIXTURE_STARTED: startupMarker }, enabled: true });
       if (mode === "tools-off") {
         await api("PATCH", `/api/instances/${instanceId}`, { tools: "false" }, 400);
         await api("PATCH", "/api/instances/claude", { tools: false }, 400);
@@ -139,7 +136,6 @@ it.each(["openaiCompat", "groq", "meta"] as const)("%s runs structured MCP calls
         const instance = changed.instances.find((item: any) => item.instanceId === instanceId);
         expect(instance.capabilities).toMatchObject({ agentsMcp: false, composioMcp: false });
       }
-      await api("PATCH", `/api/mcp/servers/${mode}`, { enabled: true });
       const { bot } = await control(["new-bot", "--name", `API tool ${mode}`]);
       await control(["set-model", "--bot", bot.id, "--instance", instanceId, "--model", "fixture-model"]);
       // On Ask, so each structured call stops on the harness's own card.
@@ -147,6 +143,9 @@ it.each(["openaiCompat", "groq", "meta"] as const)("%s runs structured MCP calls
       if (mode === "selected" || mode === "scope-empty") {
         await api("PATCH", `/api/bots/${bot.id}`, { toolScope: { allow: mode === "selected" ? [`mcp:${mode}:write_file`] : [] } });
       }
+      const mcpServer = { command: process.execPath, args: [mcpScript], env: { FIXTURE_ARTIFACT: artifact, FIXTURE_STARTED: startupMarker } };
+      await api("POST", "/api/mcp/servers", { name: mode, ...mcpServer });
+      await api("PUT", `/api/mcp/servers/${mode}`, { ...mcpServer, bot: bot.id, enabled: true });
       const memoryDirectory = join(fixture.info.dataDir, "workspaces", bot.id);
       mkdirSync(memoryDirectory, { recursive: true });
       writeFileSync(join(memoryDirectory, "MEMORY.md"), "# Memory\n- Fixture prefers concise replies.\n");

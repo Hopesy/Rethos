@@ -15,8 +15,9 @@ pnpm exec vitest run server/openai-tools.e2e.test.ts
 `launchVerificationServer`, then uses `runControlOmb` with the launcher's exact
 URL for `new-bot`, `set-model`, `send`, `wait`, `messages`, and `interrupt`.
 Configuration and approval go through the fixture's existing HTTP routes;
-approval uses `/api/bots/ID/respond`. The fixture explicitly enables each MCP
-server after adding it, following the normal disabled-on-create behavior.
+approval uses `/api/bots/ID/respond`. Each MCP server is assigned to its scenario's
+bot before being enabled, following the normal disabled-on-create behavior.
+The default main bot retains its full capabilities throughout the fixture.
 The control CLI does not provide an
 approval verb.
 
