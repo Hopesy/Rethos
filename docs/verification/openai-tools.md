@@ -72,6 +72,9 @@ steps so far already ran, so ask only for what's left (retrying the whole task
 would repeat them). A batch that would pass 10,000 runs none of its calls, and
 the handoff counts only admitted calls. There is no per-bot or per-thread
 setting for either number.
+The stdio MCP frame-count guard applies per request, so completed calls do
+not exhaust later calls' response budget; a single request's flood still closes
+the transport.
 
 A turn whose MCP servers offer more than the 128 tools a request may carry
 lists whole servers in turn order and reaches the rest through the

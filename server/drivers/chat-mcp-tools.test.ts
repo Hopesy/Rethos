@@ -311,6 +311,20 @@ describe("Chat MCP session", () => {
     expect(alive(f.read().pid)).toBe(false);
   });
 
+  it("keeps response frame budgets per request while stopping a single-request flood", async () => {
+    const f = fixture(`if (message.method === "tools/call") {
+      const flood = message.params.arguments.value === "flood";
+      process.stdout.write("\\n".repeat(flood ? 10001 : 6000));
+      if (flood) continue;
+    }`);
+    const session = await f.mount();
+    for (const value of ["first", "second"]) {
+      await expect(session.execute("audit_write", { value }, f.controller.signal)).resolves.toEqual({ ok: true, text: `recorded:${value}` });
+    }
+    await expect(session.execute("audit_write", { value: "flood" }, f.controller.signal)).rejects.toThrow("response frame count limit");
+    expect(alive(f.read().pid)).toBe(false);
+  });
+
   it("rejects untrusted transport error text without leaking it", async () => {
     const f = fixture(`if (message.method === "tools/call") { send({jsonrpc:"2.0",id:message.id,error:{code:-1,message:"secret-fixture-key"}}); continue; }`);
     const session = await f.mount();

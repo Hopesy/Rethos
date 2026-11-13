@@ -13,6 +13,7 @@ import { mentionedBots, normalizeGroupDefaultResponder, roomResponders } from ".
 import { removeTempDir, waitForExit } from "./testing/cleanup.ts";
 import { readHandoffs } from "./testing/handoff-rows.ts";
 import { workerPort } from "./testing/worker-port.ts";
+import { CHAT_TURN_LIMITS, turnBudgetStopMessage } from "./chat-turn-limits.ts";
 
 const SERVER_DIR = dirname(fileURLToPath(import.meta.url));
 const FAKE_CLI = join(SERVER_DIR, "testing", "fake-acp-cli.ts");
@@ -217,6 +218,7 @@ describe("routine comms e2e on the job runtime (fake ACP fleet)", () => {
     mkdirSync(antigravityProfile, { recursive: true });
     writeFileSync(join(antigravityProfile, "acp_token.json"), "{}\n");
     compat = createServer(async (req, res) => {
+      res.setHeader("connection", "close");
       for await (const _ of req) {}
       if (req.url?.endsWith("/models")) {
         res.setHeader("content-type", "application/json");
@@ -1040,14 +1042,14 @@ describe("routine comms e2e on the job runtime (fake ACP fleet)", () => {
           failed = askerBot.messages.find((m: any) => m.kind === "activity" && m.tool?.ok === false && m.from?.botId === helper.id);
           return Boolean(failed) && lastText(askerBot.messages)?.text === WOKE_WITH_FAILURE && !askerBot.busy;
         }, 90_000, "the stall never reached the delegator");
-        expect(failed.tool.name).toMatch(/^CapHelper — failed: Stopped after 64 steps without a final answer\./);
+        expect(failed.tool.name).toContain(`CapHelper — failed: ${turnBudgetStopMessage(`${CHAT_TURN_LIMITS.steps} steps`)}`);
         expect(failed.tool.name).not.toContain("\n");
         const tasks = (await bot(helper.id)).tasks;
         expect(tasks.map((task: any) => task.title).filter((title: string) => title?.startsWith("Continue:"))).toEqual([]);
         const handed = assignments(helper.id, asker.id);
         expect(handed).toHaveLength(1);
         expect(handed[0]).toMatchObject({ status: "failed", outcome: "stalled", executions: 2 });
-        expect(handed[0]!.outcomeDetail).toMatch(/^Stopped after 2 continuations without progress: Stopped after 64 steps/);
+        expect(handed[0]!.outcomeDetail).toContain(`Stopped after 2 continuations without progress: ${turnBudgetStopMessage(`${CHAT_TURN_LIMITS.steps} steps`)}`);
       } finally {
         compatAnswer = "hang";
       }

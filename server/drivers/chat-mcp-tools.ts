@@ -75,7 +75,7 @@ const DIRECTORY_TOOL_COUNT = 3;
 const MAX_PAGES = 100;
 const SCHEMA_BYTES = 64 * 1024;
 const CATALOG_BYTES = 1024 * 1024;
-const MAX_FRAMES = 10_000;
+const MAX_REQUEST_FRAMES = 10_000;
 
 function object(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -95,7 +95,7 @@ export class ChatMcpClient {
   private child: ReturnType<typeof spawnCli>;
   private buffer = "";
   private nextId = 1;
-  private frames = 0;
+  private framesSinceRequest = 0;
   private closed = false;
   private closing?: Promise<void>;
   private pending = new Map<number, { resolve(value: unknown): void; reject(error: Error): void }>();
@@ -162,7 +162,7 @@ export class ChatMcpClient {
     while ((newline = this.buffer.indexOf("\n")) !== -1) {
       const line = this.buffer.slice(0, newline);
       this.buffer = this.buffer.slice(newline + 1);
-      if (++this.frames > MAX_FRAMES) return this.fail(new Error("MCP session exceeded the response frame count limit"));
+      if (++this.framesSinceRequest > MAX_REQUEST_FRAMES) return this.fail(new Error("MCP session exceeded the response frame count limit"));
       if (Buffer.byteLength(line) > this.frameBytes) return this.fail(new Error("MCP response exceeds the frame limit"));
       if (!line.trim()) continue;
       let message: unknown;
@@ -190,6 +190,7 @@ export class ChatMcpClient {
   async call(method: string, params: unknown, signal: AbortSignal, timeout: number, keepOnRefusal = false): Promise<unknown> {
     if (signal.aborted) { await this.close(); throw aborted(); }
     if (this.closed) throw new Error("MCP session closed");
+    this.framesSinceRequest = 0;
     const id = this.nextId++;
     try {
       return await new Promise((resolve, reject) => {
