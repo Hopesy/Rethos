@@ -1,5 +1,7 @@
 export async function openStartPlace({ places, profiles, server, show, log = () => {} }) {
-  const last = places.remembered();
+  let last;
+  try { last = places.remembered(); }
+  catch (error) { if (error?.code !== "ENOENT") log(`start: saved workspace could not be read (${error?.message ?? error})`); }
   if (last?.profile && profiles && await profiles.open(last.profile) === true) return "remembered";
   if (last?.server && await server(last.server).catch(() => false)) return "remembered";
   if (last) {
