@@ -121,7 +121,7 @@ export function ComputerPanel(props: { bot: Bot; onOpenVmWorkspace?: (botId: str
   return <ManagedComputerPanel {...props} />;
 }
 
-function ManagedComputerPanel({
+export function ManagedComputerPanel({
   bot: profileBot,
   onOpenVmWorkspace,
 }: {

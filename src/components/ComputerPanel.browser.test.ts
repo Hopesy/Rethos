@@ -74,26 +74,6 @@ describe("Computer panel on a narrow screen", () => {
   });
 });
 
-describe("Computer panel Works on", () => {
-  const places = (markup: string) => [...markup.matchAll(/<span>(Auto|Cloud desktop|Private desktop|This computer|Browser|Off)<\/span>/g)].map((match) => match[1]);
-  const computerTab = (config: FeatureFlagConfig & { cloudHome?: boolean }) => {
-    fixture.view.current = "computer";
-    try { return render(config); } finally { fixture.view.current = "browser"; }
-  };
-
-  it("lists this computer and a private desktop on a desktop or self-hosted server", () => {
-    const markup = computerTab({});
-    expect(places(markup)).toEqual(["Auto", "Cloud desktop", "Private desktop", "This computer", "Browser", "Off"]);
-    expect(markup).toContain("Choose where this bot works.</p>");
-  });
-
-  it("lists neither on My Cloud, and says why", () => {
-    const markup = computerTab({ cloudHome: true });
-    expect(places(markup)).toEqual(["Auto", "Cloud desktop", "Browser", "Off"]);
-    expect(markup).toContain("Choose where this bot works. It can also use your computer whenever Rethos is open on it.");
-  });
-});
-
 describe("Computer panel header", () => {
   it("names its icon-only close button", () => {
     expect(render({})).toContain(`aria-label="${t("computer.close")}"`);

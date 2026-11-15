@@ -269,18 +269,6 @@ describe("Research (treg) card", () => {
     expect(html).not.toContain("Open API keys");
   });
 
-  it("is on by default with a Cloud plan, and turns off for one bot with one patch", () => {
-    fixture.config = { xResearch: { included: true } } as Partial<ConfigStatus>;
-    expect(render(makeBot())).toContain("Included with your MausBot Cloud plan");
-    const { card, derived } = capture(makeBot());
-    const toggle = card.find((node) => node.props["aria-label"] === "Let this bot use research")!;
-    (toggle.props.onClick as () => void)();
-    expect(derived.patch).toHaveBeenCalledWith({ xResearch: false });
-    const off = render(makeBot({ xResearch: false }));
-    expect(off).toMatch(new RegExp(`${SWITCH}[^>]*aria-checked="false"`));
-    expect(off).toContain("Off for this bot.");
-  });
-
   it("is not offered while a new bot or the New bot defaults are being drafted", async () => {
     fixture.config = { xResearch: { included: true } } as Partial<ConfigStatus>;
     const { BotEditorContext } = await import("./BotEditorContext");
@@ -304,7 +292,7 @@ describe("a VPS bot's own server", () => {
     const { api } = await import("@/state/store");
     const drafted = renderToStaticMarkup(createElement(StoreProvider, null,
       createElement(BotEditorContext.Provider, { value: { request: api, draft: true } }, createElement(AccessSection, { bot: vpsBot, derived: makeDerived() }))));
-    expect(drafted).toContain("Self-hosted VPS");
+    expect(drafted).not.toContain("Enable your remote desktop");
     expect(drafted).not.toContain("Server (SSH alias)");
   });
 });

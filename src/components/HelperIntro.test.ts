@@ -218,7 +218,7 @@ describe("in the chat (Simple mode)", () => {
   it("opens the app's own flow for each chip", () => {
     expect(chipAction("apps")).toEqual({ type: "togglePlugins", open: true, surface: "apps" });
     expect(chipAction("phone")).toMatchObject({ type: "toggleAppSettings", section: "companion", phonePairing: true });
-    expect(chipAction("cloud")).toEqual({ type: "openCloudAdd", source: "app_onboarding" });
+    expect(chipAction("cloud")).toEqual({ type: "toggleAppSettings", open: true, section: "desktopWorkspaces" });
   });
 
   it("says nothing while the Chief step still introduces Rethos", async () => {
@@ -307,6 +307,6 @@ describe("in Advanced mode", () => {
     expect(setupAction("bots")).toEqual({ type: "newBot" });
     expect(setupAction("apps")).toEqual({ type: "togglePlugins", open: true, surface: "apps" });
     expect(setupAction("phone")).toMatchObject({ type: "toggleAppSettings", section: "companion", phonePairing: true });
-    expect(setupAction("cloud")).toEqual({ type: "openCloudAdd", source: "app_onboarding" });
+    expect(setupAction("cloud")).toEqual({ type: "toggleAppSettings", open: true, section: "desktopWorkspaces" });
   });
 });

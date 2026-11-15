@@ -9960,7 +9960,7 @@
   "computer.remote.title": "Your remote desktop",
   "computer.remote.help": "Use a desktop on your own VPS through SSH. Computers behind a private network can connect outward through the Rethos connector and appear under Connected computers. A private desktop is an isolated VM or container.",
   "computer.remote.enable": "Enable self-hosted remote desktop",
-  "routines.server.desktopRetired": "The retired desktop service was removed. Review the bot's work location before enabling this routine again.",
+  "routines.server.desktopRetired": "The commercial desktop service was removed. Review the bot's work location before enabling this routine again.",
   "workTarget.conversation": "Conversation work location",
   "workTarget.help": "Choose a computer for this bot or pin one for this conversation. Connected computers use their own folders and the current bot permissions.",
   "workTarget.selected": "Selected: {name}",

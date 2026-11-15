@@ -40,16 +40,17 @@ describe("the known-flaky list", () => {
   });
 
   it("matches a test by its file and its full name, nothing looser", () => {
-    const file = { filepath: join(ROOT, "server", "boat-included.test.ts") };
-    const suite = { name: "waking a sleeping computer", suite: file, filepath: undefined as unknown as string };
+    const entries = [{ file: "server/example.test.ts", test: "retry fixture > recovers after one retry", owner: "fixture", reason: "fixture", since: "2026-11-15" }];
+    const file = { filepath: join(ROOT, "server", "example.test.ts") };
+    const suite = { name: "retry fixture", suite: file, filepath: undefined as unknown as string };
     delete (suite as { filepath?: string }).filepath;
     const task = (name: string, parent: object = suite) => ({ name, file, suite: parent as never });
-    const listed = testIdentity(ROOT, task("forgets a server error once a later resume is accepted"));
-    expect(listed).toEqual({ file: "server/boat-included.test.ts", test: "waking a sleeping computer > forgets a server error once a later resume is accepted" });
-    expect(findRetryEntry(list, listed)?.owner).toBeTruthy();
-    expect(findRetryEntry(list, testIdentity(ROOT, task("reports the last server error, not a bare timeout, when the wait runs out on it")))).toBeUndefined();
+    const listed = testIdentity(ROOT, task("recovers after one retry"));
+    expect(listed).toEqual({ file: "server/example.test.ts", test: "retry fixture > recovers after one retry" });
+    expect(findRetryEntry(entries, listed)?.owner).toBeTruthy();
+    expect(findRetryEntry(entries, testIdentity(ROOT, task("unlisted test")))).toBeUndefined();
     // the same title outside its describe block is another test
-    expect(findRetryEntry(list, testIdentity(ROOT, task("forgets a server error once a later resume is accepted", file)))).toBeUndefined();
+    expect(findRetryEntry(entries, testIdentity(ROOT, task("recovers after one retry", file)))).toBeUndefined();
   });
 });
 

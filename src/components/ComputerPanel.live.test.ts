@@ -36,7 +36,7 @@ vi.mock("@/state/store", async (importOriginal) => ({
       return { png: "POLLED", format: "png" };
     }
     if (path.startsWith("/api/bots/bot/computer/control")) return { held: false, helpReason: null };
-    if (path.startsWith("/api/bots/bot/computer?")) return { configured: true, box: { state: "ready" } };
+    if (path.startsWith("/api/bots/bot/computer?")) return { configured: true, ready: true, managed: true, imageMatches: true, container: "running" };
     return {};
   },
 }));
@@ -47,7 +47,7 @@ const { publishLiveFrame } = await import("@/lib/live-events");
 
 const bot = {
   id: "bot", threadId: "thread", name: "Fixture", title: "", description: "", color: "green",
-  notifications: true, unread: false, busy: true, computer: "cloud", messages: [],
+  notifications: true, unread: false, busy: true, computer: "cloud", cloudBackend: "vps", messages: [],
   modelSelection: { instanceId: "claude", model: "m" },
   tasks: [{ threadId: "thread", title: "Thread", createdAt: 1, approvalMode: "ask" }],
 } as unknown as Bot;
@@ -82,7 +82,7 @@ beforeAll(async () => {
     bots: [bot],
     selectedId: bot.id,
     instances: [engine],
-    config: { box: { configured: true } } as AppState["config"],
+    config: { vps: { configured: true, sshAlias: "fixture" } } as AppState["config"],
   };
   value = { state, dispatch: vi.fn(), flushBotPatches: async () => null, refreshInstances: async () => {}, refreshModels: async () => {} };
   const container = document.createElement("div");

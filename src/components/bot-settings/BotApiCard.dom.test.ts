@@ -51,35 +51,6 @@ beforeEach(() => {
 afterEach(() => { flushSync(() => root.unmount()); host.remove(); });
 
 describe("the Bot API card", () => {
-  it("on Starter is one line and the usual Upgrade: no switch, no key, no command, and nothing asked of the server", async () => {
-    fixture.starter = true;
-    Object.assign(fixture.view!, { enabled: true });
-    await mount({ webhooksLink: true });
-    expect(find("bot-api-starter")!.textContent).toBe("Bot API comes with a higher plan.");
-    for (const gone of ["bot-api-switch", "bot-api-curl", "bot-api-copy", "bot-api-new-key", "bot-api-key-note", "bot-api-webhooks"]) expect(find(gone), gone).toBeNull();
-    expect(fixture.read).toEqual([]);
-    await click("bot-api-upgrade");
-    expect(fixture.upgrades).toBe(1);
-  });
-
-  it("on Starter with no way to change the plan from this page, shows the line alone", async () => {
-    fixture.starter = true;
-    fixture.bridge = false;
-    await mount();
-    expect(find("bot-api-starter")).not.toBeNull();
-    expect(find("bot-api-upgrade")).toBeNull();
-  });
-
-  it("comes back as soon as the plan is no longer Starter, and says a key is like a password", async () => {
-    fixture.starter = true;
-    Object.assign(fixture.view!, { enabled: true });
-    await mount();
-    expect(find("bot-api-switch")).toBeNull();
-    fixture.starter = false;
-    await mount({ className: "x" });
-    expect(find("bot-api-switch")).not.toBeNull();
-    expect(find("bot-api-password")!.textContent).toBe("A key is like a password: whoever holds it can read what this bot can read.");
-  });
 
   it("says in one plain line when this bot's AI can't take calls", async () => {
     await mount();

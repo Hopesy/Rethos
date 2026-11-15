@@ -116,15 +116,16 @@ test("main's places: My Cloud only while the person keeps this computer's bots h
   });
   try {
     await main.refresh({ force: true });
-    assert.deepEqual(await handlers.get("two-places:state")({}), { suggest: { key: "cloud:https://omb-u-1.fly.dev", name: "My Cloud", kind: "cloud" } });
-    assert.deepEqual([...new Set(asked)].sort(), ["https://garage.example.test", "https://omb-u-1.fly.dev"], "never the team's Cloud or a server others use");
-    await handlers.get("two-places:accept")({}, "cloud:https://omb-u-1.fly.dev");
-    assert.equal(keep.on, false, "the one tap lets this computer's bots move to My Cloud, as anyone's first move");
+    assert.deepEqual(await handlers.get("two-places:state")({}), { suggest: { key: "server:https://garage.example.test", name: "Garage server", kind: "server" } });
+    assert.deepEqual([...new Set(asked)].sort(), ["https://garage.example.test"], "never the team's Cloud or a server others use");
+    await handlers.get("two-places:accept")({}, "server:https://garage.example.test");
+    assert.equal(active, true, "the selected private server starts the move");
+    active = false;
     await main.refresh({ force: true });
     assert.equal(main.state().suggest?.key, "server:https://garage.example.test");
-    journal = { v: 1, phase: "copy", cloud: { origin: "https://omb-u-1.fly.dev", account: "acct" } };
+    active = true;
     assert.deepEqual(main.state(), { suggest: null }, "nothing while a move is under way");
-    journal = null;
+    active = false;
     offered = new Set();
     assert.deepEqual(main.state(), { suggest: null }, "a server that stopped saying it is theirs alone is never suggested");
   } finally { main.close(); }

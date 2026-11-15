@@ -280,12 +280,4 @@ describe("taking control of other computers", () => {
     await press("Hand control back");
     expect(fixture.beacons.some((beacon) => beacon.url.startsWith("/api/bots/scout/computer/viewer-close"))).toBe(true);
   });
-
-  it("a cloud computer's provider-hosted desktop still opens in the app's own viewer window", async () => {
-    await open(makeBot({ computer: "cloud" }));
-    await press("Take control");
-    expect(liveDesktop()).toBeNull();
-    expect(fixture.posts).toContain("/api/bots/scout/computer/join");
-    expect(window.ogb!.desktopViewer!.open).toHaveBeenCalledWith("https://desktop.invalid/scout", "Scout's live desktop", "scout");
-  });
 });

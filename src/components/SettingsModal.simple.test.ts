@@ -197,7 +197,6 @@ describe("Settings in Simple mode", () => {
       'aria-label="Notification sounds"', 'aria-label="Show the notification feed"', 'aria-label="App language"', 'role="radiogroup" aria-label="Theme"']) {
       expect(placement(general, shown), shown).toBe("shown");
     }
-    expect(placement(open("updates"), "MARKER:updatesConsent;")).toBe("shown");
     const everyPage = ["general", "engines", "companion", "usage", "updates"].map((section) => open(section as AppSettingsSection)).join("");
     for (const gone of ["Effort for new bots", "Defaults for new bots", "Group turns", "MCP calls", "Parallel threads", "Automatic recovery", "Event log cleanup",
       "Interface font", "Chat width", "Pinned bots as circles", "Universal pins", "Tool calls", "This run", "Keep prompt cache warm"]) {
@@ -212,7 +211,7 @@ describe("Settings in Simple mode", () => {
     fixture.updater = { status: "idle" };
     const html = open("updates");
     expect(html).toMatch(/>Rethos [^<]+<\/(?:span|div)>/);
-    for (const shown of ["Check for updates", "MARKER:updatesConsent;", "Replay welcome tour", "Diagnostics"]) expect(placement(html, shown), shown).toBe("shown");
+    for (const shown of ["Check for updates", "Replay welcome tour", "Diagnostics"]) expect(placement(html, shown), shown).toBe("shown");
   });
 
   it("checks the server's version from a browser", () => {

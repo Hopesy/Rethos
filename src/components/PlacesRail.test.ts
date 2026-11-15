@@ -454,30 +454,6 @@ it("several accounts: a thin divider between groups, This computer first, and ea
   expect(host.querySelector('[data-rail-place="account:c"]')?.getAttribute("title")).toBe("carol@example.test");
 });
 
-it("a click on another account's place asks main by its id; a refusal shows the plain line, and nothing else moves", async () => {
-  rail = { places: TWO_ACCOUNTS, add: { cloud: true, link: true, address: false } };
-  Object.assign(window, { ogb: { workspaces, cloudAdd, accounts } });
-  workspaces.open.mockResolvedValueOnce({ outcome: "moving" } as never);
-  await mount(createElement(PlacesRail));
-  await click(host.querySelector('[data-rail-place="b1"]'));
-  await act(async () => { await Promise.resolve(); });
-  expect(workspaces.open.mock.calls).toEqual([["b1"]]);
-  expect(host.querySelector("[data-accounts-note]")?.textContent).toContain("moving to the Cloud");
-  expect(host.querySelector("[data-accounts-sign-out]")).toBeNull();
-});
-
-it("a saved account whose sign-in ended: its tile says so, and a click opens the emailed code for that address", async () => {
-  const ended = TWO_ACCOUNTS.map((row) => (row.id === "b1" ? { ...row, signIn: true as const } : row));
-  rail = { places: ended, add: { cloud: true, link: true, address: false } };
-  Object.assign(window, { ogb: { workspaces, cloudAdd, accounts } });
-  workspaces.open.mockResolvedValueOnce({ outcome: "sign-in", email: BOB } as never);
-  await mount(createElement(PlacesRail));
-  expect(host.querySelector('[data-rail-place="b1"]')?.getAttribute("title")).toBe(`My Cloud · ${BOB} · Sign in again`);
-  await click(host.querySelector('[data-rail-place="b1"]'));
-  await act(async () => { await Promise.resolve(); });
-  expect((document.querySelector("#cloud-add-email") as HTMLInputElement | null)?.value).toBe(BOB);
-});
-
 it("keeps account purchasing out of the server connection sheet", async () => {
   rail = { places: TWO_ACCOUNTS, add: { cloud: true, link: true, address: false, account: true } };
   Object.assign(window, { ogb: { workspaces, cloudAdd, accounts } });
