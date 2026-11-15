@@ -2,9 +2,11 @@ import { redactParams, redactSecretsInText } from "../shared/redact.ts";
 import { formatServerText, isReferenceParam, type ServerText, type ServerTextParams } from "../shared/server-text.ts";
 import { CHAT_NOTICE } from "./chat-notices.ts";
 import type { RoutineCheckResult } from "./routines.ts";
+import { RETIRED_DESKTOP_MESSAGE } from "../shared/work-target.ts";
 
 /** The client words each line by key and falls back to this English, which the server keeps storing for older clients. */
 export const ROUTINE_LINE = {
+  "routines.server.desktopRetired": RETIRED_DESKTOP_MESSAGE,
   "routines.server.checksFailed": "The checks could not run; they try again at the next check.",
   "routines.server.nothingNew": "Nothing new since the last check",
   "routines.server.limitWait": "Waiting for the AI's usage limit to reset; this run starts again at {resets}",

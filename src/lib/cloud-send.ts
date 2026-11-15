@@ -1,9 +1,8 @@
 // What either page says about the one-time move to My Cloud (electron/one-home.mjs), and what arrived, in words.
 import type { CloudSendCounts } from "../../electron/cloud-send.mjs";
 import type { OneHomeCounts, OneHomeNotCarried, OneHomeStayed, OneHomeView } from "../../electron/one-home.mjs";
-import type { TeamMoveRefusal, TeamMoveRefusalCode, TeamMoveView } from "../../electron/team-move.mjs";
 import type { LocaleKey } from "@/locales";
-import { activeLocale, t, tFromServer } from "@/lib/i18n";
+import { activeLocale, t } from "@/lib/i18n";
 import { serverErrorText } from "@/lib/server-error";
 
 const counted = (count: number, one: LocaleKey, many: LocaleKey) => t(count === 1 ? one : many, { count });
@@ -12,9 +11,7 @@ export const listOf = (parts: string[]) => new Intl.ListFormat(activeLocale(), {
 
 /** Refusals the preload sends before main is asked: it has no catalog, so they come in English. */
 const BRIDGE_REFUSALS: Readonly<Record<string, LocaleKey>> = {
-  "Turn the switch to keep this computer's bots here.": "cloudAccount.keepHere.unclicked",
   "Choose Try again to move.": "cloudSend.move.unclicked",
-  "Choose Move to move the bot.": "teamMove.unclicked",
 };
 
 /** The words main threw, without Electron's "Error invoking remote method" wrapper; null when there are none. */
@@ -73,43 +70,7 @@ const stayedHere = (items: OneHomeStayed[] | undefined) => (items ?? []).map((it
  * computer's bots on their way home and home because the person keeps them here.
  * `page`: which page shows it; `reason`: why a failing move failed, in main's words, when it said. */
 export function moveLine(move: OneHomeView, page: "local" | "cloud"): { kind: "sending" | "failed" | "done"; text: string; extra: string[]; phone?: true; retry?: true; reason?: string; place?: string } | null {
-  if (move.place) return ownMoveLine(move, move.place, page);
-  if (move.phase === "done") {
-    if (page !== "cloud") return null;
-    const list = move.counts ? arrivedList(move.counts) : [];
-    const text = move.left?.length || move.stayed?.length ? t("cloudSend.move.doneLeft") : list.length ? t("cloudSend.move.done", { list: listOf(list) }) : t("cloudSend.move.doneAll");
-    return { kind: "done", text, extra: [...notCarried(move.left), ...stayedHere(move.stayed), ...move.held.map((key) => t("cloudSend.result.held", { key }))], ...(move.phone ? { phone: true as const } : {}) };
-  }
-  if (move.phase === "keeping") return { kind: "sending", text: t(move.updating ? "cloudSend.move.keepingUpdating" : "cloudSend.move.keeping"), extra: [] };
-  if (move.phase === "home-again" || move.phase === "back") {
-    if (page !== "local") return null;
-    if (move.phase === "back" && move.kept) return { kind: "done", text: t("cloudSend.move.kept"), extra: [] };
-    if (move.phase === "back" && move.gone) return { kind: "done", text: t("cloudSend.move.backGone"), extra: [] };
-    const elsewhere = move.phase === "back" ? move.elsewhere : undefined;
-    if (elsewhere) {
-      return { kind: "done", extra: [], text: elsewhere.since
-        ? t("cloudSend.move.elsewhere", { name: elsewhere.name, date: new Intl.DateTimeFormat(activeLocale(), { dateStyle: "long" }).format(elsewhere.since) })
-        : t("cloudSend.move.elsewhereEmpty", { name: elsewhere.name }) };
-    }
-    return { kind: "done", text: t(move.phase === "home-again" ? "cloudSend.move.homeAgain" : move.lost ? "cloudSend.move.backLost" : "cloudSend.move.back"), extra: [] };
-  }
-  if (move.phase === "copy" && move.updating) return { kind: "sending", text: t("cloudSend.move.updating"), extra: [] };
-  const failing = "failing" in move ? move.failing : undefined;
-  if (failing) {
-    const extra = notCarried(failing.items);
-    return failing.error ? { kind: "failed", text: t("cloudSend.move.failing", { error: serverErrorText(failing, failing.error) }), extra, retry: true, reason: serverErrorText(failing, failing.error) }
-      : { kind: "failed", text: t("cloudSend.move.failingPlain"), extra, retry: true };
-  }
-  if (move.phase === "finishing") return { kind: "sending", text: t("cloudSend.move.finishing"), extra: [] };
-  // Who holds the move, by name, or what it is; nothing is claimed while it only waits for a quiet moment.
-  if (move.phase === "wait" && move.waitingFor !== undefined) {
-    const text = move.waitingFor ? t("cloudSend.move.waiting", { name: move.waitingFor })
-      : move.waitingWhat === "sign-in" ? t("cloudSend.move.waitingSignIn") : t("cloudSend.move.waitingAny");
-    return { kind: "sending", text, extra: [] };
-  }
-  const chats = move.phase === "copy" ? move.chats : undefined;
-  const key = page === "cloud" ? (chats ? "cloudSend.move.bringingChats" : "cloudSend.move.bringing") : (chats ? "cloudSend.move.copyChats" : "cloudSend.move.copy");
-  return { kind: "sending", text: t(key, chats ? { done: chats.done, total: chats.total } : {}), extra: [] };
+  return move.place ? ownMoveLine(move, move.place, page) : null;
 }
 
 /** The move to a server of the person's own, named `place`, on this computer's page: on its way, almost done, waiting for
@@ -134,23 +95,4 @@ function ownMoveLine(move: OneHomeView, place: string, page: "local" | "cloud"):
   }
   const chats = move.phase === "copy" ? move.chats : undefined;
   return line("sending", chats ? t("cloudSend.move.copyChatsNamed", { place, done: chats.done, total: chats.total }) : t("cloudSend.move.copyNamed", { place }));
-}
-
-/** A bot moving from My Cloud into a team, on My Cloud's page: on its way, failed (it is still here, unchanged), or done. */
-export function teamMoveLine(move: TeamMoveView): { kind: "sending" | "failed" | "done"; text: string } {
-  const names = { bot: move.bot.name, team: move.team.name };
-  if (move.phase === "done") return { kind: "done", text: t("teamMove.done", names) };
-  if (move.phase === "failed") return { kind: "failed", text: t("teamMove.failed", names) };
-  return { kind: "sending", text: t("teamMove.moving", names) };
-}
-
-const TEAM_MOVE_REFUSALS: Record<TeamMoveRefusalCode, LocaleKey> = {
-  notInTeam: "teamMove.refused.notInTeam",
-  notABot: "teamMove.refused.notABot",
-  movingElsewhere: "teamMove.refused.movingElsewhere",
-};
-
-export function teamMoveRefusalText(refused: TeamMoveRefusal): string {
-  const params = Object.fromEntries(Object.entries(Object(refused.params)).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
-  return Object.hasOwn(TEAM_MOVE_REFUSALS, refused.code) ? tFromServer(TEAM_MOVE_REFUSALS[refused.code as TeamMoveRefusalCode], refused.message, params) : refused.message;
 }

@@ -168,7 +168,6 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
     journal: file("own-home.json"),
     choice: file("own-home-choice.json"),
     sendState: file("own-home-send.json"),
-    cloudJournal: () => null,
     lend: async (projects, place) => { spies.lent.push({ projects, place: place?.origin ?? null }); },
     phone: { paired: () => true, stop: async () => { spies.phoneStops++; }, start: async () => {} },
     openHome: (place) => { spies.opened.push(place.origin ?? ""); },

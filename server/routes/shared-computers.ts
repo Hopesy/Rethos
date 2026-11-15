@@ -8,6 +8,8 @@ import type { SessionRecord } from "../sessions.ts";
 import { desktopPresence, type Answerer, type ComputerAsks } from "../computer-asks.ts";
 import { responseGone, sharedComputerRegistration, type SharedComputers } from "../shared-computers.ts";
 import { PASS, type RouteContext, type RouteHandler } from "./table.ts";
+import { ownerOrAdmin } from "../request-auth.ts";
+import { computerAccessMode } from "../computer-access.ts";
 import type { Upgrades } from "./upgrades.ts";
 
 const LINK = /^\/api\/shared-computers\/([\w-]+)\/link$/;
@@ -38,6 +40,16 @@ export function createSharedComputerRoutes(deps: {
     if (path !== "/api/shared-computers" && !path.startsWith("/api/shared-computers/")) return PASS;
     if (method === "GET" && path === "/api/shared-computers" && deps.enabled(auth)) {
       return json(res, 200, { computers: deps.computers.status(deps.principal(auth)), known: deps.computers.known(deps.principal(auth)) });
+    }
+    const access = /^\/api\/shared-computers\/([\w-]+)\/access$/.exec(path);
+    if (access && method === "PATCH" && deps.enabled(auth)) {
+      if (!ownerOrAdmin(auth)) return json(res, 403, { error: "Computer access requires its owner" });
+      const body = await readBody(req);
+      const mode = computerAccessMode.safeParse(body?.mode);
+      if (!mode.success) return json(res, 400, { error: "Access mode must be enabled, paused or revoked" });
+      const principal = deps.principal(auth);
+      deps.computers.setAccess(principal, access[1]!, mode.data);
+      return json(res, 200, { ok: true, mode: mode.data });
     }
     const link = LINK.exec(path);
     if (link && method === "GET" && deps.enabled(auth) && deps.links) {
@@ -91,7 +103,7 @@ export function createSharedComputerRoutes(deps: {
       if (power?.sleeping()) return answerAsleep(res, json);
       const job = await deps.computers.poll(id, auth.session.id, secret, power ? AbortSignal.any([responseGone(res), power.sleepSignal()]) : responseGone(res));
       if (!job && power?.sleeping()) return answerAsleep(res, json);
-      return json(res, 200, { job });
+      return json(res, 200, { job, access: deps.computers.accessMode(deps.principal(auth), id!) });
     }
     if (action === "lease") return json(res, 200, { active: deps.computers.liveJob(id, auth.session.id, secret, String(body?.jobId)) });
     if (action === "result") deps.computers.complete(id, auth.session.id, secret, String(body?.jobId), body?.result);

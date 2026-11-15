@@ -6,7 +6,7 @@
 import type { ServerResponse } from "node:http";
 import { z } from "zod";
 import type { json as sendJson } from "../harness/http.ts";
-import type { ServiceCredential } from "../included-services.ts";
+import type { ServiceCredential } from "../service-credentials.ts";
 import { costLine, createResearchClient, RESEARCH_ID, RESEARCH_SEARCH_MAX, type ResearchClient } from "../research.ts";
 import {
   createXClient,

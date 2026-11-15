@@ -7,7 +7,7 @@ import { agentsMcp } from "./drivers/agents-mcp.ts";
 import { agentsServerEnv, COMPUTER_OFF_REFUSAL, computerPickRefusal, directTurnKind, roomSkillsRefusal, type AgentsConversation, type AgentsTurn } from "./agents-turn.ts";
 
 const HOST: AgentsConversation["host"] = { skillAuthoring: true, sharedComputers: true, cloudHome: false, team: false, escalations: true, voiceNotes: true, x: true, research: true, imageGeneration: false };
-const CHAT: AgentsConversation = { threadId: "thread-1", bot: { id: "bot-1", chiefOfStaff: true }, room: false, teamComputer: false, host: HOST };
+const CHAT: AgentsConversation = { threadId: "thread-1", bot: { id: "bot-1", chiefOfStaff: true }, room: false, host: HOST };
 const ROOM: AgentsConversation = { ...CHAT, threadId: "room-1", room: true };
 
 /** Every kind of turn a direct chat gets and what that turn may do, as the harness hands it over. */
@@ -76,7 +76,6 @@ describe("one conversation's agents tools", () => {
   it("leaves select_computer out only where the conversation can never pick a computer", async () => {
     const selects = async (conversation: AgentsConversation) => (await everyTurn(conversation))[0]!.wire.includes('"name":"select_computer"');
     expect(await selects({ ...CHAT, bot: { ...CHAT.bot, computer: "off" } })).toBe(false);
-    expect(await selects({ ...CHAT, teamComputer: true })).toBe(false);
     expect(await selects({ ...CHAT, bot: { ...CHAT.bot, computer: "browser" } })).toBe(true);
   });
 });

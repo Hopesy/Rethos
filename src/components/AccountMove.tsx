@@ -1,26 +1,24 @@
-// The one-time move to My Cloud in the account area at the bottom of the sidebar, never as a strip over the page: a
-// short segment in the account's name, a line by the account (above it in Simple, under the name in Advanced), a dot
-// on the avatar, and the move's own row at the top of the account menu. In the desktop app only, never in a browser.
 import { useSyncExternalStore } from "react";
 import { CloudAlert, CloudCheck, CloudUpload, Loader2, RefreshCw, Smartphone, X } from "lucide-react";
-import type { CloudSendPageBridge } from "../../electron/cloud-send.mjs";
+import type { WorkspaceMoveBridge } from "../../electron/workspace-move.mjs";
 import { MOVE_LINE } from "../../electron/cloud-send-parts.mjs";
 import { ipcErrorText, moveLine } from "@/lib/cloud-send";
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
-import { useCloudSendNotice } from "./CloudSendStrip";
+import { useWorkspaceMoveNotice } from "./CloudSendStrip";
 import type { SidebarMenuItem } from "./SidebarPopoverMenu";
 
 export type AccountMoveLine = NonNullable<ReturnType<typeof moveLine>>;
 export type AccountMoveKind = AccountMoveLine["kind"];
 
-const pageBridge = () => (!window.ogb?.remoteClient?.active ? window.ogb?.cloudSendPage : undefined);
+const pageBridge = () => (!window.ogb?.remoteClient?.active ? window.ogb?.workspaceMove : undefined);
 
 /** The account's words for the move: it needs the person once it has failed for a day, goes quietly meanwhile, and
  * says nothing once done (its menu row says what arrived). `place`: the server of their own it goes to, else My Cloud. */
 export function accountMoveWords(kind: AccountMoveKind | null, place?: string): string | null {
-  if (kind === "failed") return place ? t("sidebar.account.moveNeedsYouNamed", { place }) : t("sidebar.account.moveNeedsYou");
-  if (kind === "sending") return place ? t("sidebar.account.movingNamed", { place }) : t("sidebar.account.moving");
+  if (!place) return null;
+  if (kind === "failed") return t("sidebar.account.moveNeedsYouNamed", { place });
+  if (kind === "sending") return t("sidebar.account.movingNamed", { place });
   return null;
 }
 
@@ -81,9 +79,9 @@ function retryStore() {
 }
 
 // The window has one move, so the account's line and every account menu share its one Try again.
-const retries = new WeakMap<CloudSendPageBridge, ReturnType<typeof retryStore>>();
+const retries = new WeakMap<WorkspaceMoveBridge, ReturnType<typeof retryStore>>();
 const offPage = retryStore();
-function retryOf(bridge: CloudSendPageBridge | undefined) {
+function retryOf(bridge: WorkspaceMoveBridge | undefined) {
   if (!bridge) return offPage;
   const known = retries.get(bridge);
   if (known) return known;
@@ -94,7 +92,7 @@ function retryOf(bridge: CloudSendPageBridge | undefined) {
 
 function useMove(cloudHome: boolean) {
   const bridge = pageBridge();
-  const [notice, setNotice] = useCloudSendNotice(bridge);
+  const [notice, setNotice] = useWorkspaceMoveNotice(bridge);
   const store = retryOf(bridge);
   const { retrying, unanswered } = useSyncExternalStore(store.subscribe, store.get, store.get);
   const line = bridge && notice?.move ? moveLine(notice.move, cloudHome ? "cloud" : "local") : null;

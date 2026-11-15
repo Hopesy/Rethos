@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { X_MESSAGES, XResearchError, type XResearchClient } from "../x-research.ts";
 import type { ResearchClient } from "../research.ts";
-import type { ServiceCredential } from "../included-services.ts";
+import type { ServiceCredential } from "../service-credentials.ts";
 import { PASS } from "./table.ts";
 import { createXResearchInternalRoutes, type XInternalContext } from "./x-research.ts";
 
@@ -157,4 +157,3 @@ describe("research internal routes", () => {
     expect((await callInternal(routes(research).handler, { path: "/api/internal/research/unknown", body: {} })).out).toBe(PASS);
   });
 });
-

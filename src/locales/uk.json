@@ -171,7 +171,6 @@
   "server.memory.starter": "У Starter вистачає місця приблизно на одне завдання за раз. Більший план запускає більше одночасно.",
   "server.planTurns.wait": "Чекає черги: Starter запускає в цьому Cloud {limit} завдання одночасно. Перед цим: {ahead}. Воно почнеться саме, щойно одне завершиться, а більший план запускає більше одночасно.",
   "server.planTurns.still": "Досі чекає: Starter запускає {limit} завдання одночасно. Перед цим: {ahead}.",
-  "server.botPaused": "Призупинено: Starter тримає активними {limit} ботів. Перейдіть на вищий план, щоб розбудити його, або змініть, які боти активні.",
   "server.teammates.queued.thread": "{bot} ще не почав: попередній хід у цьому потоці досі виконується.",
   "server.teammates.queued.slots": "{bot} ще не почав: уже виконується {busy} з {limit} потоків одночасно.",
   "server.teammates.queued.room": "{bot} ще не почав: завершує хід у кімнаті.",
@@ -2239,7 +2238,7 @@
   "computer.worksOnHintCloudHome": "Виберіть, де працює цей бот. Він також може користуватися вашим комп’ютером, поки на ньому відкритий {app}.",
   "computer.destinationAria": "Місце комп'ютера",
   "computer.dest.autoDesc": "Обирати автоматично",
-  "computer.dest.cloudDesc": "Робочий стіл у хмарі",
+  "computer.dest.cloudDesc": "Робочий стіл на власному VPS",
   "computer.dest.vmDesc": "Ізольований локальний стіл",
   "computer.dest.localDesc": "Ваш екран і застосунки",
   "computer.dest.browserDesc": "Лише вебсторінки",
@@ -2598,7 +2597,7 @@
   "canvasComputers.computer": "робочий стіл",
   "canvasComputers.assign": "Призначити робочий стіл",
   "canvasComputers.unassign": "Зняти робочий стіл",
-  "place.cloud": "Хмарний робочий стіл",
+  "place.cloud": "Ваш віддалений робочий стіл",
   "place.vm": "Приватний робочий стіл",
   "place.offHint": "«Працює на» для цього бота вимкнено. Змініть це на панелі «Екран».",
   "place.view.auto.lineMyCloud": "Користується вбудованим браузером. У чаті сам запускає свій хмарний робочий стіл, коли завданню потрібні настільні застосунки.",
@@ -3449,8 +3448,6 @@
   "server.meetings.notes.questions": "Відкриті питання",
   "server.meetings.notes.attendees": "Учасники",
   "server.meetings.notes.transcript": "Повна розшифровка додана нижче.",
-  "server.meetings.nothingHeard": "{reason} Ніхто не сказав нічого, що я зміг би розшифрувати, тому нотаток немає.",
-  "server.meetings.endedDetail": "{reason} ({detail})",
   "server.meetings.end.left": "Я вийшов із зустрічі.",
   "server.meetings.end.stop_requested": "Хтось на зустрічі написав «@notes stop», тому я вийшов.",
   "server.meetings.end.meeting_ended": "Зустріч завершилася.",
@@ -3574,5 +3571,6 @@
   "remote.client.endsDec7": "Цей тип з'єднання припиняє роботу 7 грудня. Після цього знову прив'яжіть цей комп'ютер у розділі «Телефон і пристрої» на іншому комп'ютері.",
   "phone.code.pairingCode": "Код прив'язки",
   "phone.code.typeIntro": "Відкрийте застосунок {app} і введіть цей код прив'язки.",
-  "phone.signIn.emailCode": "Код входу з листа"
+  "phone.signIn.emailCode": "Код входу з листа",
+  "routines.server.desktopRetired": "Сервіс хмарного робочого столу видалено. Перевірте робоче місце бота, перш ніж знову вмикати це завдання."
 }

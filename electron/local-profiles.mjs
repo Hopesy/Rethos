@@ -14,7 +14,7 @@ import { randomBytes } from "node:crypto";
 import nodeFs from "node:fs";
 import path from "node:path";
 
-import { CLOUD_SWATCHES, swatchColor } from "./cloud-list.mjs";
+import { CLOUD_SWATCHES, swatchColor } from "./place-appearance.mjs";
 import { DEFAULT_PROFILE, PROFILE_ID, profileDir, profilesDir } from "./clean-workspace.mjs";
 
 export const PROFILES_FILE = "profiles.json";

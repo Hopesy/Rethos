@@ -22,7 +22,7 @@ await loadLocale(params.get("lang") ?? "en");
 const rail: RailState = { places: [
   { id: "local", name: "This computer", color: null, kind: "computer", opens: true, active: true, paint: { swatch: null } },
   { id: "garage", name: "Garage server", color: "teal", kind: "server", opens: true, makeHome: true, paint: { swatch: "green" } },
-], add: { cloud: true, link: true, address: false } };
+], add: { cloud: false, link: true, address: false } };
 // cloud-failing: the move to My Cloud whose check keeps finding things missing, as main says it (one-home.mjs INCOMPLETE).
 const cloudFailing = { phase: "copy" as const, failing: { error: "Some things didn't reach My Cloud yet. It tries again by itself, and if they still can't go, the rest moves without them and you'll see what stayed here." } };
 const move = stateName === "cloud-failing" ? cloudFailing : stateName === "failing"
@@ -34,7 +34,7 @@ Object.assign(window, { ogb: {
   workspaces: { places: async () => rail, state: async () => ({ local: true, name: "This computer" }), menu: async () => {}, open: async () => {}, add: async () => {},
     makeHome: async () => ({ started: true }), onChanged: () => () => {} },
   rail: { expand: async () => {}, onSkin: () => () => {} },
-  cloudSendPage: { notice: async () => notice, dismiss: async () => notice, moveRetry: async () => notice, onNotice: () => () => {} },
+  workspaceMove: { notice: async () => notice, dismiss: async () => notice, moveRetry: async () => notice, onNotice: () => () => {} },
 } });
 
 function Gallery() {

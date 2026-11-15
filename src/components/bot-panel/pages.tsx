@@ -1,3 +1,4 @@
+import { WorkTargetPicker } from "../WorkTargetPicker";
 import { useState, type ReactNode } from "react";
 import { FolderOpen, Plus, Server } from "lucide-react";
 
@@ -343,6 +344,11 @@ export function SkillsPage({ bot }: PageContext) {
 }
 
 export function FolderPage({ bot }: PageContext) {
+  if (bot.workTarget?.kind === "connected") return <WorkTargetPicker bot={bot} />;
+  return <ServerFolderPage bot={bot} />;
+}
+
+export function ServerFolderPage({ bot }: Pick<PageContext, "bot">) {
   const { capabilities } = useDesktopCapabilities();
   const home = capabilities.host?.homeDir;
   const { draft, setDraft, error, saving, canPick, save, pick } = useWorkingFolder(bot);

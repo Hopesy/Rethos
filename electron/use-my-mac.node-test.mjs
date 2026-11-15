@@ -453,8 +453,7 @@ test("a person whose only Cloud is a Team Cloud lends nothing: lending is person
   const dir = await realpath(await mkdtemp(path.join(tmpdir(), "omb-team-cloud-")));
   t.after(() => rm(dir, { recursive: true, force: true }));
   const team = { id: "team-cloud", name: "Acme", origin: "https://omb-t-acme.fly.dev" };
-  const account = { status: "connected", account: { id: "acct_1" }, teams: [{ id: "team-acme", name: "Acme", role: "member", machine: { status: "ready", origin: team.origin } }] };
-  const target = createLendingTarget({ account: () => ({ state: () => account }), environments: () => [team] });
+  const target = createLendingTarget({ ownHome: () => null, environments: () => [team] });
   const calls = [];
   const sharing = createComputerSharing({
     file: path.join(dir, "computer-sharing.json"), environments: () => [team], enabled: async () => false, cuaConnection: async () => null, home: path.join(dir, "home"),

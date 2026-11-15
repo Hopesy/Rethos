@@ -22,7 +22,6 @@ import { callComputerAskTool, COMPUTER_ASK_TOOL_NAMES } from "./agents-computer-
 import { callImageTool, IMAGE_TOOL_NAMES } from "./agents-image-tools.ts";
 import { callMeetingTool, MEETING_TOOL_NAMES } from "./agents-meeting-tools.ts";
 import { callMausBotTool, MAUSBOT_TOOL_NAMES } from "./agents-mausbot-tools.ts";
-import { callPageTool, PAGE_TOOL_NAMES } from "./agents-pages-tools.ts";
 import { callPersonTool, PERSON_TOOL_NAMES } from "./agents-person-tools.ts";
 import { callDevsTool, DEVS_TOOL_NAMES } from "./agents-devs-tools.ts";
 
@@ -223,7 +222,6 @@ export async function callTool(called: string, input: Json, context: ToolCallCon
   if (IMAGE_TOOL_NAMES.has(name)) return callImageTool(name, args, context);
   if (MEETING_TOOL_NAMES.has(name)) return callMeetingTool(name, args, context);
   if (MAUSBOT_TOOL_NAMES.has(name)) return callMausBotTool(name, args, context);
-  if (PAGE_TOOL_NAMES.has(name)) return callPageTool(name, args, context);
   if (PERSON_TOOL_NAMES.has(name)) return callPersonTool(name, args, context);
   if (DEVS_TOOL_NAMES.has(name)) return callDevsTool(name, args, context);
   if (TRIGGER_TOOL_NAMES.has(name)) return callTriggerTool(name, args, context);
@@ -372,11 +370,12 @@ export async function callTool(called: string, input: Json, context: ToolCallCon
     };
   }
   if (name === "select_computer") {
+    if (args.computer_id !== undefined && (typeof args.computer_id !== "string" || args.surface !== undefined)) return { text: "Choose a connected computer_id or a surface.", isError: true };
     if (args.surface !== undefined && (typeof args.surface !== "string" || !["auto", "cloud", "vm", "local", "browser"].includes(args.surface))) {
       return { text: "Choose auto, cloud, vm, local or browser; omit surface to inspect connected choices.", isError: true };
     }
-    const result = await api("/api/internal/computer/select", args.surface === undefined ? undefined : {
-      method: "POST", body: JSON.stringify({ surface: args.surface }),
+    const result = await api("/api/internal/computer/select", args.surface === undefined && args.computer_id === undefined ? undefined : {
+      method: "POST", body: JSON.stringify({ surface: args.surface, computer_id: args.computer_id, cwd: args.cwd }),
     });
     return { text: JSON.stringify(result) };
   }

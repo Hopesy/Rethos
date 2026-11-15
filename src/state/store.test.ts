@@ -2543,15 +2543,6 @@ describe("activity panel", () => {
     expect(reducer(open, { type: "showTeamMap" }).activityOpen).toBe(false);
   });
 
-  it("opens Files as its own page, carrying the folders it should offer to share only when asked", () => {
-    const open = { ...initialState, activityOpen: true, appSettingsOpen: true, settingsOpen: true };
-    const suggested = reducer(open, { type: "showFiles", suggest: ["/Users/ada/site"] });
-    expect(suggested).toMatchObject({ activeView: "files", filesSuggest: ["/Users/ada/site"], activityOpen: false, appSettingsOpen: false, settingsOpen: false });
-    expect(reducer(suggested, { type: "showFiles" })).toMatchObject({ activeView: "files", filesSuggest: null });
-    expect(reducer(suggested, { type: "showFiles", suggest: [] }).filesSuggest).toBeNull();
-    expect(reducer(suggested, { type: "showTeamMap" })).toMatchObject({ activeView: "team-map", filesSuggest: null });
-  });
-
   it("a pinned web panel replaces the main view like the team map, and chat comes back", () => {
     const open = { ...initialState, activityOpen: true, computerOpen: true, settingsOpen: true };
     const panel = reducer(open, { type: "showWebPanel", id: "panel-1" });

@@ -65,11 +65,9 @@ export class LentComputers {
     return this.computers.find((computer) => computer.person === person && computer.id === id);
   }
 
-  /** A computer that registered, now lending these scopes. Each new grant has a new id, so a computer is known by its
-   * name: lending again from the same computer updates its one record. A person's newest computers are kept. */
   connected(person: string, input: { id: string; name: string; platform?: LentPlatform; folders: number; terminal: boolean; screen: boolean; internet?: boolean; chrome?: boolean; environments?: string[] }): void {
     const at = this.now();
-    const same = (computer: LentComputer) => computer.person === person && (computer.id === input.id || computer.name === input.name);
+    const same = (computer: LentComputer) => computer.person === person && computer.id === input.id;
     const previous = this.computers.find(same);
     const next: LentComputer = { id: input.id, person, name: input.name, platform: input.platform ?? previous?.platform ?? null, folders: input.folders,
       terminal: input.terminal, screen: input.screen, internet: input.internet === true, chrome: input.chrome === true,

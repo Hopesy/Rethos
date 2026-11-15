@@ -7,7 +7,7 @@
 // the choice is bound to that server's identity, so another server behind the same address takes nothing of this
 // computer's and is never lent it.
 import { createCloudSend } from "./cloud-send.mjs";
-import { freezeAnswer } from "./one-home-main.mjs";
+import { freezeAnswer } from "./workspace-move.mjs";
 import { awayIn, createOneHome, parseJournal } from "./one-home.mjs";
 import nativeText from "./native-text.cjs";
 
@@ -90,7 +90,6 @@ function jsonStore(store) {
  *   journal: { read(): unknown, write(value: unknown): void },
  *   choice: { read(): unknown, write(value: unknown): void },
  *   sendState: { read(): unknown, write(value: unknown): void },
- *   cloudJournal(): unknown,
  *   lend?(projects: string[], place: any): Promise<unknown>,
  *   phone?: { paired(): boolean, start(): Promise<void> },
  *   openHome?(place: any): void,
@@ -100,10 +99,9 @@ function jsonStore(store) {
  *   now?(): number,
  *   log?(line: string): void,
  * }} deps `localRequest`: this computer's server, as its owner. `fetch`: this window's own requests, with its sign-ins.
- * `handoff`: this computer's server's private port, which hands a moving secret to main alone. `cloudJournal()`: the move
- * to My Cloud's journal: while it is under way or done, no server of the person's own is chosen.
+ * `handoff`: this computer's server's private port, which hands a moving secret to main alone.
  */
-export function installOwnHome({ localRequest, fetch: fetchImpl, environments, handoff, journal: journalStore, choice: choiceStore, sendState, cloudJournal, lend, phone, openHome, lastInput,
+export function installOwnHome({ localRequest, fetch: fetchImpl, environments, handoff, journal: journalStore, choice: choiceStore, sendState, lend, phone, openHome, lastInput,
   version, onChange = () => {}, now = Date.now, log = () => {}, t = nativeText.englishText.t }) {
   const journal = jsonStore(journalStore), choice = jsonStore(choiceStore);
   const chosen = () => parseChoice(choice.read());
@@ -197,7 +195,6 @@ export function installOwnHome({ localRequest, fetch: fetchImpl, environments, h
     return Boolean(known?.own) && now() - known.at < OWNER_KNOWN_MS;
   };
   const moving = () => { const kept = parseJournal(journal.read()); return Boolean(kept) && kept.phase !== "back"; };
-  const cloudMoving = () => { const kept = parseJournal(cloudJournal()); return Boolean(kept) && kept.phase !== "back"; };
   let retry = null;
   /** Goes on with the move; a choice whose server was forgotten here before anything ran there is let go of, and one whose
    * move could not begin yet begins once it can. */
@@ -238,7 +235,7 @@ export function installOwnHome({ localRequest, fetch: fetchImpl, environments, h
     owns,
     /** A server whose circle may offer "Make … my home": theirs alone, and no move under way or done, to it or to My Cloud. */
     offers(place) {
-      return !moving() && !chosen() && !cloudMoving() && owns(place);
+      return !moving() && !chosen() && owns(place);
     },
     /** Asks each server connected by hand who owns it, unless it said so lately. */
     refresh() {
@@ -252,7 +249,6 @@ export function installOwnHome({ localRequest, fetch: fetchImpl, environments, h
       const place = environments().find((entry) => entry.id === id && handSaved(entry));
       if (!place) throw new Error(t("native.home.serverGone"));
       if (moving() || chosen()) throw new Error(t("native.home.alreadyMoving"));
-      if (cloudMoving()) throw new Error(t("native.home.movingToCloud"));
       const who = await serverRequests(place, fetchImpl).who().catch(() => null);
       if (!who?.signedIn) throw new Error(t("native.home.signedOut", { name: place.name }));
       if (!who.own) throw new Error(t("native.home.personalServerOnly", { name: place.name }));

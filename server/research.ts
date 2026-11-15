@@ -4,7 +4,7 @@
 // URL), within the plan's monthly research budget.
 import { createHash, randomUUID } from "node:crypto";
 
-import type { ServiceCredential } from "./included-services.ts";
+import type { ServiceCredential } from "./service-credentials.ts";
 import { dollarsText, readCapped, tregAuthHeaders, tregErrorFor, X_MESSAGES, XResearchError } from "./x-research.ts";
 
 /** A catalog id, or a hub tool's versioned id; never a path or a URL (those would reach a team's own tools). */

@@ -115,7 +115,6 @@ the request goes on by itself once the computer lends what was needed. Only on
 the person's own Cloud, never a Team Cloud.
 
 ```sh
-node --test electron/screen-status.node-test.mjs electron/computer-asks.node-test.mjs
 pnpm exec vitest run electron/capabilities.test.mjs server/computer-asks.test.ts \
   server/host/computer-asks-host.test.ts shared/computer-ask.test.ts src/components/ComputerAskCard.test.ts
 pnpm exec vitest run server/cloud-lending.e2e.test.ts -t "paused, the PC still hears"

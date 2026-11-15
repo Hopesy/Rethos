@@ -66,10 +66,6 @@ vi.mock("./WorkspaceBackupSettings", () => ({ WorkspaceBackupSettings: marker("b
 vi.mock("./RoomTurnTimeoutSettings", () => ({ RoomTurnTimeoutSettings: () => null }));
 vi.mock("./CompanyBackupSettings", () => ({ CompanyBackupSettings: () => null }));
 vi.mock("./ImportSettings", () => ({ ImportSettings: marker("import") }));
-vi.mock("./UpdatesConsent", async (importOriginal) => ({
-  ...await importOriginal<typeof import("./UpdatesConsent")>(),
-  UpdatesConsentRow: marker("updatesConsent"),
-}));
 vi.mock("./SidebarProfileMenu", async (importOriginal) => ({
   ...await importOriginal<typeof import("./SidebarProfileMenu")>(),
   useServerUpdateItem: () => fixture.serverUpdate,

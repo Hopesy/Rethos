@@ -29,6 +29,7 @@ export function createCompanionE2E({
   readCredentials,
   updateCredentials,
   fetchGrant,
+  relayEnabled = true,
   companionState,
   post,
   setTimer = setInterval,
@@ -67,7 +68,7 @@ export function createCompanionE2E({
   async function reconcile() {
     lastState = await companionState().catch(() => null);
     const need = relayNeed(lastState);
-    if (need === true) tokens.start();
+    if (need === true && relayEnabled) tokens.start();
     else if (need === false) tokens.stop();
   }
 

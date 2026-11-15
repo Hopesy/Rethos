@@ -4,7 +4,7 @@
 // - Anyone else uses their own keys, in this order: ElevenLabs (realtime; the computer gets single-use tokens minted
 //   here, POST {api}/single-use-token/realtime_scribe, 15 minutes for one connection), Groq, then OpenAI (their
 //   transcription APIs are called from this server on audio the computer sends back), then Whisper on the computer.
-import { voiceCredential } from "../included-services.ts";
+import { voiceCredential } from "../service-credentials.ts";
 import type { SpeechGrant } from "./engine.ts";
 
 /** An included (relay) token is spent in blocks: the bot reconnects with a fresh token every so often, which the relay meters. */

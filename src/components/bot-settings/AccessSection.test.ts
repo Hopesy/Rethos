@@ -220,10 +220,11 @@ describe("AccessSection Works on", () => {
     ]);
   });
 
-  it("hides the Boat or VPS choice on My Cloud, whose cloud computers are the plan's", () => {
-    expect(render(makeBot())).toContain("Cloud backend");
+  it("offers self-hosted remote desktops without the retired paid provider", () => {
+    expect(render(makeBot())).toContain("Enable self-hosted remote desktop");
+    expect(render(makeBot())).not.toContain("Boat");
     fixture.config = { cloudHome: true } as Partial<ConfigStatus>;
-    expect(render(makeBot())).not.toContain("Cloud backend");
+    expect(render(makeBot())).not.toContain("Enable self-hosted remote desktop");
     expect(render(makeBot({ computer: "cloud" }))).not.toContain("Boat");
   });
 });

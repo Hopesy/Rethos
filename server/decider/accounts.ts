@@ -1,7 +1,7 @@
 // Whose key a decision or an extraction uses, shared by server/decider and server/extractor. The person's own key always
 // wins; Cloud's included token goes only to its relay; the engine's OpenRouter key goes only to OpenRouter's own address.
 import type { AppConfig } from "../config.ts";
-import { deciderCredential, type ServiceCredential } from "../included-services.ts";
+import { deciderCredential, type ServiceCredential } from "../service-credentials.ts";
 import { WORKERS_AI_ACCOUNT_ID } from "./config.ts";
 import { OPENROUTER_DEFAULT_BASE_URL } from "./openrouter.ts";
 import type { DeciderProvider } from "./types.ts";

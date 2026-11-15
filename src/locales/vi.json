@@ -202,7 +202,6 @@
   "server.memory.starter": "Starter chỉ đủ chỗ cho khoảng một việc mỗi lúc. Gói lớn hơn chạy được nhiều việc cùng lúc hơn.",
   "server.planTurns.wait": "Đang chờ lượt: Starter chạy {limit} việc cùng lúc trên Cloud này. Phía trước việc này: {ahead}. Việc này tự bắt đầu khi có việc xong, và gói lớn hơn chạy được nhiều việc cùng lúc hơn.",
   "server.planTurns.still": "Vẫn đang chờ: Starter chạy {limit} việc cùng lúc. Phía trước việc này: {ahead}.",
-  "server.botPaused": "Tạm dừng: Starter giữ {limit} bot hoạt động. Nâng cấp để đánh thức bot này, hoặc đổi những bot đang hoạt động.",
   "server.teammates.queued.thread": "{bot} chưa bắt đầu việc này: lượt trước trong luồng đó vẫn đang chạy.",
   "server.teammates.queued.slots": "{bot} chưa bắt đầu việc này: đang chạy cùng lúc {busy} trên {limit} luồng.",
   "server.teammates.queued.room": "{bot} chưa bắt đầu việc này: đang hoàn tất một lượt trong phòng.",
@@ -3721,7 +3720,7 @@
   "computer.worksOnHintCloudHome": "Chọn nơi bot này làm việc. Bot cũng có thể dùng máy tính của bạn bất cứ khi nào {app} đang mở trên đó.",
   "computer.destinationAria": "Thiết bị đích",
   "computer.dest.autoDesc": "Chọn tự động",
-  "computer.dest.cloudDesc": "Một desktop trên đám mây",
+  "computer.dest.cloudDesc": "Máy tính trên VPS của riêng bạn",
   "computer.dest.vmDesc": "Desktop cục bộ cách ly",
   "computer.dest.localDesc": "Màn hình và ứng dụng của bạn",
   "computer.dest.browserDesc": "Chỉ các trang web",
@@ -4310,7 +4309,7 @@
   "window.maximize": "Phóng to",
   "window.restore": "Khôi phục",
   "window.close": "Đóng",
-  "place.cloud": "Desktop đám mây",
+  "place.cloud": "Máy tính từ xa của bạn",
   "place.vm": "Desktop riêng",
   "place.local": "Máy tính này",
   "place.browser": "Trình duyệt",
@@ -5439,8 +5438,6 @@
   "server.meetings.notes.questions": "Câu hỏi còn mở",
   "server.meetings.notes.attendees": "Người tham dự",
   "server.meetings.notes.transcript": "Bản ghi đầy đủ được đính kèm bên dưới.",
-  "server.meetings.nothingHeard": "{reason} Không ai nói điều gì tôi có thể ghi lại, nên không có ghi chú.",
-  "server.meetings.endedDetail": "{reason} ({detail})",
   "server.meetings.end.left": "Tôi đã rời cuộc họp.",
   "server.meetings.end.stop_requested": "Có người trong cuộc họp gõ \"@notes stop\", nên tôi đã rời đi.",
   "server.meetings.end.meeting_ended": "Cuộc họp đã kết thúc.",
@@ -5564,5 +5561,6 @@
   "remote.client.endsDec7": "Kiểu kết nối này kết thúc vào ngày 7 tháng 12. Sau đó, hãy ghép nối lại máy này từ Điện thoại và thiết bị trên máy kia.",
   "phone.code.pairingCode": "Mã ghép nối",
   "phone.code.typeIntro": "Mở ứng dụng {app} và nhập mã ghép nối này.",
-  "phone.signIn.emailCode": "Mã đăng nhập trong email của bạn"
+  "phone.signIn.emailCode": "Mã đăng nhập trong email của bạn",
+  "routines.server.desktopRetired": "Dịch vụ máy tính để bàn được lưu trữ đã bị xóa. Hãy kiểm tra vị trí làm việc của bot trước khi bật lại tác vụ định kỳ này."
 }

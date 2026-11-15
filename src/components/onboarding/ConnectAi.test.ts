@@ -2,7 +2,6 @@
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ManagedDesktopBridge } from "../../../electron/managed-desktop.mjs";
 import { setLocale } from "@/lib/i18n";
 import type { InstanceInfo } from "@/state/store";
 
@@ -25,7 +24,6 @@ vi.mock("@/components/EngineSetup", async () => {
     h("div", { "data-engine-setup": instance.instanceId, "data-intent": intent, "data-description": description }) };
 });
 // The row has its own tests; here only whether the first screen offers it.
-vi.mock("./beats/OrganisationRow", () => ({ OrganisationRow: (props: NonNullable<typeof f.row>) => { f.row = props; return null; } }));
 const { ConnectAi, ConnectAiDialog } = await import("./ConnectAi");
 const { useWelcomeAi } = await import("./welcome-ai");
 const { useStore } = await import("@/state/store");
@@ -41,7 +39,6 @@ const engine = (instanceId: string, driverKind: string, displayName: string, rea
   instanceId, driverKind, displayName, install: { docsUrl: "https://example.test" },
   snapshot: { state: ready ? "available" : "unavailable", authenticated: ready }, models: { default: "m", options: [] },
 });
-const bridge = { onState: vi.fn(), state: vi.fn() } as unknown as ManagedDesktopBridge;
 let host: HTMLDivElement, root: Root;
 const text = () => host.textContent ?? "";
 const show = async (extra: { hosted?: boolean } = {}) => {
@@ -209,21 +206,6 @@ describe("connecting an AI on the first screen", () => {
     expect(host.querySelector("[data-ai-connected]")).toBeNull();
     expect(host.querySelector("[data-ai-backup]")?.textContent).toBe("OpenCode's free model is ready as a backup. For the best answers, connect an AI you already use.");
     expect(host.querySelector("[data-ai-recommended]")?.getAttribute("data-ai-recommended")).toBe("claude");
-  });
-
-  it("offers the organization sign-in under Other ways on this computer's own window only", async () => {
-    await show();
-    await otherWays();
-    expect(f.row).toBeNull();
-    vi.stubGlobal("ogb", { organization: bridge });
-    window.ogb = { organization: bridge } as unknown as typeof window.ogb;
-    await show({ hosted: true });
-    expect(f.row).toBeNull();
-    await show();
-    expect(f.row?.bridge).toBe(bridge);
-    f.row!.onOpenSettings();
-    expect(f.dispatch).toHaveBeenCalledWith({ type: "toggleAppSettings", open: true, section: "organization" });
-    delete window.ogb;
   });
 
   it("opens as the Connect an AI dialog, which Escape and a click outside close", async () => {

@@ -9,7 +9,6 @@ import { KeysPage } from "./keys/KeysPage";
 import { KEY_CATALOG, keyMatches, keySection, type KeyEntry } from "./keys/key-catalog";
 import { openKeySettings, useKeyFocus } from "./keys/key-focus";
 import { AnalyticsRow } from "./AnalyticsRow";
-import { UpdatesConsentRow } from "./UpdatesConsent";
 import { OpenAtLoginRow } from "./OpenAtLoginRow";
 import { DefaultBotSidebarRow } from "./DefaultBotControls";
 import { TalkShortcutRow, talkShortcutKeywords } from "./TalkShortcutRow";
@@ -34,7 +33,7 @@ import { ConnectedWorkspacesSettings } from "./ConnectedWorkspacesSettings";
 import { PlaceLookCard } from "./PlaceLookCard";
 import { ChromeRailRow } from "./ChromeRailToggle";
 import { WindowFrameRow } from "./WindowFrameRow";
-import { Card, SettingsGroup, SIMPLE_BUTTONS } from "./SettingsPrimitives";
+import { Card, SIMPLE_BUTTONS } from "./SettingsPrimitives";
 import { shortcutLabel } from "./ShortcutHint";
 import { UsageSection } from "./UsageSection";
 import { SkillsSection } from "./SkillsSection";
@@ -335,7 +334,6 @@ export function SettingsModal() {
             <NewBotEffortRow />
             <SavedStepsRow />
             <AnalyticsRow />
-            <UpdatesConsentRow />
             <DefaultBotSettings />
 
             <Card title={t("settings.roomTurns.title")} subtitle={t("settings.roomTurns.subtitle")}>

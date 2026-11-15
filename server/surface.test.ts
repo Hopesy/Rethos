@@ -18,6 +18,12 @@ import {
 } from "./surface.ts";
 
 describe("browserIsThePlace", () => {
+  it("uses canonical targets for task Off, connected devices and private desktops", () => {
+    expect(resolveSurface({ destination: "local", pinnedSurface: "vm", workTarget: { kind: "off" }, browserOn: true })).toMatchObject({ computer: "off", browser: false });
+    expect(resolveSurface({ destination: "local", workTarget: { kind: "connected", computerId: "fixture" }, browserOn: true })).toMatchObject({ computer: "off", note: expect.stringContaining("fixture") });
+    expect(resolveSurface({ destination: "local", workTarget: { kind: "private", backend: "vps" }, browserOn: true })).toMatchObject({ computer: "cloud" });
+    expect(resolveSurface({ destination: "off", workTarget: { kind: "connected", computerId: "fixture" }, browserOn: true })).toMatchObject({ computer: "off", browser: false });
+  });
   it("is true only where the conversation works on the built-in browser", () => {
     expect(browserIsThePlace(resolveSurface({ destination: "browser", browserOn: true }))).toBe(true);
     expect(browserIsThePlace(resolveSurface({ destination: undefined, pinnedSurface: "browser", browserOn: true }))).toBe(true);

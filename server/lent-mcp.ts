@@ -10,6 +10,7 @@ import { homedir } from "node:os";
 import { delimiter, join } from "node:path";
 
 import { canUseMcpServer } from "../shared/tool-scope.ts";
+import { connectedTargetRefusal, workTargetKey, type WorkTarget } from "../shared/work-target.ts";
 import type { AppConfig } from "./config.ts";
 import type { McpServerSpec } from "./contracts.ts";
 import { augmentedPath } from "./env-path.ts";
@@ -138,6 +139,7 @@ export interface LentMcpDeps {
   /** This turn's bearer for LENT_MCP_PATH, minted only while it runs. */
   mint(turn: Turn): string;
   active(turn: Turn): boolean;
+  target?(turn: Turn): WorkTarget | undefined;
   /** This server's own loopback address, `http://127.0.0.1:<port>`. */
   origin: string;
   personal: boolean;
@@ -198,8 +200,15 @@ export function createLentMcp(deps: LentMcpDeps) {
     if (!principal) return refuse((method === "tools/call" ? deps.refusal(turn) : deps.notice(turn)) ?? `This conversation can't use ${server.runsOn.label}.`);
     const state = lentState(deps.computers, principal, server);
     if (state.kind !== "ready") return refuse(lentLine(name, state, words));
+    const target = deps.target?.(turn);
+    const targetRefusal = connectedTargetRefusal(target, state.computerId);
+    if (targetRefusal) return refuse(targetRefusal);
     const definition = lentDefinition(name, server);
-    const active = () => deps.active(turn);
+    const selected = target && workTargetKey(target);
+    const active = () => {
+      const current = deps.target?.(turn);
+      return deps.active(turn) && selected === (current && workTargetKey(current));
+    };
     try {
       if (method === "tools/list") return reply(id, { tools: await tools(state.computerId, definition, principal, active) });
       const params = (message.params ?? {}) as { name?: unknown; arguments?: unknown };
@@ -226,6 +235,7 @@ export function createLentMcp(deps: LentMcpDeps) {
       for (const [name, server] of elsewhere) {
         const state = lentState(deps.computers, principal, server);
         if (state.kind !== "ready") continue;
+        if (connectedTargetRefusal(deps.target?.(turn), state.computerId)) continue;
         token ??= deps.mint(turn);
         mounted[name] = { type: "http", url: `${deps.origin}${LENT_MCP_PATH}${name}`, headers: { authorization: `Bearer ${token}` } };
         void tools(state.computerId, lentDefinition(name, server), principal, () => deps.active(turn)).catch(() => {});

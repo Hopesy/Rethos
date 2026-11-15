@@ -1,5 +1,5 @@
 import type { AppConfig } from "../config.ts";
-import { voiceCredential } from "../included-services.ts";
+import { voiceCredential } from "../service-credentials.ts";
 import * as chatterbox from "./chatterbox.ts";
 import * as elevenlabs from "./elevenlabs.ts";
 import * as openai from "./openai.ts";

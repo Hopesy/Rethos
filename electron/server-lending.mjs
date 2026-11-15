@@ -80,8 +80,8 @@ export function installServerLending({ ipcMain, guard, sharing, dialogs, validat
     if (!(await allows(env))) return null;
     return sharing().lendOwn(env, firstGrant);
   }));
-  ipcMain.handle("sharing:pause", guard("sharing:pause", () => { sharing().pause(); }));
-  ipcMain.handle("sharing:resume", guard("sharing:resume", async () => { await sharing().resume(); }));
+  ipcMain.handle("sharing:pause", guard("sharing:pause", (_event, id) => sharing().pauseServer(saved(id))));
+  ipcMain.handle("sharing:resume", guard("sharing:resume", (_event, id) => sharing().resumeServer(saved(id))));
 
   const asking = new Set();
   /** Still on that server: the person may have gone elsewhere while the server answered. */

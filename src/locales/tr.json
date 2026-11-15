@@ -202,7 +202,6 @@
   "server.memory.starter": "Starter'da aynı anda yaklaşık bir görev için yer vardır. Daha büyük bir plan aynı anda daha fazlasını çalıştırır.",
   "server.planTurns.wait": "Sıra bekleniyor: Starter bu Cloud'da aynı anda {limit} görev çalıştırır. Önünde: {ahead}. Biri bitince kendiliğinden başlar; daha büyük bir plan aynı anda daha fazlasını çalıştırır.",
   "server.planTurns.still": "Hâlâ bekliyor: Starter aynı anda {limit} görev çalıştırır. Önünde: {ahead}.",
-  "server.botPaused": "Duraklatıldı: Starter {limit} botu uyanık tutar. Uyandırmak için yükseltin ya da hangi botların uyanık kalacağını değiştirin.",
   "server.teammates.queued.thread": "{bot} buna henüz başlamadı: o konudaki önceki tur hâlâ çalışıyor.",
   "server.teammates.queued.slots": "{bot} buna henüz başlamadı: zaten aynı anda {limit} konudan {busy} tanesini çalıştırıyor.",
   "server.teammates.queued.room": "{bot} buna henüz başlamadı: bir odadaki turunu bitiriyor.",
@@ -3721,7 +3720,7 @@
   "computer.worksOnHintCloudHome": "Bu botun nerede çalışacağını seçin. Bilgisayarınızda {app} açık olduğu sürece onu da kullanabilir.",
   "computer.destinationAria": "Bilgisayar hedefi",
   "computer.dest.autoDesc": "Otomatik olarak seç",
-  "computer.dest.cloudDesc": "Buluttaki bir masaüstü",
+  "computer.dest.cloudDesc": "Kendi VPS sunucunuzda bir masaüstü",
   "computer.dest.vmDesc": "Yalıtılmış yerel masaüstü",
   "computer.dest.localDesc": "Ekranınız ve uygulamalarınız",
   "computer.dest.browserDesc": "Yalnızca web sayfaları",
@@ -4310,7 +4309,7 @@
   "window.maximize": "Ekranı kapla",
   "window.restore": "Önceki boyuta getir",
   "window.close": "Kapat",
-  "place.cloud": "Bulut masaüstü",
+  "place.cloud": "Uzak masaüstünüz",
   "place.vm": "Özel masaüstü",
   "place.local": "Bu bilgisayar",
   "place.browser": "Tarayıcı",
@@ -5439,8 +5438,6 @@
   "server.meetings.notes.questions": "Açık sorular",
   "server.meetings.notes.attendees": "Katılımcılar",
   "server.meetings.notes.transcript": "Tam döküm aşağıda ekli.",
-  "server.meetings.nothingHeard": "{reason} Kimse yazıya dökebileceğim bir şey söylemedi, bu yüzden not yok.",
-  "server.meetings.endedDetail": "{reason} ({detail})",
   "server.meetings.end.left": "Toplantıdan ayrıldım.",
   "server.meetings.end.stop_requested": "Toplantıda biri \"@notes stop\" yazdı, bu yüzden ayrıldım.",
   "server.meetings.end.meeting_ended": "Toplantı bitti.",
@@ -5564,5 +5561,6 @@
   "remote.client.endsDec7": "Bu bağlantı türü 7 Aralık'ta sona eriyor. Sonrasında bu bilgisayarı diğer bilgisayarın Telefon ve cihazlar bölümünden yeniden eşleştirin.",
   "phone.code.pairingCode": "Eşleştirme kodu",
   "phone.code.typeIntro": "{app} uygulamasını açın ve bu eşleştirme kodunu yazın.",
-  "phone.signIn.emailCode": "E-postanızdaki oturum açma kodu"
+  "phone.signIn.emailCode": "E-postanızdaki oturum açma kodu",
+  "routines.server.desktopRetired": "Barındırılan masaüstü hizmeti kaldırıldı. Bu rutini yeniden etkinleştirmeden önce botun çalışma konumunu gözden geçirin."
 }

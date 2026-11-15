@@ -207,7 +207,6 @@
   "server.memory.starter": "Starter ha spazio per circa un'attività alla volta. Un piano più grande ne esegue di più insieme.",
   "server.planTurns.wait": "In attesa di un posto: Starter esegue {limit} attività alla volta su questo Cloud. Prima di questa: {ahead}. Parte da sola appena una finisce, e un piano più grande ne esegue di più insieme.",
   "server.planTurns.still": "Ancora in attesa: Starter esegue {limit} attività alla volta. Prima di questa: {ahead}.",
-  "server.botPaused": "In pausa: Starter tiene svegli {limit} bot. Passa a un piano superiore per svegliarlo, oppure cambia quali bot restano svegli.",
   "server.teammates.queued.thread": "{bot} non ha ancora iniziato: un turno precedente in quel thread è ancora in corso.",
   "server.teammates.queued.slots": "{bot} non ha ancora iniziato: sta già eseguendo {busy} thread su {limit} insieme.",
   "server.teammates.queued.room": "{bot} non ha ancora iniziato: sta finendo un turno in una stanza.",
@@ -4546,7 +4545,7 @@
   "computer.worksOnHintCloudHome": "Scegli dove lavora questo bot. Può usare anche il tuo computer quando {app} è aperto lì.",
   "computer.destinationAria": "Destinazione del computer",
   "computer.dest.autoDesc": "Scelta automatica",
-  "computer.dest.cloudDesc": "Un desktop nel cloud",
+  "computer.dest.cloudDesc": "Un desktop sul tuo VPS",
   "computer.dest.vmDesc": "Desktop locale isolato",
   "computer.dest.localDesc": "Il tuo schermo e le tue app",
   "computer.dest.browserDesc": "Solo pagine web",
@@ -5208,7 +5207,7 @@
   "window.maximize": "Ingrandisci",
   "window.restore": "Ripristina",
   "window.close": "Chiudi",
-  "place.cloud": "Desktop cloud",
+  "place.cloud": "Il tuo desktop remoto",
   "place.vm": "Desktop privato",
   "place.local": "Questo computer",
   "place.off": "Spento",
@@ -6563,8 +6562,6 @@
   "server.meetings.notes.questions": "Domande aperte",
   "server.meetings.notes.attendees": "Partecipanti",
   "server.meetings.notes.transcript": "La trascrizione completa è allegata qui sotto.",
-  "server.meetings.nothingHeard": "{reason} Nessuno ha detto nulla che potessi trascrivere, quindi non ci sono note.",
-  "server.meetings.endedDetail": "{reason} ({detail})",
   "server.meetings.end.left": "Ho lasciato la riunione.",
   "server.meetings.end.stop_requested": "Qualcuno nella riunione ha scritto \"@notes stop\", quindi sono uscito.",
   "server.meetings.end.meeting_ended": "La riunione è terminata.",
@@ -6689,5 +6686,6 @@
   "phone.code.pairingCode": "Codice di abbinamento",
   "phone.code.typeIntro": "Apri l'app {app} e inserisci questo codice di abbinamento.",
   "phone.signIn.emailCode": "Codice di accesso dalla tua email",
-  "computer.linux.metaOmarchy": "Sperimentale · Omarchy (Hyprland) · Wayland"
+  "computer.linux.metaOmarchy": "Sperimentale · Omarchy (Hyprland) · Wayland",
+  "routines.server.desktopRetired": "Il servizio desktop ospitato è stato rimosso. Controlla la posizione di lavoro del bot prima di riattivare questa routine."
 }

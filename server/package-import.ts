@@ -7,7 +7,6 @@ import {
   ROOM_PARTS, roomReleaseValues, ROUTINE_PARTS, routineReleaseValues, scheduleValue, sha256Hex, TEAM_PARTS,
   type AgentPart, type PartPair, type TeamPart,
 } from "./package-parts.ts";
-import type { BotLimit } from "./host/starter-bot-limit.ts";
 import type { PresetRegistry } from "./presets.ts";
 import type { Routine, RoutineInput, RoutineManager } from "./routines.ts";
 import type { SkillListing, SkillPackageStamp } from "./skills.ts";
@@ -65,7 +64,6 @@ export interface PackageImportDeps {
   images: { save(bytes: Uint8Array, mime: string): string };
   broadcast?: (event: { kind: "bot"; bot: BotRecord } | { kind: "group"; group: GroupRecord }) => void;
   defaultSelection: () => ModelSelection;
-  botLimit?: Pick<BotLimit, "refusal">;
   presets?: PresetRegistry;
 }
 
@@ -227,8 +225,7 @@ function runImport(source: ImportSource, options: PackageImportOptions, deps: Pa
   const members = pkg
     ? pkg.agents.map((agent) => ({ member: memberFromAgent(agent), agent }))
     : (source as { manifest: ParsedTeamManifest }).manifest.team.members.map((member) => ({ member, agent: undefined }));
-  const overPlan = deps.botLimit?.refusal(members.length);
-  if (overPlan) throw new PackageImportError(overPlan.code, overPlan.error, 409);
+
 
   const importedBots: BotRecord[] = [];
   const createdGroups: GroupRecord[] = [];

@@ -47,7 +47,6 @@ export type RoutineRunOn = "maus" | "cloud";
 export type RoutineTarget = "bot" | "room-goal";
 export type RoutineGoalStatus = Exclude<GroupGoalRunStatus, "working">;
 
-
 export interface Routine extends RoutineTroubleCode {
   id: string;
   name: string;
@@ -199,7 +198,6 @@ interface RoutineFile {
   holds?: RoutineHoldCause[];
 }
 
-
 export type RoutineRequestOwner = Pick<RoutineRequestReceipt, "requestId" | "messageId" | "botId" | "threadId">;
 
 function routineRequestOwnerKey(owner: RoutineRequestOwner): string {
@@ -327,12 +325,14 @@ export class RoutineManager {
     this.file = options.file ?? join(DATA_DIR, "routines.json"); this.disk = new OwnedFile(this.file, { mode: 0o600 });
     this.now = options.now ?? Date.now;
     this.bootedAt = this.now();
+    let retiredDesktopMigration = false;
     try {
       const text = readFileSync(this.file, "utf8"), disk = JSON.parse(text) as Partial<RoutineFile>; this.disk.loaded(text);
       if (disk === null || typeof disk !== "object" || Array.isArray(disk)) throw new Error("Invalid routines file");
       for (const key of ["routines", "runs", "routineRequestReceipts", "webhookRunReceipts"] as const) {
         if (key in disk && !Array.isArray(disk[key])) throw new Error(`Invalid routines file: ${key} is not a list`);
       }
+      retiredDesktopMigration = Boolean(disk.routines?.some(routine => routine.runOn === "cloud" || routine.heldFor === "plan_cancelled") || disk.runs?.some(run => run.runOn === "cloud" && ["queued", "running", "waiting"].includes(run.status)));
       this.routines = Array.isArray(disk.routines) ? disk.routines.flatMap((routine) => {
         const loaded = loadRoutine(routine, this.now());
         if (!loaded) {
@@ -341,7 +341,7 @@ export class RoutineManager {
         }
         return loaded ? [loaded] : [];
       }) : [];
-      this.runs = Array.isArray(disk.runs) ? disk.runs.map(loadRun) : []; this.malformedAttachments = attachmentsMalformed([...(disk.routines ?? []), ...(disk.runs ?? [])]);
+      this.runs = Array.isArray(disk.runs) ? disk.runs.map(run => loadRun(run, this.now())) : []; this.malformedAttachments = attachmentsMalformed([...(disk.routines ?? []), ...(disk.runs ?? [])]);
       this.routineRequestReceipts = loadRequestReceipts(disk.routineRequestReceipts);
       this.webhookRunReceipts = loadEventReceipts(disk.webhookRunReceipts, this.runs, this.now());
       this.frozenPending = disk.frozenResultsCleared !== true;
@@ -371,7 +371,7 @@ export class RoutineManager {
       }
       cut.push(cloneRun(run));
     }
-    if (cut.length > 0) this.saveLater();
+    if (cut.length > 0 || retiredDesktopMigration) this.saveLater();
     for (const run of cut) {
       if (run.threadId) this.options.onRunCut?.(run);
       this.notifyRunChanged(run);

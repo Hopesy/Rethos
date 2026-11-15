@@ -62,6 +62,7 @@ export type CloudBackend = "box" | "vps";
 
 /** A place a bot can act. `cloud` covers both cloud backends. */
 export type Surface = "cloud" | "vm" | "local" | "browser";
+import type { WorkTargetOwner } from "./work-target.ts";
 
 export const MAUS_COLOR_NAMES = [
   "green", "blue", "red", "orange", "purple", "cyan", "pink",
@@ -134,7 +135,7 @@ export interface BotMovedTo {
 
 /** One task = one conversation with its own context, thread and provider
  * session. */
-export interface WireTask extends InboxTask {
+export interface WireTask extends InboxTask, WorkTargetOwner {
   /** Outstanding handoffs, not an active provider turn. */
   waitingForTeammates?: boolean;
   threadId: string;
@@ -274,7 +275,7 @@ export const helperModelAllowed = (bot: { helperModel?: unknown }): boolean => b
 
 /** A bot as a client may see it. avatarUrl is always present (null when the
  * bot has none). */
-export interface WireBot extends DefaultBotFields, BotAccessFields {
+export interface WireBot extends DefaultBotFields, BotAccessFields, WorkTargetOwner {
   waitingForTeammates?: boolean;
   id: string;
   /** The task selected in the UI; running turns keep their own thread id. */

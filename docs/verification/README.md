@@ -95,8 +95,6 @@ Use only mapped, tested commands:
 - [Preset bots](presets.md)
 - [Teams and shared instructions](teams.md)
 - [Full workspace backups](workspace-backups.md)
-- [Optional company cloud backups](company-backups.md)
-- [Organization library: the desktop channel](desktop-library.md)
 - [Fleet: many workspaces on one server](fleet.md)
 - [Workspaces screen and the fleet agent](workspaces.md)
 - [Hosted workspace sign-in and revocation](hosted-workspaces.md)
@@ -126,10 +124,6 @@ The [talk shortcut recipe](talk-shortcut.md) checks hold-to-talk from any app, t
 reply box and the Quick asks chat by hand on a packaged side-by-side build; the
 control surface cannot drive a global shortcut or the microphone, so it is not
 in the map above.
-
-The [move to My Cloud fixture](cloud-send.md) runs this computer's server and a
-Cloud home with the desktop's own wiring between them, and runs and checks the
-one-time move as main does.
 
 The [server of the person's own as home fixture](own-home.md) runs this
 computer's server and servers of the person's own with main's wiring for
@@ -168,13 +162,6 @@ against isolated servers and renderer fixtures.
 
 The [loading screen and tray smoke](startup-tray.md) checks the startup close
 button, hidden handoff, tray restore, and Quit in a disposable Electron profile.
-
-The [optional organization connection smoke](organization-settings.md) checks
-the real Settings panel and production desktop client against a synthetic
-Admin server, including cancellation, revocation and unchanged normal startup.
-
-The [personal Cloud account smoke](cloud-account.md) checks optional browser
-sign-in, server-verified Pro status and sign-out in a disposable Electron profile.
 
 The [rail of Clouds](cloud-rail.md) checks the session's list of Clouds, which
 pages may read the rail, opening a place by its id, hiding the rail, and buying

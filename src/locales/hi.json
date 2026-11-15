@@ -171,7 +171,6 @@
   "server.memory.starter": "Starter में एक समय में लगभग एक काम की जगह होती है। बड़ा प्लान एक साथ ज़्यादा चलाता है।",
   "server.planTurns.wait": "बारी का इंतज़ार: इस Cloud पर Starter एक साथ {limit} काम चलाता है। इससे आगे: {ahead}। एक काम ख़त्म होते ही यह अपने आप शुरू होगा, और बड़ा प्लान एक साथ ज़्यादा चलाता है।",
   "server.planTurns.still": "अब भी इंतज़ार: Starter एक साथ {limit} काम चलाता है। इससे आगे: {ahead}।",
-  "server.botPaused": "रुका हुआ: Starter {limit} बॉट जगाए रखता है। इसे जगाने के लिए अपग्रेड करें, या बदलें कि कौन से बॉट जगे रहें।",
   "server.teammates.queued.thread": "{bot} ने इसे अभी शुरू नहीं किया: उस थ्रेड का पिछला काम अभी चल रहा है।",
   "server.teammates.queued.slots": "{bot} ने इसे अभी शुरू नहीं किया: वह पहले से {limit} में से {busy} थ्रेड एक साथ चला रहा है।",
   "server.teammates.queued.room": "{bot} ने इसे अभी शुरू नहीं किया: वह एक रूम में अपना काम पूरा कर रहा है।",
@@ -1857,7 +1856,7 @@
   "computer.worksOnHintCloudHome": "चुनें कि यह बॉट कहाँ काम करे। जब भी आपके कंप्यूटर पर {app} खुला हो, यह उसका इस्तेमाल भी कर सकता है।",
   "computer.destinationAria": "कंप्यूटर गंतव्य",
   "computer.dest.autoDesc": "स्वतः चुनें",
-  "computer.dest.cloudDesc": "क्लाउड में एक डेस्कटॉप",
+  "computer.dest.cloudDesc": "आपके अपने VPS पर एक डेस्कटॉप",
   "computer.dest.vmDesc": "अलग-थलग स्थानीय डेस्कटॉप",
   "computer.dest.localDesc": "आपकी स्क्रीन और ऐप्स",
   "computer.dest.browserDesc": "केवल वेब पेज",
@@ -2124,7 +2123,7 @@
   "canvasComputers.computer": "डेस्कटॉप",
   "canvasComputers.assign": "डेस्कटॉप दें",
   "canvasComputers.unassign": "डेस्कटॉप हटाएँ",
-  "place.cloud": "क्लाउड डेस्कटॉप",
+  "place.cloud": "आपका रिमोट डेस्कटॉप",
   "place.vm": "निजी डेस्कटॉप",
   "place.offHint": "इस बॉट के लिए “काम करता है” बंद है। इसे स्क्रीन पैनल में बदलें।",
   "place.view.auto.lineMyCloud": "बिल्ट-इन ब्राउज़र इस्तेमाल करता है। चैट में, जब किसी काम को डेस्कटॉप ऐप्स चाहिए होते हैं, तो यह अपना क्लाउड डेस्कटॉप अपने आप शुरू करता है।",
@@ -3008,8 +3007,6 @@
   "server.meetings.notes.questions": "खुले सवाल",
   "server.meetings.notes.attendees": "शामिल लोग",
   "server.meetings.notes.transcript": "पूरी ट्रांसक्रिप्ट नीचे संलग्न है।",
-  "server.meetings.nothingHeard": "{reason} किसी ने ऐसा कुछ नहीं कहा जिसे मैं लिख सकूँ, इसलिए कोई नोट्स नहीं हैं।",
-  "server.meetings.endedDetail": "{reason} ({detail})",
   "server.meetings.end.left": "मैंने मीटिंग छोड़ दी।",
   "server.meetings.end.stop_requested": "मीटिंग में किसी ने \"@notes stop\" लिखा, इसलिए मैं निकल गया।",
   "server.meetings.end.meeting_ended": "मीटिंग खत्म हो गई।",
@@ -3133,5 +3130,6 @@
   "remote.client.endsDec7": "यह कनेक्शन तरीका 7 दिसंबर को खत्म होगा। उसके बाद दूसरे कंप्यूटर के फ़ोन और डिवाइस से इस कंप्यूटर को फिर से जोड़ें।",
   "phone.code.pairingCode": "पेयरिंग कोड",
   "phone.code.typeIntro": "{app} ऐप खोलें और यह पेयरिंग कोड डालें।",
-  "phone.signIn.emailCode": "आपके ईमेल का साइन-इन कोड"
+  "phone.signIn.emailCode": "आपके ईमेल का साइन-इन कोड",
+  "routines.server.desktopRetired": "होस्ट किए गए डेस्कटॉप की सेवा हटा दी गई है। इस रूटीन को फिर से चालू करने से पहले बॉट के कार्य स्थान की जाँच करें।"
 }

@@ -12,47 +12,34 @@ const require = createRequire(import.meta.url);
 const environments = require("./environments.cjs");
 const localOrigin = require("./local-origin.cjs");
 
-const POPUP = "whats-new-2026-11", BOAT = "boat-credit-2026-11", GROK = "grok-move-2026-11";
+const POPUP = "grok-move-2026-11";
 const NOON = new Date(2026, 9, 16, 12).getTime();
 const LOCAL = "http://127.0.0.1:18799", CLOUD = "https://omb-u-1.fly.dev", VPS = "https://bots.example.test";
 
-test("a page on an older release keeps working with the longer list: its own ids record as before, and it never reads the new one", () => {
-  let saved = { seen: [POPUP, GROK, "gone-notice"] };
+test("retired commercial notice records are discarded while active notices and preferences persist", () => {
+  let saved = { seen: ["whats-new-2026-11", POPUP, "boat-credit-2026-11"], analytics: false };
   const prefs = createDesktopPrefs({ read: () => saved, write: value => { saved = structuredClone(value); } });
-  assert.deepEqual(prefs.seen(), [POPUP, GROK]);
-  prefs.markSeen(BOAT);
-  assert.deepEqual(saved.seen, [POPUP, GROK, BOAT], "the new id is kept beside the ones an older page records");
-  assert.ok(prefs.seen().includes(BOAT) && prefs.seen().includes(POPUP), "the lookups an older page makes");
+  assert.deepEqual(DESKTOP_NOTICES, [POPUP]);
+  assert.deepEqual(prefs.seen(), [POPUP]);
+  prefs.markSeen("boat-credit-2026-11");
+  prefs.setAnalytics(true);
+  assert.deepEqual(saved, { seen: [POPUP], analytics: true });
+  const restarted = createDesktopPrefs({ read: () => saved, write: value => { saved = value; } });
+  assert.deepEqual(restarted.seen(), [POPUP]);
+  assert.equal(restarted.analytics(), true);
 });
 
-test("What's new, Boat's credit offer and the Grok Bot move are the notices a page can record; seen and analytics survive a restart; a broken record never stops the app", () => {
-  assert.deepEqual([...DESKTOP_NOTICES], [POPUP, BOAT, GROK]);
-  let saved = null;
+test("only supported notices are recorded and a damaged record keeps the desktop usable", () => {
   const writes = [];
-  const prefs = createDesktopPrefs({ read: () => saved, write: value => { writes.push(value); saved = structuredClone(value); } });
-  assert.deepEqual(prefs.seen(), []); assert.equal(prefs.analytics(), null);
-  for (const id of ["other-notice", "__proto__", "", 42]) prefs.markSeen(id);
-  assert.equal(writes.length, 0, "nothing a page names outside the list is written");
+  const prefs = createDesktopPrefs({ read: () => null, write: value => writes.push(value) });
+  for (const id of ["other", "__proto__", "", 42]) prefs.markSeen(id);
+  assert.equal(writes.length, 0);
   prefs.markSeen(POPUP); prefs.markSeen(POPUP);
-  assert.deepEqual(prefs.seen(), [POPUP]); assert.equal(writes.length, 1);
-  prefs.markSeen(BOAT);
-  assert.deepEqual(prefs.seen(), [POPUP, BOAT]); assert.equal(writes.length, 2);
-  prefs.setAnalytics(false);
-  const restarted = createDesktopPrefs({ read: () => saved, write: value => { saved = value; } });
-  assert.deepEqual(restarted.seen(), [POPUP, BOAT]); assert.equal(restarted.analytics(), false);
-  restarted.setAnalytics("yes"); assert.equal(restarted.analytics(), false, "only true turns it on");
-  restarted.setAnalytics(true); assert.equal(restarted.analytics(), true);
-
-  const broken = createDesktopPrefs({ read: () => { throw new Error("unreadable"); }, write: () => { throw new Error("read-only disk"); } });
-  assert.deepEqual(broken.seen(), []);
+  assert.equal(writes.length, 1);
+  const broken = createDesktopPrefs({ read: () => { throw new Error("unreadable"); }, write: () => { throw new Error("disk full"); } });
   broken.markSeen(POPUP); broken.setAnalytics(false);
-  assert.deepEqual(broken.seen(), [POPUP], "kept for this launch when the file cannot be written");
+  assert.deepEqual(broken.seen(), [POPUP]);
   assert.equal(broken.analytics(), false);
-  for (const record of ["nonsense", [POPUP], { seen: "all", shown: [], analytics: "off" }, { seen: [POPUP, "<b>"], shown: { [POPUP]: "today" } }]) {
-    const prefs = createDesktopPrefs({ read: () => record, write: () => {} });
-    assert.equal(prefs.analytics(), null, JSON.stringify(record));
-    assert.ok(prefs.seen().every(id => id === POPUP), JSON.stringify(record));
-  }
 });
 
 test("a write that fails leaves the last whole record on disk, analytics opt-out included", () => {
@@ -100,11 +87,11 @@ function desktopMain({ offered = true, page = event => event.page, config = () =
 test("every page of this desktop's window reads and records the same notices; nothing else is answered", async () => {
   const main = desktopMain();
   assert.deepEqual(main.channels, ["desktop-notices:state", "desktop-notices:seen", "desktop-profile:system-name", "desktop-analytics:set", "desktop-language:set", "window-frame:state", "window-frame:set"]);
-  for (const page of ["local", "cloud", "server"]) assert.deepEqual(await main.ask("desktop-notices:state", page), { seen: [], cloud: true });
+  for (const page of ["local", "cloud", "server"]) assert.deepEqual(await main.ask("desktop-notices:state", page), { seen: [] });
   await main.ask("desktop-notices:seen", "server", POPUP);
-  assert.deepEqual(await main.ask("desktop-notices:state", "local"), { seen: [POPUP], cloud: true });
+  assert.deepEqual(await main.ask("desktop-notices:state", "local"), { seen: [POPUP] });
   for (const channel of main.channels) assert.throws(() => main.ask(channel, null, POPUP), /only available in this app's window/, channel);
-  assert.deepEqual((await desktopMain({ offered: false }).ask("desktop-notices:state", "server")).cloud, false);
+  assert.deepEqual(await desktopMain({ offered: false }).ask("desktop-notices:state", "server"), { seen: [] });
 });
 
 test("a first run's default name for the profile goes to this computer's own page only", async () => {
@@ -118,7 +105,7 @@ test("This computer's own record counts on every page before its page loads on t
   const record = (onboarding) => () => ({ composio: { apiKey: "" }, onboarding });
   for (const [hint, seen] of [[POPUP, [POPUP]], [ONBOARDING_CLOUD_HINT, []]]) {
     const main = desktopMain({ config: record({ completedAt: "2026-10-01", version: 1, hintsSeen: ["tour-finished", hint] }) });
-    for (const page of ["local", "cloud", "server"]) assert.deepEqual(await main.ask("desktop-notices:state", page), { seen, cloud: true }, `${hint} ${page}`);
+    for (const page of ["local", "cloud", "server"]) assert.deepEqual(await main.ask("desktop-notices:state", page), { seen }, `${hint} ${page}`);
     assert.equal(main.saved(), null, "read, never written into this desktop's record");
   }
   assert.deepEqual(onboardingHints({ onboarding: { completedAt: "x", version: 2, hintsSeen: ["a", 1, null, "b"] } }), ["a", "b"]);
@@ -131,7 +118,7 @@ test("every desktop has What's new still to show, whatever This computer's welco
   for (const config of records) {
     for (const page of ["local", "cloud", "server"]) {
       const main = desktopMain({ config }), name = `${String(config)} ${page}`;
-      assert.deepEqual(await main.ask("desktop-notices:state", page), { seen: [], cloud: true }, name);
+      assert.deepEqual(await main.ask("desktop-notices:state", page), { seen: [] }, name);
     }
   }
 });
@@ -341,23 +328,23 @@ test("production wiring: main answers this computer's page, My Cloud's own page 
   assert.equal(broadcasts, 1, "the pages hear the frame change");
   assert.equal(options.page({ sender: { mainFrame: localFrame }, senderFrame: localFrame }), "local");
   assert.equal(options.page({ sender: contents, senderFrame: serverFrame }), "server");
-  assert.equal(options.page({ sender: contents, senderFrame: serverFrame, verifiedCloud: true }), "cloud", "My Cloud's page as main verifies it");
+  assert.equal(options.page({ sender: contents, senderFrame: serverFrame, verifiedCloud: true }), "server", "saved server origin remains authoritative");
   assert.equal(options.page({ sender: contents, senderFrame: { url: `${VPS}/` } }), null, "a frame inside the server's page");
   assert.equal(options.page({ sender: {}, senderFrame: serverFrame }), null, "another window");
   const evil = { url: "https://evil.example.test/" };
   assert.equal(options.page({ sender: { mainFrame: evil }, senderFrame: evil }), null, "a page that is not the active server");
-  assert.equal(await options.cloudOffered(), true);
-  assert.deepEqual(calls, ["restored", "offers"]);
+  assert.equal(options.cloudOffered, undefined);
+  assert.deepEqual(calls, []);
   options.languageChanged("en", windows[0].webContents);
   assert.deepEqual(sent, [["home", "desktop-language:changed", "en"], ["rail", "desktop-language:changed", "en"]], "every other open window hears the pick, and the window's rail");
   options.onLanguage("pt-br"); options.onLanguage("en");
-  assert.deepEqual(calls.slice(2), [["language", "pt-br"], "relabel", "talk relabel", ["language", "en"]], "main draws its native surfaces again only when the words change");
+  assert.deepEqual(calls, [["language", "pt-br"], "relabel", "talk relabel", ["language", "en"]], "main draws its native surfaces again only when the words change");
   options.onShown("de", {}); options.onShown("de", contents); options.onShown("en", contents);
-  assert.deepEqual(calls.slice(6), [["shown", "de"], "relabel", "talk relabel", ["shown", "en"]], "only the window's own page leads main's words, and only a change redraws them");
-  const navigate = main.slice(main.indexOf("function navigateMainWindow(url, keepingRecovery = false) {"), main.indexOf("\n}\n", main.indexOf("function navigateMainWindow(url, keepingRecovery = false) {")) + 3);
-  const load = vm.runInNewContext(`${navigate}; navigateMainWindow`, { homeWindow: { cancel: () => {} }, mainWindow: { isDestroyed: () => false, loadURL: async url => { if (url.endsWith("fail")) throw new Error("ERR_CONNECTION_REFUSED"); } } });
+  assert.deepEqual(calls.slice(4), [["shown", "de"], "relabel", "talk relabel", ["shown", "en"]], "only the window's own page leads main's words, and only a change redraws them");
+  const navigate = main.slice(main.indexOf("function navigateMainWindow(url) {"), main.indexOf("\n}\n", main.indexOf("function navigateMainWindow(url) {")) + 3);
+  const load = vm.runInNewContext(`${navigate}; navigateMainWindow`, { talk: { homeChanged: () => {} }, mainWindow: { isDestroyed: () => false, loadURL: async url => { if (url.endsWith("fail")) throw new Error("ERR_CONNECTION_REFUSED"); } } });
   assert.equal(await load(`${LOCAL}/ok`), true); assert.equal(await load(`${LOCAL}/fail`), false, "a failed load answers false, never throws");
-  assert.equal(await vm.runInNewContext(`${navigate}; navigateMainWindow`, { homeWindow: { cancel: () => {} }, mainWindow: null })(`${LOCAL}/`), false, "no window");
+  assert.equal(await vm.runInNewContext(`${navigate}; navigateMainWindow`, { talk: { homeChanged: () => {} }, mainWindow: null })(`${LOCAL}/`), false, "no window");
 });
 
 test("the window's rail of places is shown until the person hides it, and the choice survives a restart", () => {

@@ -208,7 +208,6 @@
   "server.memory.starter": "В Starter хватает места примерно на одну задачу за раз. Более крупный план запускает больше одновременно.",
   "server.planTurns.wait": "Ждёт очереди: Starter запускает в этом Cloud {limit} задачи одновременно. Перед этой: {ahead}. Она начнётся сама, когда одна завершится, а более крупный план запускает больше одновременно.",
   "server.planTurns.still": "Всё ещё ждёт: Starter запускает {limit} задачи одновременно. Перед этой: {ahead}.",
-  "server.botPaused": "На паузе: Starter держит активными {limit} ботов. Перейдите на план выше, чтобы разбудить его, или поменяйте, какие боты активны.",
   "server.teammates.queued.thread": "{bot} ещё не начал: предыдущий ход в этом потоке всё ещё выполняется.",
   "server.teammates.queued.slots": "{bot} ещё не начал: уже выполняется {busy} из {limit} потоков одновременно.",
   "server.teammates.queued.room": "{bot} ещё не начал: завершает ход в комнате.",
@@ -4693,7 +4692,7 @@
   "computer.worksOnHintCloudHome": "Выберите, где работает этот бот. Он также может пользоваться вашим компьютером, пока на нём открыт {app}.",
   "computer.destinationAria": "Куда направить бота",
   "computer.dest.autoDesc": "Выбирать автоматически",
-  "computer.dest.cloudDesc": "Облачный рабочий стол",
+  "computer.dest.cloudDesc": "Рабочий стол на вашем VPS",
   "computer.dest.vmDesc": "Изолированный локальный рабочий стол",
   "computer.dest.localDesc": "Ваш экран и приложения",
   "computer.dest.browserDesc": "Только веб-страницы",
@@ -5403,7 +5402,7 @@
   "window.maximize": "Развернуть",
   "window.restore": "Восстановить",
   "window.close": "Закрыть",
-  "place.cloud": "Облачный рабочий стол",
+  "place.cloud": "Ваш удалённый рабочий стол",
   "place.vm": "Личный рабочий стол",
   "place.local": "Этот компьютер",
   "place.browser": "Браузер",
@@ -6764,8 +6763,6 @@
   "server.meetings.notes.questions": "Открытые вопросы",
   "server.meetings.notes.attendees": "Участники",
   "server.meetings.notes.transcript": "Полная расшифровка приложена ниже.",
-  "server.meetings.nothingHeard": "{reason} Никто не сказал ничего, что я смог бы расшифровать, поэтому заметок нет.",
-  "server.meetings.endedDetail": "{reason} ({detail})",
   "server.meetings.end.left": "Я покинул встречу.",
   "server.meetings.end.stop_requested": "Кто-то на встрече написал «@notes stop», поэтому я вышел.",
   "server.meetings.end.meeting_ended": "Встреча завершилась.",
@@ -6889,5 +6886,6 @@
   "remote.client.endsDec7": "Этот тип подключения перестанет работать 7 декабря. После этого снова сопрягите этот компьютер из раздела «Телефон и устройства» на другом компьютере.",
   "phone.code.pairingCode": "Код сопряжения",
   "phone.code.typeIntro": "Откройте приложение {app} и введите этот код сопряжения.",
-  "phone.signIn.emailCode": "Код входа из письма"
+  "phone.signIn.emailCode": "Код входа из письма",
+  "routines.server.desktopRetired": "Сервис облачного рабочего стола удалён. Проверьте рабочее место бота перед повторным включением этой задачи."
 }

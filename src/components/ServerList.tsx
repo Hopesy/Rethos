@@ -10,7 +10,7 @@ import { useCopyFeedback } from "@/lib/copy-text";
 import { t } from "@/lib/i18n";
 import { OwnServerLink, RailSheet } from "./PlaceAddSheet";
 import { Switch } from "./SettingsPrimitives";
-import { CloudTile } from "./cloud-buy/parts";
+import { CloudTile } from "./ServerUi";
 
 type Saved = Awaited<ReturnType<NonNullable<NonNullable<Window["ogb"]>["environments"]>["state"]>>;
 type Entry = Saved["environments"][number];

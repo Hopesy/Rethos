@@ -36,7 +36,6 @@ export function installOwnHome(deps: {
   choice: { read(): unknown; write(value: unknown): void };
   sendState: { read(): unknown; write(value: unknown): void };
   /** The move to My Cloud's journal. */
-  cloudJournal(): unknown;
   lend?(projects: string[], place: SavedPlace | null): Promise<unknown>;
   phone?: { paired(): boolean; stop(): Promise<void>; start(): Promise<void> };
   openHome?(place: SavedPlace): void;

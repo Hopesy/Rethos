@@ -15,7 +15,7 @@ const lend = (extra: Record<string, unknown> = {}) => ({ id: randomUUID(), name:
   folders: [{ id: randomUUID(), name: "Plans", write: false }], terminal: false, computer: true, ...extra });
 
 describe("what a server remembers about computers lent to it", () => {
-  it("knows a computer by name across new grants, keeps when it was last online and used, and survives a restart", () => {
+  it("keeps a computer's identity across grants and survives a restart", () => {
     let now = Date.UTC(2026, 9, 7, 14, 2);
     const path = file();
     const lent = new LentComputers(path, () => now);
@@ -27,7 +27,7 @@ describe("what a server remembers about computers lent to it", () => {
     expect(JSON.parse(readFileSync(path, "utf8")).computers[0].lastSeenAt).toBe(Date.UTC(2026, 9, 7, 14, 2));
     now += 60_000;
     lent.used("cloud-home", first);
-    const again = randomUUID();
+    const again = first;
     now += 60_000;
     lent.connected("cloud-home", { id: again, name: "ASH-PC", folders: 0, terminal: false, screen: true });
     const reread = new LentComputers(path, () => now);
@@ -38,6 +38,14 @@ describe("what a server remembers about computers lent to it", () => {
     reread.stopped("cloud-home", again);
     expect(new LentComputers(path).list("cloud-home")[0]!.stoppedAt).toBe(now);
     expect(readFileSync(path, "utf8")).not.toMatch(/Plans|secret/u);
+  });
+
+  it("keeps different computers with the same display name", () => {
+    const path = file();
+    const lent = new LentComputers(path);
+    const first = randomUUID(), second = randomUUID();
+    for (const id of [first, second]) lent.connected("owner", { id, name: "Desktop", folders: 0, terminal: true, screen: true });
+    expect(new LentComputers(path).list("owner").map(item => item.id).sort()).toEqual([first, second].sort());
   });
 
   it("says PC on Windows, Mac only on a Mac, and computer otherwise", () => {

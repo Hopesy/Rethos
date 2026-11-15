@@ -75,11 +75,7 @@ test("a server's circle offers Make my home only once it said it is this person'
   assert.equal(own.offers(garage), false, "an old word is asked again first");
   own.close();
 
-  const moving = install({ answers: { [garage.origin]: { own: true } }, cloudJournal: { v: 1, phase: "copy", cloud: { origin: "https://omb-u-1.fly.dev", account: "acct" } } });
-  moving.own.refresh();
-  await new Promise((resolve) => setTimeout(resolve, 20));
-  assert.equal(moving.own.offers(garage), false, "this computer's bots are on their way to My Cloud");
-  moving.own.close();
+
 });
 
 test("starting asks the server once more, and keeps this computer's bots here when it isn't theirs alone, isn't signed in or is too old", async () => {
@@ -94,9 +90,6 @@ test("starting asks the server once more, and keeps this computer's bots here wh
     assert.equal(own.chosen(), null);
     own.close();
   }
-  const cloud = install({ answers: { [garage.origin]: { own: true } }, cloudJournal: { v: 1, phase: "done", cloud: { origin: "https://omb-u-1.fly.dev", account: "acct" } } });
-  await assert.rejects(cloud.own.start("g"), /moving to My Cloud/u);
-  cloud.own.close();
   const unknown = install({ answers: {} });
   await assert.rejects(unknown.own.start("home"), /isn't in this app/u, "My Cloud is never made home this way");
   unknown.own.close();

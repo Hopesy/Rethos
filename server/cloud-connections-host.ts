@@ -31,8 +31,6 @@ export interface CloudConnectionsHostDeps {
   mcpOAuth: Pick<McpOAuthManager, "authState" | "signInRecord" | "adopt" | "forget">;
   /** The engines (instance ids) ready to run here now. */
   engines(): Promise<string[]>;
-  /** A trial's moved keys, unused while its Claude credit lasts. */
-  heldKeys?: { hold(engines: readonly string[]): boolean } | null;
   /** This server's data folder, where a Cloud home keeps the computer its bots moved from. */
   dataDir?: string;
   /** The person's mailboxes: what a move carries, and what takes them on the Cloud they move to. */
@@ -82,7 +80,6 @@ export function createCloudConnectionsHost(deps: CloudConnectionsHostDeps) {
         return { ok: true, outcome: deps.mcpOAuth.adopt(name, parsed.server.url, record, replaces ? (current) => signInDigest(current.tokens) === replaces : undefined) };
       },
       ...(deps.email ? { adoptEmail: deps.email.adopt } : {}),
-      holdKeys: (engines) => deps.heldKeys?.hold(engines) ?? false,
     }),
 
     /** The private port's ask: one connection's secrets, a code for the person's Cloud to act as this computer's

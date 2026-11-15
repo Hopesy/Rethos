@@ -201,7 +201,6 @@
   "server.memory.starter": "Starter tiene espacio para una tarea a la vez, más o menos. Un plan mayor ejecuta más a la vez.",
   "server.planTurns.wait": "Esperando turno: Starter ejecuta {limit} tareas a la vez en esta Cloud. Delante de esta: {ahead}. Empieza sola cuando termine una, y un plan mayor ejecuta más a la vez.",
   "server.planTurns.still": "Sigue esperando: Starter ejecuta {limit} tareas a la vez. Delante de esta: {ahead}.",
-  "server.botPaused": "En pausa: Starter mantiene {limit} bots despiertos. Mejora el plan para despertarlo o cambia qué bots están despiertos.",
   "server.teammates.queued.thread": "{bot} aún no ha empezado esto: sigue en marcha un turno anterior de ese hilo.",
   "server.teammates.queued.slots": "{bot} aún no ha empezado esto: ya ejecuta {busy} de {limit} hilos a la vez.",
   "server.teammates.queued.room": "{bot} aún no ha empezado esto: está terminando un turno en una sala.",
@@ -4288,7 +4287,7 @@
   "computer.worksOnHintCloudHome": "Elige dónde trabaja este bot. También puede usar tu equipo siempre que {app} esté abierto en él.",
   "computer.destinationAria": "Destino del equipo",
   "computer.dest.autoDesc": "Elegir automáticamente",
-  "computer.dest.cloudDesc": "Un escritorio en la nube",
+  "computer.dest.cloudDesc": "Un escritorio en tu propio VPS",
   "computer.dest.vmDesc": "Escritorio local aislado",
   "computer.dest.localDesc": "Tu pantalla y tus apps",
   "computer.dest.browserDesc": "Solo páginas web",
@@ -4935,7 +4934,7 @@
   "window.maximize": "Maximizar",
   "window.restore": "Restaurar",
   "window.close": "Cerrar",
-  "place.cloud": "Escritorio en la nube",
+  "place.cloud": "Tu escritorio remoto",
   "place.vm": "Escritorio privado",
   "place.local": "Este equipo",
   "place.browser": "Navegador",
@@ -5940,8 +5939,6 @@
   "server.meetings.notes.questions": "Preguntas abiertas",
   "server.meetings.notes.attendees": "Asistentes",
   "server.meetings.notes.transcript": "La transcripción completa está adjunta abajo.",
-  "server.meetings.nothingHeard": "{reason} Nadie dijo nada que pudiera transcribir, así que no hay notas.",
-  "server.meetings.endedDetail": "{reason} ({detail})",
   "server.meetings.end.left": "Salí de la reunión.",
   "server.meetings.end.stop_requested": "Alguien en la reunión escribió \"@notes stop\", así que salí.",
   "server.meetings.end.meeting_ended": "La reunión terminó.",
@@ -6065,5 +6062,6 @@
   "remote.client.endsDec7": "Este tipo de conexión termina el 7 de diciembre. Después, vuelve a emparejar esta computadora desde Teléfono y dispositivos en la otra.",
   "phone.code.pairingCode": "Código de emparejamiento",
   "phone.code.typeIntro": "Abre la app de {app} y escribe este código de emparejamiento.",
-  "phone.signIn.emailCode": "Código de inicio de sesión de tu correo"
+  "phone.signIn.emailCode": "Código de inicio de sesión de tu correo",
+  "routines.server.desktopRetired": "Se eliminó el servicio de escritorio alojado. Revisa el lugar de trabajo del bot antes de volver a activar esta rutina."
 }

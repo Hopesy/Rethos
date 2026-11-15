@@ -199,7 +199,6 @@
   "server.memory.starter": "Starter hat Platz für etwa eine Aufgabe gleichzeitig. Ein größerer Plan führt mehr gleichzeitig aus.",
   "server.planTurns.wait": "Wartet auf einen Platz: Starter führt auf dieser Cloud {limit} Aufgaben gleichzeitig aus. Davor in der Reihe: {ahead}. Es startet von selbst, sobald eine fertig ist, und ein größerer Plan führt mehr gleichzeitig aus.",
   "server.planTurns.still": "Wartet noch: Starter führt {limit} Aufgaben gleichzeitig aus. Davor in der Reihe: {ahead}.",
-  "server.botPaused": "Pausiert: Starter hält {limit} Bots wach. Führe ein Upgrade durch, um ihn zu wecken, oder tausche, welche Bots wach sind.",
   "server.teammates.queued.thread": "{bot} hat damit noch nicht begonnen: Ein früherer Durchlauf in diesem Thread läuft noch.",
   "server.teammates.queued.slots": "{bot} hat damit noch nicht begonnen: Es laufen bereits {busy} von {limit} Threads gleichzeitig.",
   "server.teammates.queued.room": "{bot} hat damit noch nicht begonnen: Es beendet gerade einen Durchlauf in einem Raum.",
@@ -1913,7 +1912,7 @@
   "computer.worksOnHintCloudHome": "Wähle, wo dieser Bot arbeitet. Er kann auch deinen Computer nutzen, solange {app} darauf geöffnet ist.",
   "computer.destinationAria": "Computer-Ziel",
   "computer.dest.autoDesc": "Automatisch wählen",
-  "computer.dest.cloudDesc": "Ein Desktop in der Cloud",
+  "computer.dest.cloudDesc": "Ein Desktop auf deinem eigenen VPS",
   "computer.dest.vmDesc": "Isolierter lokaler Desktop",
   "computer.dest.localDesc": "Dein Bildschirm und deine Apps",
   "computer.dest.browserDesc": "Nur Webseiten",
@@ -2180,7 +2179,7 @@
   "canvasComputers.computer": "Desktop",
   "canvasComputers.assign": "Desktop zuweisen",
   "canvasComputers.unassign": "Desktop-Zuweisung aufheben",
-  "place.cloud": "Cloud-Desktop",
+  "place.cloud": "Dein Remote-Desktop",
   "place.vm": "Privater Desktop",
   "place.offHint": "„Arbeitet auf“ ist für diesen Bot aus. Ändere es im Bildschirm-Panel.",
   "place.view.auto.lineMyCloud": "Nutzt den eingebauten Browser. In einem Chat startet er seinen Cloud-Desktop von selbst, wenn eine Aufgabe Desktop-Apps braucht.",
@@ -3290,8 +3289,6 @@
   "server.meetings.notes.questions": "Offene Fragen",
   "server.meetings.notes.attendees": "Teilnehmende",
   "server.meetings.notes.transcript": "Das vollständige Transkript ist unten angehängt.",
-  "server.meetings.nothingHeard": "{reason} Niemand hat etwas gesagt, das ich transkribieren konnte, daher gibt es keine Notizen.",
-  "server.meetings.endedDetail": "{reason} ({detail})",
   "server.meetings.end.left": "Ich habe die Besprechung verlassen.",
   "server.meetings.end.stop_requested": "Jemand in der Besprechung hat „@notes stop“ geschrieben, also bin ich gegangen.",
   "server.meetings.end.meeting_ended": "Die Besprechung ist beendet.",
@@ -3415,5 +3412,7 @@
   "remote.client.endsDec7": "Diese Verbindungsart endet am 7. Dezember. Koppeln Sie diesen Computer danach erneut über Telefon & Geräte auf dem anderen Computer.",
   "phone.code.pairingCode": "Kopplungscode",
   "phone.code.typeIntro": "Öffnen Sie die {app}-App und geben Sie diesen Kopplungscode ein.",
-  "phone.signIn.emailCode": "Anmeldecode aus Ihrer E-Mail"
+  "phone.signIn.emailCode": "Anmeldecode aus Ihrer E-Mail",
+  "routines.server.desktopRetired": "Der gehostete Desktop-Dienst wurde entfernt. Prüfe den Arbeitsort des Bots, bevor du diese Routine wieder aktivierst.",
+  "server.connectedComputer": "Verbundener Computer {name}"
 }

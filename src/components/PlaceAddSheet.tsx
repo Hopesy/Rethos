@@ -1,17 +1,17 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Laptop, Loader2, Server, X } from "lucide-react";
-import type { CloudSwatch } from "../../electron/cloud-list.mjs";
+import type { CloudSwatch } from "../../shared/place-colors.mjs";
 import type { RailAddChoices, RailPlace } from "../../electron/cloud-rail.mjs";
 import { EXAMPLE_ADDRESS, parseServerInput } from "../../electron/server-address.mjs";
 import { CONNECT_PROBLEM_KEYS, type ServerProbe, type ServerProbeProblem } from "../../electron/server-probe.mjs";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/cn";
-import { CLOUD_LIST_NAME_LIMIT, CLOUD_SWATCH_ORDER, SWATCH_COLOR, swatchFill } from "@/lib/cloud-extra";
+import { CLOUD_LIST_NAME_LIMIT, CLOUD_SWATCH_ORDER, SWATCH_COLOR, swatchFill } from "@/lib/place-colors";
 import { useCopyFeedback } from "@/lib/copy-text";
 import { t } from "@/lib/i18n";
 import type { LocaleKey } from "@/locales";
 import { computerName, createLocal, placeInitials, suggestedLocalName } from "@/lib/places";
-import { BackLink, FIELD, Heading, PRIMARY_WIDE } from "./cloud-buy/parts";
+import { BackLink, FIELD, Heading, PRIMARY_WIDE } from "./ServerUi";
 import { SwatchRadios } from "./SwatchRadios";
 
 const PAIR_COMMAND = "npx rethos pair";
@@ -144,12 +144,12 @@ export function RailSheet({ wide = false, focusKey, onClose, children }: { wide?
   }, [onClose]);
   useEffect(() => {
     if (sheet.current?.contains(document.activeElement) && document.activeElement !== sheet.current) return;
-    (sheet.current?.querySelector<HTMLElement>("[data-autofocus]") ?? sheet.current?.querySelector<HTMLElement>("#cloud-add-title"))?.focus();
+    (sheet.current?.querySelector<HTMLElement>("[data-autofocus]") ?? sheet.current?.querySelector<HTMLElement>("#server-dialog-title"))?.focus();
   }, [focusKey]);
   return <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 sm:p-6" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-    <div ref={sheet} role="dialog" aria-modal="true" aria-labelledby="cloud-add-title" data-place-add-sheet tabIndex={-1}
+    <div ref={sheet} role="dialog" aria-modal="true" aria-labelledby="server-dialog-title" data-place-add-sheet tabIndex={-1}
       className={cn("animate-pop-in relative max-h-full w-full overflow-y-auto overscroll-contain rounded-2xl border border-hairline/70 bg-panel shadow-2xl outline-none", wide ? "max-w-[900px]" : "max-w-[560px]")}>
-      <button type="button" onClick={onClose} aria-label={t("cloudAdd.close")} className="ui-icon-button absolute end-3.5 top-3.5 z-10"><X size={18} /></button>
+      <button type="button" onClick={onClose} aria-label={t("common.close")} className="ui-icon-button absolute end-3.5 top-3.5 z-10"><X size={18} /></button>
       {children}
     </div>
   </div>;
@@ -218,7 +218,7 @@ export function NewLocalFromMenu() {
   </RailSheet>;
 }
 
-export function PlaceAddSheet({ choices, places = [], connect = null, onClose }: { choices: RailAddChoices; places?: readonly RailPlace[]; connect?: { name: string } | null; onClose: () => void; onAccount?: () => void }) {
+export function PlaceAddSheet({ choices, places = [], connect = null, onClose }: { choices: RailAddChoices; places?: readonly RailPlace[]; connect?: { name: string } | null; onClose: () => void }) {
   const server = choices.link, local = choices.local === true;
   const several = local && server;
   const [view, setView] = useState<"choose" | "local" | "server">(connect ? "server" : several ? "choose" : local ? "local" : "server");

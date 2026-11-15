@@ -23,11 +23,13 @@ const nothingQueued = async (broker: SharedComputers, id: string) => {
 describe("shared computer authority and lifecycle", () => {
   it("requires both the owning paired session and the connector secret", async () => {
     const broker = new SharedComputers(id => id === "owner");
-    const computer = registration(); broker.register(computer, alice, secret);
+    const computer = { ...registration(), botPermissions: true as const }; broker.register(computer, alice, secret);
     for (const [session, key] of [["intruder", secret], ["owner", "wrong"], ["owner", "é".repeat(64)]]) {
       await expect(broker.poll(computer.id, session, key)).rejects.toMatchObject({ status: 403 });
     }
     expect(JSON.stringify(broker.list(alice.person))).not.toContain(secret);
+    expect(broker.status(alice.person)).toMatchObject([{ id: computer.id, botPermissions: true }]);
+    expect(broker.status(bob.person)).toEqual([]);
     broker.close();
   });
   it("chromeLender names the newest computer that lends Chrome, and whether it is online", () => {
@@ -279,17 +281,17 @@ describe("owner partition (audit H1, H2)", () => {
     await expect(broker.poll(computer.id, bob.session, secret)).rejects.toMatchObject({ status: 403 });
     broker.close();
   });
-  it("a new grant from the same desktop replaces its earlier one; other desktops are untouched", async () => {
+  it("a new grant revision replaces the same device's access and leaves other devices untouched", async () => {
     const broker = new SharedComputers(() => true);
-    const first = registration({ computer: true }); broker.register(first, alice, secret);
+    const first = { ...registration({ computer: true }), grantRevision: randomUUID() }; broker.register(first, alice, secret);
     const bobs = registration({ computer: true }); broker.register(bobs, bob, other);
     const pending = broker.request({ computer_id: first.id, action: "computer_tools" }, alice.person, () => true);
-    const replaced = expect(pending).rejects.toThrow(/access changed/);
-    const second = registration({ computer: true }); broker.register(second, alice, other);
+    const replaced = expect(pending).rejects.toThrow(/permissions changed/);
+    const second = { ...first, grantRevision: randomUUID() }; broker.register(second, alice, secret);
     await replaced;
     expect(broker.list(alice.person).map(entry => entry.id)).toEqual([second.id]);
     expect(broker.list(bob.person).map(entry => entry.id)).toEqual([bobs.id]);
-    await expect(broker.poll(first.id, alice.session, secret)).rejects.toMatchObject({ status: 403 });
+    await expect(broker.poll(first.id, alice.session, other)).rejects.toMatchObject({ status: 403 });
     broker.close();
   });
   it("one session cannot fill the registry for everyone else", () => {
@@ -324,7 +326,7 @@ describe("status for the next step's placement", () => {
     const docs = { id: randomUUID(), name: "Docs", write: true };
     const mac = registration({ computer: true, folders: [docs] }); broker.register(mac, alice, secret);
     broker.register(registration({ terminal: true }), bob, other);
-    expect(broker.status(alice.person)).toEqual([{ id: mac.id, name: "Desktop", online: true, busy: false, lastSeenAt: expect.any(Number), scopes: { folders: [docs], terminal: false, screen: true, internet: false, chrome: false } }]);
+    expect(broker.status(alice.person)).toEqual([{ id: mac.id, name: "Desktop", access: "enabled", online: true, busy: false, botPermissions: false, lastSeenAt: expect.any(Number), scopes: { folders: [docs], terminal: false, screen: true, internet: false, chrome: false } }]);
     expect(broker.status(null)).toEqual([]);
     expect(JSON.stringify(broker.status(alice.person))).not.toContain(secret);
     await vi.advanceTimersByTimeAsync(40_001);

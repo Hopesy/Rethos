@@ -12,7 +12,6 @@ export interface AgentsConversation {
   /** A room's thread: rooms refuse widgets, pages and a computer pick. */
   room: boolean;
   /** The bot works on its team's cloud computer, so it has no computer of its own to pick. */
-  teamComputer: boolean;
   /** `x`: a research credential is held (a treg key or a plan's); `research`: research works for it too. */
   host: { skillAuthoring: boolean; sharedComputers: boolean; cloudHome: boolean; team: boolean; escalations: boolean; voiceNotes: boolean; x: boolean; research: boolean; imageGeneration: boolean; meetings?: boolean };
 }
@@ -49,7 +48,7 @@ export function agentsServerEnv(conversation: AgentsConversation, turn: AgentsTu
     OMB_ESCALATIONS: flag(host.escalations),
     OMB_IMAGE_GENERATION: flag(host.imageGeneration),
     OMB_MEETINGS: flag(host.meetings === true && !conversation.room),
-    OMB_COMPUTER_SELECTION: flag(!conversation.room && bot.computer !== "off" && !conversation.teamComputer),
+    OMB_COMPUTER_SELECTION: flag(!conversation.room && bot.computer !== "off"),
   };
 }
 

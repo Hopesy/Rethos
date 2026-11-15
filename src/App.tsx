@@ -5,8 +5,7 @@ import { nextShortcutBot, shortcutBots, shownBotIds } from "@/lib/sidebar-shortc
 import { useShowThreads } from "@/lib/thread-preferences";
 import { useWelcomeViewer, WelcomeGate } from "@/components/onboarding/WelcomeGate";
 import { MausBotWelcome } from "@/components/MausBotWelcome";
-import { CloudTimeZoneSync } from "@/components/CloudTimeZone";
-import { cloudSignInDue, spotlightsQuiet, type WelcomeViewer } from "@/lib/onboarding";
+import { spotlightsQuiet, type WelcomeViewer } from "@/lib/onboarding";
 import { FirstConversationTour } from "@/components/onboarding/FirstConversationTour";
 import { GuidedTour } from "@/components/onboarding/GuidedTour";
 import { LiveCallHost } from "@/components/LiveCallHost";
@@ -19,7 +18,7 @@ import { GroupView } from "@/components/GroupView";
 import { SIDEBAR_AND_PANEL_FIT, SIDEBAR_INLINE, TWO_SIDE_PANELS_FIT, useMediaQuery } from "@/lib/use-media-query";
 import { preloadConnectedApps } from "@/lib/connected-apps";
 import {
-  ActivityPanel, BotSettingsDialog, ComputerPanel, FilesView, InspectorPanel, KeyboardShortcutsModal, LocalVmWorkspace,
+  ActivityPanel, BotSettingsDialog, ComputerPanel, InspectorPanel, KeyboardShortcutsModal, LocalVmWorkspace,
   PluginsPanel, preloadScreens, RemoteAgentSettingsPanel, RemoteDesktopPanel, RoomPanel, SettingsModal, TeamMapPage, TriggersPage,
 } from "@/components/lazy-screens";
 import { useAdvancedMode } from "@/lib/interface-mode";
@@ -29,10 +28,7 @@ import { NotificationRail, NotificationsPanel } from "@/components/Notifications
 import { useNotificationFeed } from "@/lib/notification-preferences";
 import { UpdateBanner } from "@/components/UpdateBanner";
 import { AppNotices } from "@/components/AppNotices";
-import { BotLimitPopup } from "@/components/BotLimitPopup";
-import { CloudAsleepStrip } from "@/components/CloudAsleepStrip";
 import { LiveConnectionStrip } from "@/components/LiveConnectionStrip";
-import { CloudSendStrip } from "@/components/CloudSendStrip";
 import { HomeLine } from "@/components/HomeLine";
 import { useTeamChats } from "@/state/team-chats";
 import { needsYouVersion, useTeamPeopleLoader } from "@/state/team-people";
@@ -45,21 +41,14 @@ import { WindowCaptionButtons } from "@/components/WindowCaptionButtons";
 import { WindowFrameBar } from "@/components/WindowFrameBar";
 import { cn } from "@/lib/cn";
 import { NoEngines } from "@/components/NoEngines";
-import { CloudEngineSignIn } from "@/components/CloudEngineSignIn";
-import { CloudIntent } from "@/components/CloudIntent";
-import { cloudIntentDue, cloudIntentShown, useCloudIntent } from "@/lib/cloud-intent";
-import { CloudSetup } from "@/components/CloudSetup";
-import { CloudWelcome } from "@/components/cloud-welcome/CloudWelcome";
-import { WelcomeKeeper } from "@/components/cloud-welcome/WelcomeKeeper";
 import { EmptyChatShell } from "@/components/onboarding/EmptyChatShell";
-import { cloudFirstRun, cloudWelcomeVisible, useCloudWelcome } from "@/lib/cloud-welcome";
-import { engineReady } from "@/components/EngineLibrary";
 import { CommandPalette } from "@/components/CommandPalette";
 import { t } from "@/lib/i18n";
 import { botCycleStep, shouldOpenKeyboardShortcuts } from "@/lib/keyboard-shortcuts";
 import { effectiveLanguage, useLanguageChoice, usePageLanguage } from "@/lib/language-preference";
 import { botUnreadCount, showBrowserUnread } from "@/lib/bot-unread";
-import { phonePairingSettingsAction, takePhonePairingRequest } from "@/lib/phone-pairing"; import { takeConnectRequest } from "@/lib/connect-link";
+import { phonePairingSettingsAction, takePhonePairingRequest } from "@/lib/phone-pairing";
+import { takeConnectRequest } from "@/lib/connect-link";
 import { useDesktopNotificationOpens, useExternalChatLinks } from "@/hooks/use-external-chat-links";
 import { useUsageSnapshot } from "@/hooks/use-usage-snapshot";
 import { useReadShownChatOnFocus } from "@/hooks/use-read-shown-chat";
@@ -167,17 +156,6 @@ function Shell({ viewer }: { viewer: WelcomeViewer | null }) {
     state.connected &&
     state.instances.length > 0 &&
     !state.instances.some((i) => i.snapshot.state === "available");
-  const cloudSignIn = cloudSignInDue(viewer, state, engineReady);
-  const cloudIntent = useCloudIntent();
-  const cloudAsk = cloudIntentShown(cloudIntentDue({
-    viewer, connected: state.connected, enginesKnown: state.instances.length > 0,
-    onboarding: state.config?.onboarding, reopened: false,
-  }), cloudIntent);
-  const cloudJobWaiting = Boolean(viewer?.cloudHome && viewer.canSave && cloudIntent.pending);
-  const welcome = useCloudWelcome();
-  const welcomeOnScreen = cloudWelcomeVisible({ viewer, connected: state.connected, enginesKnown: state.instances.length > 0, onboarding: state.config?.onboarding }, welcome)
-    && state.activeView === "chat" && !(!remoteClient && localVmWorkspaceBotId);
-  const firstRun = cloudFirstRun({ welcome: welcomeOnScreen, intent: cloudAsk, signIn: cloudSignIn || cloudJobWaiting });
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -312,16 +290,13 @@ function Shell({ viewer }: { viewer: WelcomeViewer | null }) {
   const framed = windowFramed(capabilities);
   const strips = <>
     <UpdateBanner sidebarIndicator={framed || (!calendarFocus && (sidebarInline || drawerOpen))} />
-    <CloudAsleepStrip />
     <LiveConnectionStrip connected={state.connected} hydrated={state.hydrated === true} />
-    <CloudSendStrip cloudHome={state.config?.cloudHome === true} />
     <HomeLine />
     <AppNotices quiet={paletteOpen || drawerOpen || Boolean(localVmWorkspaceBotId)} viewer={viewer} />
   </>;
   return (
     <div className={cn("flex h-full flex-col", framed && "bg-frame")}>
       <WindowFrameBar notifications={notificationTray} />
-      <BotLimitPopup />
       {!framed && strips}
       <div className="relative flex min-h-0 flex-1">
       {!calendarFocus && <button
@@ -359,8 +334,7 @@ function Shell({ viewer }: { viewer: WelcomeViewer | null }) {
       <div className="contents" inert={!sidebarInline && drawerOpen} aria-hidden={!sidebarInline && drawerOpen ? true : undefined}>
       {state.activeView === "team-map" ? (
         <TeamMapPage />
-      ) : state.activeView === "files" ? (
-        <FilesView />
+
       ) : state.activeView === "web-panel" ? (
         <WebPanelPage />
       ) : state.activeView === "routines" ? (
@@ -372,12 +346,6 @@ function Shell({ viewer }: { viewer: WelcomeViewer | null }) {
           onClose={() => setLocalVmWorkspaceBotId(null)}
           onOpenComputer={openComputerFromWorkspace}
         />
-      ) : firstRun === "welcome" ? (
-        <CloudWelcome />
-      ) : firstRun === "intent" ? (
-        <CloudIntent />
-      ) : firstRun === "sign-in" ? (
-        <CloudEngineSignIn />
       ) : chiefStep ? (
         <EmptyChatShell />
       ) : group ? (
@@ -428,8 +396,6 @@ function Shell({ viewer }: { viewer: WelcomeViewer | null }) {
       </div>
       </div>
       {state.appSettingsOpen && <SettingsModal />}
-      <CloudSetup viewer={viewer} welcomeShown={welcomeOnScreen} />
-      <WelcomeKeeper viewer={viewer} />
       {state.pluginsOpen && <PluginsPanel />}
       {state.shortcutsOpen && (
         <KeyboardShortcutsModal
@@ -468,7 +434,6 @@ function Application() {
         </ThreadRefsProvider>
         <WelcomeGate viewer={viewer} />
         <MausBotWelcome viewer={viewer} />
-        <CloudTimeZoneSync viewer={viewer} />
         <GuidedTour />
         <LiveCallHost />
         <FirstConversationTour quiet={spotlightsQuiet(viewer)} />

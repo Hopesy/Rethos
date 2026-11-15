@@ -1,24 +1,6 @@
 // The narrow bridge the Electron preload exposes. Absent in the browser.
 
 declare global {
-  type CompanyBackupEntry = Omit<import("../../electron/company-backups.mjs").CompanyBackupMetadata, "status"> & { status: "creating" | "uploading" | "completing" | "ready" | "cleanup" };
-  interface CompanyBackupScheduleState {
-    enabled: boolean;
-    status: "off" | "waiting" | "running" | "paused" | "error";
-    nextBackupAt?: number;
-    lastAttemptAt?: number;
-    lastBackupAt?: number;
-    message?: string;
-  }
-  interface CompanyBackupState {
-    busy: boolean;
-    pendingRestore?: boolean;
-    kind?: "backup" | "restore";
-    progress?: import("../../electron/company-backups.mjs").CompanyBackupProgress;
-    message?: string;
-    lastBackupAt?: number;
-    schedule?: CompanyBackupScheduleState;
-  }
 /** The package.json version, inlined by Vite's define at build time. */
 const __APP_VERSION__: string;
 
@@ -120,12 +102,8 @@ const __APP_VERSION__: string;
       /** This app's own version, and whether this page is this app's own: false on a server added in the Server menu,
        * whose page carries that server's version. Absent in desktop builds before it. */
       app?: { version: string; ownPage: boolean };
-      organization?: import("../../electron/managed-desktop.mjs").ManagedDesktopBridge;
-      cloudAccount?: import("../../electron/cloud-account.mjs").CloudAccountBridge;
-      accounts?: import("../../electron/cloud-account.mjs").AccountsBridge;
-      accountSheet?: import("../../electron/cloud-account.mjs").AccountSheetBridge;
       /** Either page in this app: the one-time move's line (on its way, what arrived, coming home). */
-      cloudSendPage?: import("../../electron/cloud-send.mjs").CloudSendPageBridge;
+      workspaceMove?: import("../../electron/workspace-move.mjs").WorkspaceMoveBridge;
       /** This computer's page only: bots in two places, and the one tap that brings them together on one (electron/two-places.mjs). */
       twoPlaces?: {
         state(): Promise<{ suggest: import("../lib/two-places").TwoPlacesSuggestion | null }>;
@@ -133,29 +111,12 @@ const __APP_VERSION__: string;
         dismiss(key: string): Promise<{ suggest: import("../lib/two-places").TwoPlacesSuggestion | null }>;
         onChanged(callback: () => void): () => void;
       };
-      /** Settings on the person's own Cloud: the plan, read only. */
-      cloudPlan?: import("../../electron/cloud-account.mjs").CloudPlanBridge;
-      /** This computer's page, and My Cloud's own page once it is the person's home: the window onto My Cloud. */
-      home?: import("../../electron/home-window.mjs").HomeBridge;
       desktopNotices?: import("../../electron/desktop-prefs.mjs").DesktopNoticesBridge;
       desktopNotifications?: import("../../electron/desktop-notifications.mjs").DesktopNotificationsBridge;
       /** This computer's own page only: the account's full name, for a first run's profile (system-name.mjs). */
       desktopProfile?: { systemName(): Promise<string | null> };
       desktopAnalytics?: import("../../electron/desktop-prefs.mjs").DesktopAnalyticsBridge;
       desktopLanguage?: import("../../electron/desktop-prefs.mjs").DesktopLanguageBridge;
-      /** This computer's page and My Cloud's own page: the one-time "Get MausBot updates?" answer. */
-      updatesConsent?: import("../../electron/updates-consent.mjs").UpdatesConsentBridge;
-      companyBackups?: {
-        state(): Promise<CompanyBackupState>;
-        list(): Promise<{ backups: CompanyBackupEntry[]; usedBytes: number; limits: { ownerQuotaBytes: number; retainedSnapshots: number } }>;
-        create(input: { clientState: import("../../shared/workspace-backup").WorkspaceBackupClientState }): Promise<CompanyBackupEntry>;
-        configureSchedule?(input: { enabled: false } | { enabled: true; confirmation: "BACK UP THIS WORKSPACE DAILY" }): Promise<CompanyBackupState>;
-        prepareRestore(input: { id: string; password?: string }): Promise<{ id: string; summary: import("../../shared/workspace-backup").WorkspaceBackupSummary }>;
-        restore(input: { id: string; confirmation: "REPLACE" }): Promise<{ restoreId: string }>;
-        delete(input: { id: string; confirmation: "DELETE" }): Promise<unknown>;
-        cancel(): Promise<void>;
-        onState(callback: (state: CompanyBackupState) => void): () => void;
-      };
       /** The window's own rail of places: its page at /rail (a sheet of its own covers the window while open; the skin of
        * the page beside it comes from main), and the button on the page beside it that hides and shows it. */
       rail?: import("../../electron/chrome-rail.mjs").ChromeRailBridge;
@@ -175,7 +136,7 @@ const __APP_VERSION__: string;
         places?: () => Promise<import("../../electron/cloud-rail.mjs").RailState>;
         /** Opens a circle main listed, by its id, through main's own switch: only from the person's click. */
         /** Nothing for a place of the account in use; for another account's, how its switch went. */
-        open?: (id: string) => Promise<import("../../electron/cloud-account.mjs").RailOpenResult | undefined>;
+        open?: (id: string) => Promise<{ outcome: "switched" | "failed"; email?: string } | undefined>;
         /** ＋'s fixed choices: buy a Cloud (this computer's own sheet), connect to a server (`link`: the sheet's link or
          * address, `code` the pairing code typed apart; without `link`, the clipboard's), or type its address. With `code`
          * (even empty) it resolves with the outcome; without, false when the person cancels Connect. */
@@ -186,13 +147,13 @@ const __APP_VERSION__: string;
          * older app. */
         look?: () => Promise<import("../../electron/place-look.mjs").PlaceLook | null>;
         /** That place's colour, from the person's click: one of the six swatches, or null for none. */
-        color?: (swatch: import("../../electron/cloud-list.mjs").CloudSwatch | null) => Promise<{ outcome: import("../../electron/place-look.mjs").PlaceColorOutcome; look: import("../../electron/place-look.mjs").PlaceLook | null }>;
+        color?: (swatch: import("../../shared/place-colors.mjs").CloudSwatch | null) => Promise<{ outcome: import("../../electron/place-look.mjs").PlaceColorOutcome; look: import("../../electron/place-look.mjs").PlaceLook | null }>;
         /** The colour of a place the window's rail lists, by its circle's id, from the person's click on the rail's own
          * page (refused on any other page). */
-        recolor?: (id: string, swatch: import("../../electron/cloud-list.mjs").CloudSwatch | null) => Promise<{ outcome: import("../../electron/place-look.mjs").PlaceColorOutcome; look: import("../../electron/place-look.mjs").PlaceLook | null }>;
+        recolor?: (id: string, swatch: import("../../shared/place-colors.mjs").CloudSwatch | null) => Promise<{ outcome: import("../../electron/place-look.mjs").PlaceColorOutcome; look: import("../../electron/place-look.mjs").PlaceLook | null }>;
         /** Remove from list: a Cloud the window's rail lists as `removable`, by its circle's id, once the person said yes on
          * the rail's own page (refused on any other page). Absent on an older app. */
-        remove?: (id: string) => Promise<{ outcome: import("../../electron/cloud-account.mjs").CloudRemoveOutcome }>;
+        remove?: (id: string) => Promise<{ outcome: "removed" | "gone" | "failed" | "unsupported" }>;
         /** Make a server of the person's own, which the rail lists with `makeHome`, their bots' home: the move starts. */
         makeHome?: (id: string) => Promise<{ started: true }>;
         /** Main's word that the places or the sign-in changed: read them again. */
@@ -201,29 +162,12 @@ const __APP_VERSION__: string;
          * which main opens next; a name or colour for one the rail lists; its removal, once the person said yes. Absent on
          * an older app. */
         local?: {
-          create(name: string, color: import("../../electron/cloud-list.mjs").CloudSwatch | null): Promise<{ outcome: "made"; id: string } | { outcome: "name" | "taken" | "failed" }>;
-          edit(id: string, changes: { name: string } | { color: import("../../electron/cloud-list.mjs").CloudSwatch | null }): Promise<{ outcome: "saved" | "name" | "taken" | "full" | "gone" }>;
+          create(name: string, color: import("../../shared/place-colors.mjs").CloudSwatch | null): Promise<{ outcome: "made"; id: string } | { outcome: "name" | "taken" | "failed" }>;
+          edit(id: string, changes: { name: string } | { color: import("../../shared/place-colors.mjs").CloudSwatch | null }): Promise<{ outcome: "saved" | "name" | "taken" | "full" | "gone" }>;
           remove(id: string): Promise<{ outcome: "removed" | "gone" | "failed" }>;
         };
         /** The Server menu's New workspace on this computer: this computer's own page asks its name. */
         onNewLocal?: (callback: () => void) => () => void;
-      };
-      /** Buying another Cloud from the rail's ＋, on this app's page or a hosted Cloud's; absent on an older app. */
-      cloudAdd?: {
-        state(): Promise<import("../../electron/cloud-rail.mjs").AddCloudView>;
-        /** Opens that plan's checkout in the browser, for a Cloud of this name and swatch; only from the person's click. */
-        /** `source`: where the checkout started, one of the app's checkout sources (main ignores any other). */
-        start(tier: string, name: string, color: import("../../electron/cloud-list.mjs").CloudSwatch | null, source?: string): Promise<{ outcome: "opened" | "unsupported" | "failed" } | { outcome: "blocked"; blocked: import("../../electron/cloud-account.mjs").CloudAddBlock }>;
-        reopen(): Promise<boolean>;
-        copyLink(): Promise<boolean>;
-        /** Opens the Cloud just bought, once it is ready. */
-        open(): Promise<void>;
-        interest(): Promise<void>;
-        /** The sheet is open on this page (main then says "ready" here, not with a notification). */
-        sheet(open: boolean): Promise<void>;
-        /** A new organization on the Team plan this account pays for, of this name and swatch: no checkout; only from the person's click. */
-        organization?(name: string, color: import("../../electron/cloud-list.mjs").CloudSwatch | null): Promise<{ outcome: "added" | "taken" | "unsupported" | "failed" }
-          | { outcome: "blocked"; blocked: import("../../electron/cloud-list.mjs").OrganizationBlock }>;
       };
       /** Saved servers and the active one (desktop Server menu). Present on
        * the local server's UI; a remote server's page sees a reduced bridge. */
@@ -243,7 +187,6 @@ const __APP_VERSION__: string;
             missing?: boolean;
             /** One of the six Cloud colours (environments.cjs ENTRY_COLORS). */
             color?: string;
-            /** The person's own My Cloud. */
             home?: boolean;
             /** Another Cloud of the person's own, as the verified session lists it. */
             cloud?: { id: string; role: string };
@@ -280,9 +223,9 @@ const __APP_VERSION__: string;
         servers?(): Promise<Array<{ id: string; enabled: boolean; connected: boolean; paused: boolean }>>;
         /** Asks in main's own popup, then lends that server of the person's own the apps on the screen; null on Not now. */
         allow?(id: string): Promise<DesktopComputerSharing | null>;
-        /** Every Cloud and server of the person's own stops using this computer until resume(), as the icon's menu does. */
-        pause?(): Promise<void>;
-        resume?(): Promise<void>;
+        /** Pause or resume only this saved server's connection, preserving its local grant. */
+        pause?(id: string): Promise<void>;
+        resume?(id: string): Promise<void>;
       };
       confirm(message: string): Promise<boolean>;
       getCapabilities(): Promise<DesktopCapabilities>;
@@ -447,7 +390,7 @@ const __APP_VERSION__: string;
       openAtLogin?: { state(): Promise<{ available: boolean; on: boolean }>; set(on: boolean): Promise<{ available: boolean; on: boolean }> };
       /** Save a provider credential through Electron's OS-backed store. */
       setCredential?(
-        name: "composioApiKey" | "xaiApiKey" | "boxToken" | "opencodeGoApiKey" | "ttsKey" | "fishAudioKey" | "geminiTtsKey" | "jevApiKey" | "openrouterDeciderKey" | "workersAiToken" | "openaiImageApiKey" | "customImageApiKey" | "openaiLiveKey" | "tregApiKey" | "postizApiKey" | "geminiImageApiKey",
+        name: "composioApiKey" | "xaiApiKey" | "opencodeGoApiKey" | "ttsKey" | "fishAudioKey" | "geminiTtsKey" | "jevApiKey" | "openrouterDeciderKey" | "workersAiToken" | "openaiImageApiKey" | "customImageApiKey" | "openaiLiveKey" | "tregApiKey" | "postizApiKey" | "geminiImageApiKey",
         value: string,
       ): Promise<ConfigStatus>;
       /** In-app auto-update (packaged app only; dormant in dev). Updates

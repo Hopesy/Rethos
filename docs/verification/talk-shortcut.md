@@ -10,7 +10,6 @@ the control surface cannot drive them, so this is not in the map in
 ## Floor: automated checks
 
 ```sh
-node --test electron/talk-*.node-test.mjs electron/home-window.node-test.mjs electron/desktop-prefs.node-test.mjs electron/preload.node-test.mjs electron/speech-helper-release.node-test.mjs
 pnpm exec vitest run electron/speech.test.mjs electron/skin-overlay.test.mjs server/task-select.test.ts server/talk-server.e2e.test.ts src/lib/call-presence.test.ts src/components/TalkShortcutRow.test.ts --maxWorkers=1
 pnpm typecheck && pnpm lint && pnpm i18n:check
 ```

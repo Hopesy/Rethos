@@ -3,7 +3,6 @@
 // home: POST /api/cloud-connections/connected-apps makes this Cloud act as the computer's connected-apps account (a
 // one-time code from OpenMausBot's service, or the person's own Composio project); PUT
 // /api/cloud-connections/mcp/<name>/sign-in takes a sign-in that moved; PUT
-// /api/cloud-connections/held-keys keeps a trial's moved keys unused while its Claude credit lasts; PUT
 // /api/cloud-connections/email takes the person's mailboxes. Admin scope
 // (request-auth's default): only the owner's app reaches them.
 import { z } from "zod";
@@ -52,8 +51,6 @@ export interface CloudConnectionRouteDeps {
   adoptSignIn(name: string, record: McpOAuthRecord, replaces: string | null): Adopted;
   /** The person's mailboxes with their passwords; one already here at that address stays. */
   adoptEmail?(accounts: unknown[]): { adopted: number; kept: number };
-  /** Keeps the keys of these engines unused while a trial's Claude credit lasts; false when they run now. */
-  holdKeys?(engines: string[]): boolean;
 }
 
 export function createCloudConnectionRoutes(deps: CloudConnectionRouteDeps): RouteHandler {
@@ -65,12 +62,6 @@ export function createCloudConnectionRoutes(deps: CloudConnectionRouteDeps): Rou
       return json(res, 200, await deps.list());
     }
     if (!deps.cloudHome && deps.ownHome?.(auth) !== true) return json(res, 404, { error: "not found" });
-    if (path === "/api/cloud-connections/held-keys") {
-      if (method !== "PUT") return json(res, 405, { error: "method not allowed" });
-      const asked = z.object({ for: z.array(z.string().regex(/^[\w.:-]{1,128}$/u)).max(20) }).safeParse(await readBody(req, 4096));
-      if (!asked.success) return json(res, 400, { error: "send { for }: the engines a key runs" });
-      return json(res, 200, { held: deps.holdKeys?.(asked.data.for) ?? false });
-    }
     const signIn = SIGN_IN.exec(path);
     if (path !== "/api/cloud-connections/connected-apps" && path !== "/api/cloud-connections/email" && !signIn) return json(res, 404, { error: "not found" });
     if (method !== (path === "/api/cloud-connections/connected-apps" ? "POST" : "PUT")) return json(res, 405, { error: "method not allowed" });

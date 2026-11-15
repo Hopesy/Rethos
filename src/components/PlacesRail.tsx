@@ -10,7 +10,7 @@
 // are grouped by account with a thin divider, and a click on another account's tile switches to it first (main does that).
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from "react";
 import { Cloud, House, Laptop, Loader2, MoreHorizontal, Plus, Search, Server, UserRound } from "lucide-react";
-import type { CloudSwatch } from "../../electron/cloud-list.mjs";
+import type { CloudSwatch } from "../../shared/place-colors.mjs";
 import type { PlaceColorOutcome } from "../../electron/place-look.mjs";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/cn";
@@ -20,7 +20,6 @@ import { localizedRelativeTime } from "@/lib/relative-time";
 import { useAdvancedMode } from "@/lib/interface-mode";
 import { useBesideFramed } from "@/lib/chrome-rail";
 import { computerName, editLocal, makeHome, placeInitials, recolorPlace, removeLocal, removePlace, usePlaces, type RailPlace } from "@/lib/places";
-import { AccountsSheet, switchNote } from "./AccountMenu";
 import { useDesktopCapabilities, windowFramed } from "./DesktopCapabilities";
 import { MENU_ROW, MENU_SHEET } from "./menu-recipe";
 import { PlaceAddSheet } from "./PlaceAddSheet";
@@ -393,7 +392,7 @@ export function PlacesRail({ chrome = false }: { chrome?: boolean }) {
   const [adding, setAdding] = useState(false);
   const [connecting, setConnecting] = useState<string | null>(null);
   const [menu, setMenu] = useState<{ place: RailPlace; top: number } | null>(null);
-  const [accounts, setAccounts] = useState<{ adding: string | null; note: string | null } | null>(null);
+  const [openError, setOpenError] = useState<string | null>(null);
   const moreRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   // The place last clicked, until main lists it on screen: the one still marked meanwhile can be clicked to stay.
@@ -409,20 +408,19 @@ export function PlacesRail({ chrome = false }: { chrome?: boolean }) {
     window.addEventListener("mousedown", away);
     return () => window.removeEventListener("mousedown", away);
   }, [more, menu]);
-  const covering = more || adding || connecting !== null || menu !== null || accounts !== null;
+  const covering = more || adding || connecting !== null || menu !== null;
   useEffect(() => { if (chrome) void window.ogb?.rail?.expand?.(covering)?.catch(() => {}); }, [chrome, covering]);
   if (!state.places.length) return null;
   const bridge = window.ogb?.workspaces;
   const open = (place: RailPlace) => {
     if (!place.opens) { if (place.pairs) setConnecting(place.name); return; }
     if (place.active && (asked.current === null || asked.current === place.id)) return;
-    asked.current = place.id;
+    asked.current = place.id; setOpenError(null);
     track("rail_place_opened", { kind: place.kind });
     void bridge?.open?.(place.id).then((said) => {
       if (!said) return;
-      if (said.outcome === "sign-in") setAccounts({ adding: said.email ?? place.email ?? "", note: null });
-      else { const note = switchNote(said); if (note) setAccounts({ adding: null, note }); }
-    }, () => {});
+      if (said.outcome !== "switched") setOpenError(t("sidebar.switchServerError"));
+    }, () => setOpenError(t("sidebar.switchServerError")));
   };
   const framed = windowFramed(capabilities), draggable = capabilities.windowChrome !== "native";
   // In a framed window the rail is part of the frame: the window's own rail runs the full height, its top in the frame's
@@ -468,8 +466,8 @@ export function PlacesRail({ chrome = false }: { chrome?: boolean }) {
     {menu && <div ref={menuRef} style={noDrag}>
       <PlaceMenu key={menu.place.id} place={state.places.find((entry) => entry.id === menu.place.id) ?? menu.place} top={menu.top} onClose={() => setMenu(null)} />
     </div>}
-    {adding && <PlaceAddSheet choices={state.add} places={state.places} onClose={() => setAdding(false)} onAccount={() => { setAdding(false); setAccounts({ adding: "", note: null }); }} />}
-    {accounts && <AccountsSheet adding={accounts.adding} note={accounts.note} onClose={() => setAccounts(null)} />}
+    {adding && <PlaceAddSheet choices={state.add} places={state.places} onClose={() => setAdding(false)} />}
+    {openError && <p role="alert" className="absolute bottom-0 left-full z-50 w-56 rounded-lg bg-panel p-3 text-[12px] text-danger">{openError}</p>}
     {connecting !== null && <PlaceAddSheet choices={state.add} connect={{ name: connecting }} onClose={() => setConnecting(null)} />}
   </nav>;
 }

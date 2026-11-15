@@ -1,4 +1,3 @@
-import { boatCapableEngine } from "@/lib/remote-desktop";
 import { useEffect, useRef, useState } from "react";
 import { CalendarClock, CalendarDays, Globe, ImageOff, Loader2, Monitor, Plus, X } from "lucide-react";
 
@@ -92,10 +91,6 @@ export function RemoteDesktopPanel({ bot }: { bot: Bot }) {
     .sort((a, b) => Number(b.enabled) - Number(a.enabled) || (a.nextRunAt ?? Infinity) - (b.nextRunAt ?? Infinity));
   const activeRoutineRun = state.routineRuns.find(
     (run) => run.botId === bot.id && ["queued", "running", "waiting"].includes(run.status),
-  );
-  const cloudRoutineReady = Boolean(
-    state.config?.box.configured &&
-      boatCapableEngine(state.instances, bot.modelSelection.instanceId)?.snapshot.state === "available",
   );
 
   useEffect(() => {
@@ -379,7 +374,7 @@ export function RemoteDesktopPanel({ bot }: { bot: Bot }) {
         <RoutineEditor
           bots={[bot]}
           lockedBotId={bot.id}
-          defaultRunOn={cloudRoutineReady ? "cloud" : "maus"}
+          defaultRunOn="maus"
           onClose={() => setCreatingRoutine(false)}
         />
       )}

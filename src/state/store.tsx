@@ -11,8 +11,10 @@ import {
   type ReactNode,
 } from "react";
 import { flushSync } from "react-dom";
-import type { BotMovedTo, BotVisibility, CardAnswerer, CloudBackend, ConnectorToolGrant, EffortLevel, InstalledPackageMetadata, LiveCallState, ServerFrame, GroupThreadUsage, SteerQueueReason, WireBot, WireGroup, WireTask, OptionCardData as WireOptionCard } from "../../shared/wire"; import type { InstanceEndpointInfo } from "../../shared/claude-endpoint";
-import { movesThreadToTop } from "../../shared/wire"; import type { DefaultBotFields } from "../../shared/default-bot";
+import type { BotMovedTo, BotVisibility, CardAnswerer, CloudBackend, ConnectorToolGrant, EffortLevel, InstalledPackageMetadata, LiveCallState, ServerFrame, GroupThreadUsage, SteerQueueReason, WireBot, WireGroup, WireTask, OptionCardData as WireOptionCard } from "../../shared/wire";
+import type { InstanceEndpointInfo } from "../../shared/claude-endpoint";
+import { movesThreadToTop } from "../../shared/wire";
+import type { DefaultBotFields } from "../../shared/default-bot";
 import { reorderStable } from "../../shared/bot-order";
 import { withOneChief } from "../../shared/bot-owner";
 import { DATA_ROUTES, type DataSheet, type DataTable } from "../../shared/data-surface";
@@ -26,15 +28,14 @@ import { optimisticMessageId, optimisticUserMessage, sendArrived, sendReconciled
 import { patchedGroups, roomAnswers, snapshotPatch } from "./room-frames";
 import { savedStateAction, type SavedOwner, type SavedSnapshot } from "./saved-state";
 import { keepBotNavigation, keepGroupNavigation, navigatedSince, visibleMessages } from "./snapshot-navigation";
-export { visibleMessages } from "./snapshot-navigation";
-export { awayFromMainThread, botOpensTo, markedThread, openBot, openBotRow, openBotThread, openRoomThread, openThread, visibleNotificationThread, type ThreadTarget } from "./thread-navigation";
 import type { TurnDigest } from "../../shared/digest";
 import type { ToolScope } from "../../shared/tool-scope";
 import type { ModelVariantOption, RuntimeEvent } from "../../shared/runtime-events";
 import type { MausColor, MausMotion } from "@/lib/mascot";
 import type { BotAvatarCrop } from "../../shared/bot-avatar";
 import { approvalModeFor, type ApprovalMode } from "../../shared/approval-mode";
-import { askResetBridge, desktopCapabilitiesNow } from "@/lib/desktop"; import { isBotLimitRefusal, stoppedAtBotLimit } from "@/lib/bot-limit";
+import { askResetBridge, desktopCapabilitiesNow } from "@/lib/desktop";
+import { isBotLimitRefusal, stoppedAtBotLimit } from "@/lib/bot-limit";
 import { sameModelSelection } from "../../shared/thread-model";
 import type { BotBodyId } from "../../shared/bot-body";
 import { StoreRefContext } from "./store-ref-context";
@@ -67,14 +68,17 @@ import { randomUuid } from "@/lib/random-uuid";
 import { useShowThreads } from "@/lib/thread-preferences";
 import { speechOwner, spokenReplyStream } from "@/lib/spoken-reply-stream";
 import { t } from "@/lib/i18n";
-export { formatTime } from "@/lib/clock-time";
-import { createBotPatchQueue, executionSettingsMatch, flushWhenLeaving, keepaliveFits, savedBotPatch, type BotUpdatePatch } from "./bot-patch-queue"; import { createNewTaskOnce } from "./new-task-once";
+import { createBotPatchQueue, executionSettingsMatch, flushWhenLeaving, keepaliveFits, savedBotPatch, type BotUpdatePatch } from "./bot-patch-queue";
+import { createNewTaskOnce } from "./new-task-once";
 import { liveCallFromFrame, nextLiveCallLookup } from "./live-call";
 import { isNoAiRefusal, useChatErrorClear } from "./chat-error";
 import { openLiveEvents, publishLiveFrame, publishMissedFrames, withoutScreenPixels } from "@/lib/live-events";
 import { unlessRefused } from "@/lib/admin-scope";
 import { olderRunsSince, ROUTINE_RUNS_WINDOW_MS, trimRoutineRuns, withOlderRoutineRuns } from "./routine-runs";
 import { reconcileSnapshotQueues, rememberConsumedQueueId, replaceBotQueues } from "./queue-receipts";
+export { visibleMessages } from "./snapshot-navigation";
+export { awayFromMainThread, botOpensTo, markedThread, openBot, openBotRow, openBotThread, openRoomThread, openThread, visibleNotificationThread, type ThreadTarget } from "./thread-navigation";
+export { formatTime } from "@/lib/clock-time";
 
 export type { MausColor } from "@/lib/mascot";
 export type { RoutineRunCardData } from "../../shared/routine-run";
@@ -216,7 +220,7 @@ export interface ModelSelection {
   variant?: string;
 }
 
-export interface Task extends Pick<WireTask, "private" | "setupRequest" | "inbox" | "openAsks"> {
+export interface Task extends Pick<WireTask, "workTarget" | "private" | "setupRequest" | "inbox" | "openAsks"> {
   waitingForTeammates?: boolean; sharedChat?: true;
   threadId: string;
   routineRunId?: string;
@@ -272,7 +276,7 @@ export interface TaskUsage {
   context?: { tokens: number; window?: number };
 }
 
-export interface Bot extends DefaultBotFields, Pick<WireBot, "mascotFaceColor" | "access" | "yourAccess" | "onlyPeopleAdded"> {
+export interface Bot extends DefaultBotFields, Pick<WireBot, "workTarget" | "mascotFaceColor" | "access" | "yourAccess" | "onlyPeopleAdded"> {
   toolScope?: ToolScope;
   waitingForTeammates?: boolean;
   id: string;
@@ -395,7 +399,7 @@ function taskPatchFields(patch: TaskUpdatePatch): Partial<Task> {
     ...(projectId === undefined ? {} : { projectId: projectId ?? undefined }),
     ...(archivedAt === undefined ? {} : { archivedAt: archivedAt ?? undefined }),
     ...(snoozedUntil === undefined ? {} : { snoozedUntil: snoozedUntil ?? undefined }),
-    ...(surface === undefined ? {} : { surface: surface ?? undefined, surfaceAuto: undefined }),
+    ...(surface === undefined ? {} : { surface: surface ?? undefined, surfaceAuto: undefined, workTarget: undefined }),
     ...(pinned === undefined ? {} : { pinned: pinned ? true : undefined }),
     ...(link === undefined ? {} : { link: link ?? undefined }) };
 }
@@ -568,9 +572,8 @@ export interface AppState {
   liveCallVersion: number;
   liveCallLookupSeq: number;
   selectedId: string;
-  activeView: "chat" | "team-map" | "routines" | "files" | "web-panel";
-  /** Folders a finished move left on this computer, for Files to offer sharing. */
-  filesSuggest: string[] | null; webPanelId?: string;
+  activeView: "chat" | "team-map" | "routines" | "web-panel";
+  webPanelId?: string;
   routines: Routine[];
   routineRuns: RoutineRun[];
   routinesLoadState: "loading" | "ready" | "error"; routineRunsSince: number | null;
@@ -594,8 +597,6 @@ export interface AppState {
   appSettingsCloudLink: number;
   appSettingsPhonePairing: number;
   shortcutsOpen: boolean;
-  cloudAdd: { source: import("@/lib/cloud-plan").CloudSource; signIn?: true } | null;
-  cloudHowTo: boolean;
   welcomeOpen: boolean;
   tourOpen: boolean;
   botSettingsSection: BotSettingsSection;
@@ -651,7 +652,6 @@ export type Action =
   | { type: "sectionDeleted"; section: string; sections: string[] }
   | { type: "showRoutines"; section?: "schedule" | "logs"; view?: "calendar" | "list"; botId?: string; routineId?: string; runStatus?: RoutineRunStatusFilter }
   | { type: "showTeamMap" } | { type: "showWebPanel"; id: string }
-  | { type: "showFiles"; suggest?: string[] }
   | { type: "showChat" }
   | { type: "routinesHydrated"; routines: Routine[]; runs: RoutineRun[]; since?: number }
   | { type: "routinesLoadFailed" } | { type: "routineRunsLoaded"; runs: RoutineRun[]; from?: number; to?: number }
@@ -802,9 +802,6 @@ export type Action =
   | { type: "unreadDividerDone"; threadId: string }
   | { type: "toggleAppSettings"; open?: boolean; section?: AppSettingsSection; cloudLink?: boolean; phonePairing?: boolean }
   | { type: "toggleShortcuts"; open?: boolean }
-  | { type: "openCloudAdd"; source: import("@/lib/cloud-plan").CloudSource; signIn?: true }
-  | { type: "closeCloudAdd" }
-  | { type: "cloudHowTo"; open: boolean }
   | { type: "toggleWelcome"; open?: boolean }
   | { type: "toggleTour"; open?: boolean }
   | {
@@ -997,11 +994,11 @@ export function reducer(state: AppState, action: Action): AppState {
     case "showChat":
       return state.activeView === "chat" ? state : { ...state, activeView: "chat" };
     case "showTeamMap":
-    case "showFiles": case "showWebPanel":
+    case "showWebPanel":
       return {
         ...state,
-        activeView: action.type === "showFiles" ? "files" : action.type === "showWebPanel" ? "web-panel" : "team-map",
-        filesSuggest: action.type === "showFiles" && action.suggest?.length ? action.suggest : null, webPanelId: action.type === "showWebPanel" ? action.id : state.webPanelId,
+        activeView: action.type === "showWebPanel" ? "web-panel" : "team-map",
+        webPanelId: action.type === "showWebPanel" ? action.id : state.webPanelId,
         settingsOpen: false, computerOpen: false, inspectorOpen: false, activityOpen: false, appSettingsOpen: false, pluginsOpen: false,
       };
     case "routinesHydrated":
@@ -1204,7 +1201,7 @@ export function reducer(state: AppState, action: Action): AppState {
       if ((switchedThread || (before.awaitingThreadSnapshot && action.bot.threadId === before.threadId)) &&
           Array.isArray(action.bot.messages)) {
         // The slim deletion broadcast can beat the full snapshot; later duplicate snapshots must not overwrite newer messages.
-        return reducer(switching, { type: "taskSwitched", bot: { ...before, ...action.bot, computer: action.bot.computer, section: action.bot.section, toolScope: action.bot.toolScope, managedSections: action.bot.managedSections, messages: action.bot.messages, browserProfile: action.bot.browserProfile, vpsAlias: action.bot.vpsAlias, phoneApps: action.bot.phoneApps, onlyPeopleAdded: action.bot.onlyPeopleAdded } });
+        return reducer(switching, { type: "taskSwitched", bot: { ...before, ...action.bot, computer: action.bot.computer, workTarget: action.bot.workTarget, section: action.bot.section, toolScope: action.bot.toolScope, managedSections: action.bot.managedSections, messages: action.bot.messages, browserProfile: action.bot.browserProfile, vpsAlias: action.bot.vpsAlias, phoneApps: action.bot.phoneApps, onlyPeopleAdded: action.bot.onlyPeopleAdded } });
       }
       const patched = updateBot(switching, action.bot.id, (b) => ({
         ...b,
@@ -1214,7 +1211,7 @@ export function reducer(state: AppState, action: Action): AppState {
         awaitingThreadSnapshot: switchedThread || b.awaitingThreadSnapshot,
         // Complete frames omit cleared optional fields; copy them so the spread cannot keep stale values.
         browserProfile: action.bot.browserProfile,
-        computer: action.bot.computer,
+        computer: action.bot.computer, workTarget: action.bot.workTarget,
         toolScope: action.bot.toolScope,
         section: action.bot.section, managedSections: action.bot.managedSections,
         vpsAlias: action.bot.vpsAlias, phoneApps: action.bot.phoneApps, onlyPeopleAdded: action.bot.onlyPeopleAdded,
@@ -1564,11 +1561,6 @@ export function reducer(state: AppState, action: Action): AppState {
         shortcutsOpen: open,
       };
     }
-    case "openCloudAdd":
-    case "cloudHowTo":
-      return state;
-    case "closeCloudAdd":
-      return state.cloudAdd ? { ...state, cloudAdd: null } : state;
     case "toggleTour": {
       const open = action.open ?? !state.tourOpen;
       return { ...state, tourOpen: open, appSettingsOpen: open ? false : state.appSettingsOpen };
@@ -1764,7 +1756,7 @@ export function reducer(state: AppState, action: Action): AppState {
       let switched = updateBot(bumpTranscriptGeneration(state, action.bot.threadId), action.bot.id, (bot) => ({
         ...bot,
         ...action.bot,
-        computer: action.bot.computer,
+        computer: action.bot.computer, workTarget: action.bot.workTarget,
         toolScope: action.bot.toolScope, managedSections: action.bot.managedSections,
         vpsAlias: action.bot.vpsAlias,
         messages: action.bot.messages ?? [],
@@ -1877,7 +1869,6 @@ export const initialState: AppState = {
   routineRuns: [], routineRunsSince: null,
   routinesLoadState: "loading",
   routinesFocus: { nonce: 0 },
-  filesSuggest: null,
   webhooks: [],
   webhookAttempts: [],
   webhookIngress: null,
@@ -1896,8 +1887,6 @@ export const initialState: AppState = {
   appSettingsCloudLink: 0,
   appSettingsPhonePairing: 0,
   shortcutsOpen: false,
-  cloudAdd: null,
-  cloudHowTo: false,
   welcomeOpen: false,
   tourOpen: false,
   botSettingsSection: "overview",
@@ -2249,7 +2238,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     };
 
     const wrapped: React.Dispatch<Action> = (action) => {
-      if (["select", "newTask", "switchTask", "newGroupTask", "switchGroupTask", "showChat", "showRoutines", "showTeamMap", "showFiles", "showWebPanel"].includes(action.type)) selectionRevision.current++;
+      if (["select", "newTask", "switchTask", "newGroupTask", "switchGroupTask", "showChat", "showRoutines", "showTeamMap", "showWebPanel"].includes(action.type)) selectionRevision.current++;
       // Pin before any await or optimistic state change.
       action = pinBotThreadAction(action, stateRef.current.bots);
       if (action.type === "taskSwitched") action = { ...action, bot: withTaskWrites(action.bot) as Bot };

@@ -65,7 +65,7 @@ describe("what a saved key's check said", () => {
   });
 
   it("is ok for keys the server checks before saving, and unverified for the rest", () => {
-    for (const provider of ["boat", "composio", "elevenlabs", "fish_audio"] as const) expect(savedKeyResult(provider)).toBe("ok");
+    for (const provider of ["composio", "elevenlabs", "fish_audio"] as const) expect(savedKeyResult(provider)).toBe("ok");
     for (const provider of ["opencode_go", "openai_image", "custom_endpoint", "xai", "other"] as const) expect(savedKeyResult(provider)).toBe("unverified");
   });
 });
@@ -77,11 +77,11 @@ describe("what reaches PostHog", () => {
     const analytics = await import("./analytics");
     const events = await import("./product-events");
     await analytics.initAnalytics();
-    events.keySaved("boat", "computer_panel", "rejected");
+    events.keySaved("composio", "computer_panel", "rejected");
     events.keyRemoved("anthropic", "settings");
     events.keySaved("sk-ant-api03-ZZtestSECRET0123456789" as never, "https://evil.example.com" as never, "ok");
     expect(ph.captured.filter(({ event }) => event.startsWith("api_key_"))).toEqual([
-      { event: "api_key_saved", props: { provider: "boat", via: "computer_panel", result: "rejected" } },
+      { event: "api_key_saved", props: { provider: "composio", via: "computer_panel", result: "rejected" } },
       { event: "api_key_removed", props: { provider: "anthropic", via: "settings" } },
       { event: "api_key_saved", props: { provider: "other", via: "other", result: "ok" } },
     ]);

@@ -67,7 +67,8 @@ function manualTimers() {
 describe("relay tokens", () => {
   it("refuses a grant with any field off", () => {
     expect(validRelayGrant(grant())).toEqual(grant());
-    for (const bad of [{ token: "no-dot" }, { hostId: "short" }, { nodes: ["relay.example.com"] }, { nodes: [] }, { refreshAfter: 11 * 60 * 60_000 }]) {
+    expect(validRelayGrant(grant({ nodes: ["relay.example.com"] }))?.nodes).toEqual(["relay.example.com"]);
+    for (const bad of [{ token: "no-dot" }, { hostId: "short" }, { nodes: ["https://relay.example.com/path"] }, { nodes: [] }, { refreshAfter: 11 * 60 * 60_000 }]) {
       expect(validRelayGrant(grant(bad))).toBeNull();
     }
   });

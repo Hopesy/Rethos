@@ -182,12 +182,9 @@ export async function sendConnections(collected, target, { local, release = true
     async key(item) {
       const { connection } = await secrets(local, item);
       if (!record(connection.config)) throw new ConnectionMoveError("local", `${item.label} could not be read on this computer.`);
-      const holding = await target.call("PUT", "/api/cloud-connections/held-keys", { for: item.for ?? [] }).catch(() => null);
       const saved = await target.call("PATCH", "/api/config", connection.config);
       if (!saved.ok) throw refused(saved, `My Cloud did not take the ${item.label} key.`);
-      if (holding?.ok && holding.body?.held === true) result.held.push({ id: item.id, label: item.label });
       done(item);
-      return holding?.ok && holding.body?.held === true;
     },
     async mcp(item) {
       const { connection, digest } = await secrets(local, item);

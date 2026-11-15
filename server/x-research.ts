@@ -7,7 +7,7 @@
 // falls back once to treg's routed endpoint, which works through the other scrapers in turn. Scrapers name the same
 // fields differently, so rows are read through short alias lists.
 import { parseXIncludedUsage, type XIncludedUsage } from "../shared/x-connector.ts";
-import type { ServiceCredential } from "./included-services.ts";
+import type { ServiceCredential } from "./service-credentials.ts";
 
 /** Posts one call may return. Fifty compact posts stay under the agents
  * server's result cap. */

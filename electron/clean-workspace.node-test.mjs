@@ -275,8 +275,8 @@ test("no lending from the clean workspace: nothing is lent or asked while it run
   const w = computer(t);
   const env = { id: "c", origin: CLOUD, cloud: { id: "c" } };
   const state = { status: "connected", account: owner, machine: { status: "ready", origin: CLOUD } };
-  const target = createLendingTarget({ account: () => ({ state: () => state, isOwnCloud: () => true, ownClouds: () => [] }), clean: w.clean, environments: () => [env] });
-  const grant = { accountId: owner.id, origin: CLOUD };
+  const target = createLendingTarget({ ownHome: () => state.status === "connected" ? { origin: CLOUD, environmentId: "fixture" } : null, clean: w.clean, environments: () => [env] });
+  const grant = { accountId: "own:fixture", origin: CLOUD };
   assert.deepEqual(cloudLendingVerdict(grant, target.cloud(env), env), { allow: true });
   await w.clean.enter();
   assert.equal(target.environment(), null);
@@ -332,8 +332,8 @@ test("lending goes on from a profile: the sign-in alone decides, and only the wo
   const w = computer(t);
   const env = { id: "c", origin: CLOUD, cloud: { id: "c" } };
   let state = { status: "connected", account: owner, machine: { status: "ready", origin: CLOUD } };
-  const target = createLendingTarget({ account: () => ({ state: () => state, isOwnCloud: () => true }), clean: w.clean, environments: () => [env] });
-  const grant = { accountId: owner.id, origin: CLOUD };
+  const target = createLendingTarget({ ownHome: () => state.status === "connected" ? { origin: CLOUD, environmentId: "fixture" } : null, clean: w.clean, environments: () => [env] });
+  const grant = { accountId: "own:fixture", origin: CLOUD };
   await w.clean.open();
   assert.equal(target.environment(), env);
   assert.deepEqual(target.places(), [env]);

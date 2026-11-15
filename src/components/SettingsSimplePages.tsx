@@ -6,7 +6,6 @@ import { appVersion } from "@/lib/app-links";
 import type { LocaleKey } from "@/locales";
 import { productName } from "../lib/brand";
 import { AnalyticsRow } from "./AnalyticsRow";
-import { UpdatesConsentRow } from "./UpdatesConsent";
 import { OpenAtLoginRow } from "./OpenAtLoginRow";
 import { DefaultBotSidebarRow } from "./DefaultBotControls";
 import { TalkShortcutRow } from "./TalkShortcutRow";
@@ -182,7 +181,6 @@ export function SimpleUpdatesPage({ remoteActive }: { remoteActive: boolean }) {
     <SettingsGroup block="updates">
       <SettingsRows>
         {window.ogb?.updater ? <UpdatesRow title={versionTitle()} /> : <ServerUpdatesRow />}
-        <UpdatesConsentRow />
         {!remoteActive && <ReplayTourRow />}
         <DiagnosticsRow simple />
       </SettingsRows>

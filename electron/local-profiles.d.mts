@@ -1,4 +1,4 @@
-import type { CloudSwatch } from "./cloud-list.mjs";
+import type { CloudSwatch } from "./place-appearance.mjs";
 import type { CleanWorkspace } from "./clean-workspace.mjs";
 
 export declare const PROFILES_FILE: "profiles.json";

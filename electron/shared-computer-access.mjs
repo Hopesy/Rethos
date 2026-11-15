@@ -243,7 +243,8 @@ export async function executeSharedOperation(grant, operation, signal, cua, lent
   }
   if (operation.action === "run_command") {
     if (grant.terminal !== true) throw new Error("Terminal access is not enabled for this server");
-    return sharedCommand(operation.command, grant.folders[0]?.path ?? process.env.HOME ?? process.env.USERPROFILE, signal, operation.timeout_seconds);
+    if (operation.path && (!path.isAbsolute(operation.path) || operation.path.includes("\0"))) throw new Error("Use an absolute working directory on this computer");
+    return sharedCommand(operation.command, operation.path ?? grant.folders[0]?.path ?? process.env.HOME ?? process.env.USERPROFILE, signal, operation.timeout_seconds);
   }
   if (["computer_tools", "computer_call"].includes(operation.action)) {
     if (grant.computer !== true) throw new Error("Computer control is not enabled for this server");

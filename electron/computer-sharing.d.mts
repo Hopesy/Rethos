@@ -8,6 +8,7 @@ export interface SharingState {
   own?: boolean;
   /** Explicitly follow this own server's bot/conversation permissions for local file access. */
   botPermissions?: boolean;
+  access?: "enabled" | "paused" | "revoked";
   /** Lending is paused from the OpenMausBot icon's menu or Settings. */
   paused?: boolean;
   connected?: boolean;
@@ -183,6 +184,8 @@ export function createComputerSharing(options: {
   /** Every Cloud stops using this computer, across restarts too, until resume(). */
   pause(): void;
   resume(): Promise<void> | undefined;
+  pauseServer(env: Workspace): Promise<void>;
+  resumeServer(env: Workspace): Promise<void>;
   /** Whether every Cloud of the signed-in account's own may run commands here as this user, across restarts too. */
   lendTerminal(on: boolean): Promise<void> | undefined;
   screenChanged(): Promise<void>;

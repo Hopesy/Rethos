@@ -23,23 +23,6 @@ for (const remote of [false, true]) for (const legacyCompanyFlag of [false, true
   });
 }
 
-test("official cloud and organization IPC refuse requests before any client is created", () => {
-  const source = readFileSync(new URL("./main.mjs", import.meta.url), "utf8");
-  const start = source.indexOf("const localWorkspaceOnly =");
-  const end = source.indexOf('\nfor (const method', start);
-  assert.ok(start >= 0 && end > start);
-  let guard, invoked = 0;
-  vm.runInNewContext(source.slice(start, end) + "\nfixture(localWorkspaceOnly);", {
-    localOnly: (_channel, handler) => handler, workspaceOnly: handler => handler, fixture: value => { guard = value; },
-  });
-  for (const channel of ["cloud-account:begin", "cloud-buy:checkout", "organization:reopen", "company-backups:state"]) {
-    assert.throws(() => guard(channel, () => invoked++)({}), /self-hosted/);
-  }
-  assert.equal(invoked, 0);
-  guard("workspaces:connect", () => invoked++)({});
-  assert.equal(invoked, 1);
-});
-
 test("the rail offers local workspaces and own servers even with a legacy cloud account", async () => {
   const handlers = new Map(), runs = [];
   installCloudRail({

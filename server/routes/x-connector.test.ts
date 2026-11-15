@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { XIncludedUsage } from "../../shared/x-connector.ts";
-import type { ServiceCredential } from "../included-services.ts";
+import type { ServiceCredential } from "../service-credentials.ts";
 import { PASS, type RouteContext } from "./table.ts";
 import { createXConnectorRoutes, type XConnectorDeps } from "./x-connector.ts";
 

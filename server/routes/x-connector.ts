@@ -2,7 +2,7 @@
 // resolver as the tools' own routes, and asks the plan's relay for this month's included calls, cached briefly so
 // opening Apps again does not ask every time.
 import type { XConnectorStatus, XIncludedUsage } from "../../shared/x-connector.ts";
-import type { ServiceCredential } from "../included-services.ts";
+import type { ServiceCredential } from "../service-credentials.ts";
 import { readIncludedXUsage } from "../x-research.ts";
 import { PASS, type RouteHandler } from "./table.ts";
 

@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import type { RoutineRequestOperation } from "../shared/routine-request.ts";
 import { ROUTINE_CHECKS, type RoutineCheck } from "../shared/routines.ts";
+import { RETIRED_DESKTOP_MESSAGE } from "../shared/work-target.ts";
 import { isEffortLevel, type ModelSelection } from "../shared/wire.ts";
 import { isModelVariant } from "./contracts.ts";
 import { ROUTINE_PARTS, type PartPair, type RoutinePart } from "./package-parts.ts";
@@ -114,10 +115,19 @@ export function loadRoutine(routine: Routine, now: number): Routine | null {
     heldFor: isRoutineHoldCause(routine.heldFor) ? routine.heldFor : undefined,
   };
   delete loaded.failureStreak;
+  if (routine.runOn === "cloud" || routine.heldFor === "plan_cancelled") {
+    if (routine.runOn === "cloud") loaded.runOn = "maus";
+    loaded.enabled = false;
+    loaded.nextRunAt = null;
+    delete loaded.heldFor;
+    delete loaded.wakeAt;
+    loaded.checkTrouble = RETIRED_DESKTOP_MESSAGE;
+    loaded.checkTroubleCode = "routines.server.desktopRetired";
+  }
   return withCheckFields(withoutUndefined(loaded, ["timeoutMinutes", "runOnStartup", "modelSelection", "installedPackage", "checkedAt", "checkTrouble", "checkTroubleCode", "wakeAt", "heldFor"]));
 }
 
-export function loadRun(run: RoutineRun): RoutineRun {
+export function loadRun(run: RoutineRun, now = Date.now()): RoutineRun {
   const target = loadTarget(run.target);
   const loaded: RoutineRun = {
     ...run,
@@ -133,6 +143,14 @@ export function loadRun(run: RoutineRun): RoutineRun {
     deliver: run.deliver === "brief" ? "brief" : undefined,
     checkKey: typeof run.checkKey === "string" && /^[\w-]{1,128}$/.test(run.checkKey) ? run.checkKey : undefined,
   };
+  if (run.runOn === "cloud" && ["queued", "running", "waiting"].includes(run.status)) {
+    loaded.status = "cancelled";
+    loaded.finishedAt = now;
+    loaded.error = RETIRED_DESKTOP_MESSAGE;
+    loaded.errorCode = "routines.server.desktopRetired";
+    delete loaded.attention;
+    delete loaded.retryAt;
+  }
   return withoutUndefined(loaded, ["timeoutMinutes", "access", "deliver", "checkKey"]);
 }
 

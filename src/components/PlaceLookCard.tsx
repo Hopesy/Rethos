@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { CloudSwatch } from "../../electron/cloud-list.mjs";
+import type { CloudSwatch } from "../../shared/place-colors.mjs";
 import type { PlaceColorOutcome } from "../../electron/place-look.mjs";
 import { t } from "@/lib/i18n";
 import { choosePlaceColor, usePlaceLook } from "@/lib/place-look";

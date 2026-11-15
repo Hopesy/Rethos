@@ -31,13 +31,13 @@ async function scratch(t) {
 /** A self-hosted server as this desktop's sign-in there sees it: `scopes`, whether nobody else signs in there (`own`, which
  * the server says only to its one owner, with what it takes from them), and whether it is a team's or a Cloud. Its public
  * description offers no lending, as before pairing. */
-function selfHosted({ scopes = ["admin", "client"], own = true, extra = {}, mcp = true } = {}) {
+function selfHosted({ scopes = ["admin", "client"], own = true, extra = {}, mcp = true, accessControl = false } = {}) {
   const json = (value, status = 200) => ({ ok: status < 400, status, headers: { get: () => null }, body: (async function* () { yield Buffer.from(JSON.stringify(value)); })() });
-  const state = { environmentId: randomUUID(), sessionId: randomUUID(), scopes, own, extra, connects: [], disconnects: [], polls: 0 };
+  const state = { environmentId: randomUUID(), sessionId: randomUUID(), scopes, own, extra, connects: [], disconnects: [], polls: 0, access: "enabled" };
   state.fetch = async (url, init) => {
     const route = new URL(url).pathname;
     const owner = state.own && state.scopes.includes("admin");
-    if (route === "/api/auth/session") return json({ kind: "session", id: state.sessionId, scopes: state.scopes, ...(owner ? { own: true, lending: { sharedComputers: true, lendingDetails: true, fileEdits: true, ...(mcp ? { lentMcp: true } : {}) } } : {}), ...state.extra });
+    if (route === "/api/auth/session") return json({ kind: "session", id: state.sessionId, scopes: state.scopes, ...(owner ? { own: true, lending: { sharedComputers: true, lendingDetails: true, fileEdits: true, ...(mcp ? { lentMcp: true } : {}), ...(accessControl ? { computerAccessControl: true } : {}) } } : {}), ...state.extra });
     if (route === "/.well-known/openmausbot/environment") return json({ environmentId: state.environmentId, capabilities: { remoteSessions: true } });
     const body = init?.body ? JSON.parse(init.body) : {};
     if (route === "/api/shared-computers/connect") { state.connects.push(body); return json({ ok: true }); }
@@ -45,20 +45,21 @@ function selfHosted({ scopes = ["admin", "client"], own = true, extra = {}, mcp 
       state.polls++;
       await delay(50, undefined, { signal: init?.signal }).catch(() => {});
       init?.signal?.throwIfAborted();
-      return json({ job: null });
+      return json({ job: null, ...(accessControl ? { access: state.access } : {}) });
     }
     if (route.endsWith("/disconnect")) { state.disconnects.push(body); return json({ ok: true }); }
+    if (route.endsWith("/access") && accessControl) { assert.equal(init.method, "PATCH"); state.access = body.mode; return json({ ok: true }); }
     return json({ ok: true });
   };
   return state;
 }
 
 /** This desktop with the maintainer flag off, lending as main wires it; `restart()` is the app opening again. */
-async function desktop(t, server, { ownClouds = () => [] } = {}) {
+async function desktop(t, server, { ownClouds = () => [], environments = () => [garage] } = {}) {
   const dir = await scratch(t);
   const file = path.join(dir, "profile", "computer-sharing.json");
   const summaries = [];
-  const make = () => createComputerSharing({ file, environments: () => [garage], enabled: async () => false, home: path.join(dir, "home"), cuaConnection: async () => null,
+  const make = () => createComputerSharing({ file, environments, enabled: async () => false, home: path.join(dir, "home"), cuaConnection: async () => null,
     fetch: (url, init) => server.fetch(url, init), ownClouds, localEnvironments: () => [server.environmentId], onChange: summary => summaries.push(summary) });
   let sharing = make();
   t.after(() => sharing.close());
@@ -265,4 +266,32 @@ test("Settings: each server of the person's own has the switch, which asks the s
   assert.deepEqual(await other.handlers.get("sharing:servers")({}), []);
   await other.handlers.get("sharing:revoke")({}, "garage");
   assert.deepEqual(other.calls.revoked, ["garage"], "stopping never needs a flag");
+});
+
+test("pausing one server preserves every other connection and the paused state survives restart", async t => {
+  const second = { ...garage, id: "studio", name: "Studio", origin: "http://192.168.1.21:8799" };
+  const a = selfHosted({ accessControl: true }), b = selfHosted({ accessControl: true });
+  const mac = await desktop(t, { fetch: (url, init) => (new URL(url).origin === GARAGE ? a : b).fetch(url, init) },
+    { environments: () => [garage, second] });
+  await mac.sharing.lendOwn(garage, { computer: true });
+  await mac.sharing.lendOwn(second, { computer: true });
+  await until(() => a.connects.length === 1 && b.connects.length === 1, "both servers to connect");
+  const before = JSON.parse(await readFile(mac.file, "utf8")).records;
+  await mac.sharing.pauseServer(garage);
+  assert.equal(a.access, "paused");
+  assert.equal(b.access, "enabled");
+  assert.equal(mac.sharing.state(garage.id).paused, true);
+  assert.equal(mac.sharing.state(second.id).paused, undefined);
+  assert.equal(mac.sharing.state(second.id).connected, true);
+  assert.equal(b.disconnects.length, 0);
+  mac.restart();
+  await until(() => b.connects.length === 2, "the second server to reconnect");
+  assert.equal(a.connects.length, 1);
+  assert.equal(mac.sharing.state(garage.id).paused, true);
+  await mac.sharing.resumeServer(garage);
+  assert.equal(a.access, "enabled");
+  await until(() => a.connects.length === 2, "the paused server to resume");
+  const after = JSON.parse(await readFile(mac.file, "utf8")).records;
+  assert.equal(after.garage.id, before.garage.id);
+  assert.equal(after.studio.id, before.studio.id);
 });

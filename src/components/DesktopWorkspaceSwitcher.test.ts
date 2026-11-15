@@ -1,8 +1,8 @@
+import { DesktopWorkspaceSwitcher, openServerMenu } from "./DesktopWorkspaceSwitcher";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, expect, it, vi } from "vitest";
 
-import { DesktopWorkspaceSwitcher, openServerMenu, planSleeps } from "./DesktopWorkspaceSwitcher";
 
 afterEach(() => { vi.unstubAllGlobals(); });
 
@@ -52,27 +52,6 @@ it("names whose Cloud a browser signed in to under My Cloud, quietly", () => {
   expect(renderToStaticMarkup(createElement(DesktopWorkspaceSwitcher, { owner: "ada@example.test" }))).toBe("");
 });
 
-it("reads whether the plan sleeps from main's verified plan: an active plan without sleeps never sleeps; anything else is not known", () => {
-  expect(planSleeps({ status: "paid", tier: "pro" })).toBe(false);
-  expect(planSleeps({ status: "paid", tier: "starter", sleeps: true })).toBe(true);
-  expect(planSleeps({ status: "none", sleeps: true })).toBe(true);
-  for (const status of ["attention", "checking", "signin", "none"] as const) expect(planSleeps({ status }), status).toBeNull();
-  expect(planSleeps(null)).toBeNull();
-});
-
-it("is the Show me how tip's anchor, and opens the menu as reached from the tip only while the tip is up", async () => {
-  vi.stubGlobal("window", { ogb: { workspaces: { state: () => new Promise(() => {}), menu: () => Promise.resolve() } } });
-  for (const props of [{}, { inline: true }, { compact: true }]) expect(renderToStaticMarkup(createElement(DesktopWorkspaceSwitcher, props))).toContain('data-tour="server-switcher"');
-  const menu = vi.fn(() => Promise.resolve()), onClosed = vi.fn();
-  await openServerMenu({ menu }, { howTo: true, onClosed });
-  expect(menu).toHaveBeenLastCalledWith({ from: "howto" }); expect(onClosed).toHaveBeenCalledOnce();
-  menu.mockRejectedValueOnce(new Error("no menu"));
-  await expect(openServerMenu({ menu }, { howTo: true, onClosed })).rejects.toThrow("no menu");
-  expect(onClosed).toHaveBeenCalledTimes(2);
-  await openServerMenu({ menu }, { onClosed });
-  expect(menu).toHaveBeenLastCalledWith(undefined); expect(onClosed).toHaveBeenCalledTimes(2);
-});
-
 it("draws Simple mode's switcher as a rounded pill that names the server in full, swapping to the laptop icon only when the row is too narrow", () => {
   vi.stubGlobal("window", { ogb: { workspaces: { state: () => new Promise(() => {}), menu: () => Promise.resolve() } } });
   const pill = renderToStaticMarkup(createElement(DesktopWorkspaceSwitcher, { inline: true, pill: true }));
@@ -91,3 +70,5 @@ it("draws Simple mode's switcher as a rounded pill that names the server in full
   expect(visibleText(browser)).toBe("My Cloud");
   expect(browser).toMatch(/class="[^"]*\bh-8\b[^"]*\brounded-full\b/);
 });
+
+it("opens the saved server menu and reports failures", async () => { const menu = vi.fn().mockResolvedValue(undefined); await openServerMenu({ menu }); expect(menu).toHaveBeenCalledOnce(); menu.mockRejectedValue(new Error("unavailable")); await expect(openServerMenu({ menu })).rejects.toThrow("unavailable"); });

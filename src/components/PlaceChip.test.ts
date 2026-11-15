@@ -59,6 +59,7 @@ const bot = {
   busy: false,
   messages: [],
   computer: "local",
+  cloudBackend: "vps",
   modelSelection: { instanceId: "test", model: "grok-4.6" },
 } as Bot;
 
@@ -192,7 +193,7 @@ describe("J11: the chip names a place's problem in the panel's words", () => {
     fixture.computerMcp = false;
     fixture.menuOpen = true;
     const html = renderToStaticMarkup(createElement(PlaceChip, { bot, live: false, onPin: () => {} }));
-    const row = html.split('role="menuitemradio"').slice(1).find((entry) => entry.includes("Cloud desktop"))!;
+    const row = html.split('role="menuitemradio"').slice(1).find((entry) => entry.includes("Your remote desktop"))!;
     expect(row).toContain('disabled=""');
     expect(row).toContain("Not with this model");
     expect(row).toContain("title=\"grok-4.6 can&#x27;t use a desktop. Choose a model that can, such as Claude or ChatGPT.\"");

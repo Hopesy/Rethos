@@ -7,7 +7,7 @@ import { parseToolScope, toolScopeWidens } from "../shared/tool-scope.ts"; impor
 import { reorderStable } from "../shared/bot-order.ts"; import { trimOutboundPolicy } from "../shared/outbound.ts";
 import { botOwner, chiefConflict, chiefScope, ownerEmail } from "../shared/bot-owner.ts";
 import { ensureSections, readSections, changeEmptySection } from "./section-context.ts";
-import type { TeamComputers } from "./team-computers.ts";
+import { botWorkTargetPatch, taskWorkTargetPatch, migrateWorkTargets, resolveWorkTarget, type WorkTarget } from "../shared/work-target.ts";
 import { removeBotFolder, soulFile, soulHash, writeSoulMirror } from "./bot-folder.ts";
 import type { BotProfilePatch } from "./bot-profile.ts";
 import { peerAllowKey, type PeerAction } from "./peer-approval-key.ts";
@@ -106,7 +106,7 @@ const ASK_NOW = { approvalMode: "ask" as const, autoApprove: false, alwaysAllow:
 const TASK_PATCH_FIELDS = [
   "title", "projectId", "modelSelection", "approvalMode", "autoApprove", "alwaysAllow",
   "unread", "lastReadMessageId", "rewound", "archivedAt", "pinned", "pinnedMessageId", "resumeCursors", "lastInstanceId", "cwd",
-  "routineRunId", "surface", "surfaceSource", "snoozedUntil", "link", "linkAuto", "appliedCompactionId", "contextFloor", "lastContextModel", "setupRequest", "botApi", "outside",
+  "routineRunId", "surface", "surfaceSource", "workTarget", "snoozedUntil", "link", "linkAuto", "appliedCompactionId", "contextFloor", "lastContextModel", "setupRequest", "botApi", "outside",
 ] as const satisfies readonly (keyof TaskRecord)[];
 export type TaskPatch = Partial<Pick<TaskRecord, typeof TASK_PATCH_FIELDS[number]>>;
 
@@ -336,6 +336,7 @@ export class Store {
     const chiefSectionsSeen = new Set<string>();
     let groupsMigrated = false;
     for (const b of this.bots) {
+      if (migrateWorkTargets(b)) botsMigrated = true;
       const capabilities = defaultBotCapabilityPatch(b); if (capabilities) { Object.assign(b, capabilities); botsMigrated = true; }
       if (b.busy || (b.activity !== undefined && b.activity !== "idle")) botsMigrated = true;
       b.busy = false;
@@ -719,12 +720,12 @@ export class Store {
     }
   }
 
-  renameSection(name: string, nextName: string, computers?: TeamComputers): string | undefined {
+  renameSection(name: string, nextName: string): string | undefined {
     if (!name || !this.sections.includes(name)) return "No such department";
     nextName = nextName.trim();
     if (!nextName || nextName.length > 60 || [...nextName].some(char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127)) return "Department name must be 1 to 60 characters without control characters";
     if (name === nextName) return undefined;
-    if (this.sections.includes(nextName) || computers?.forSection(nextName)) return "A department with that name already exists";
+    if (this.sections.includes(nextName)) return "A department with that name already exists";
     const members = this.bots.filter(bot => sectionKey(bot.section) === name);
     const rooms = this.groups.filter(group => sectionKey(group.section) === name);
     const affected = this.bots.filter(bot => members.includes(bot) || bot.managedSections?.some(section => sectionKey(section) === name));
@@ -732,26 +733,21 @@ export class Store {
       return "Stop this department's active work before renaming it";
     }
     // Removing an empty identity revokes its old grants, so recreating it cannot restore access.
-    if (!members.length && !rooms.length && !computers?.forSection(name)) return this.changeEmptySection(name, nextName);
+    if (!members.length && !rooms.length) return this.changeEmptySection(name, nextName);
     const nextBots = this.bots.map(bot => ({ ...bot,
       ...(members.includes(bot) ? { section: nextName } : {}),
       ...(bot.managedSections ? { managedSections: [...new Set(bot.managedSections.map(section => sectionKey(section) === name ? nextName : section))] } : {}),
     }));
     const nextGroups = this.groups.map(group => rooms.includes(group) ? { ...group, section: nextName } : group);
-    let computerChanged = false;
     try {
-      // Register the new name only after saving, or the registry's duplicate-name check rejects this rename.
       this.saveBots(nextBots, false);
       this.saveGroups(nextGroups, false);
-      computerChanged = computers?.renameSection(name, nextName) ?? false;
       changeEmptySection(name, nextName);
     } catch (error) {
       this.saveBots(this.bots, false);
       this.saveGroups(this.groups, false);
-      if (computerChanged) computers!.renameSection(nextName, name);
       throw error;
     }
-    // Mutate in place: schedulers and other consumers hold these objects.
     for (let i = 0; i < nextBots.length; i++) Object.assign(this.bots[i], nextBots[i]);
     for (let i = 0; i < nextGroups.length; i++) Object.assign(this.groups[i], nextGroups[i]);
     for (const bot of affected) this.emit({ type: "bot", botId: bot.id });
@@ -1207,7 +1203,6 @@ export class Store {
     }
     this.noteThreadActivity(threadId, full.at, movesThreadToTop(full), full.turnCompletedAt ?? full.at);
     this.emit({ type: "message", threadId, message: full });
-    // After the insert, so no client ever sees two siblings claiming the same parent.
     for (const child of children) this.patchMessage(threadId, child.id, { parentId: full.id });
     return full;
   }
@@ -1258,7 +1253,6 @@ export class Store {
     mdb.appendMessage(threadId, full);
     this.noteThreadActivity(threadId, full.at, true);
     this.emit({ type: "message", threadId, message: full });
-    // A client adopts a new message as its leaf only when it chains onto its leaf; a sibling needs this pointer.
     this.emit({ type: "thread", threadId, activeLeafId: full.id });
     return full;
   }
@@ -1506,6 +1500,7 @@ export class Store {
   patchBot(id: string, patch: Partial<BotRecord>): BotRecord | null {
     const bot = this.bot(id);
     if (!bot) return null;
+    patch = { ...patch, ...botWorkTargetPatch(bot, patch) };
     if (patch.connectorTools !== undefined) {
       const parsed = parseConnectorTools(patch.connectorTools);
       if (!parsed.ok) throw new Error(parsed.error);
@@ -1542,6 +1537,14 @@ export class Store {
       this.saveBots(this.bots.map((candidate) => candidate === bot ? { ...bot, toolScope: nextToolScope } : candidate));
       bot.toolScope = nextToolScope;
     } else this.saveBots();
+    this.emit({ type: "bot", botId: id });
+    return bot;
+  }
+
+  setBotWorkTarget(id: string, workTarget: WorkTarget): BotRecord | null {
+    const bot = this.bot(id);
+    if (!bot) return null;
+    commitRegistryChange(bot, "bots.json", "set work location", () => this.saveBots(), () => Object.assign(bot, botWorkTargetPatch(bot, { workTarget })));
     this.emit({ type: "bot", botId: id });
     return bot;
   }
@@ -1988,7 +1991,6 @@ export class Store {
     const byId = new Map(this.bots.map((bot) => [bot.id, bot]));
     if (botIds.some((id) => !byId.has(id))) return null;
     const next = reorderStable(this.bots, botIds);
-    // Mutate in place: schedulers and other consumers hold this array and its records.
     this.bots.splice(0, this.bots.length, ...next);
     this.saveBots();
     this.emit({ type: "bots.order" });
@@ -2037,6 +2039,7 @@ export class Store {
     return {
       ...bot,
       threadId: task.threadId,
+      workTarget: resolveWorkTarget(bot, task),
       approvalGrant: bot.approvalGrant?.threadOnly && bot.approvalGrant.threadId !== threadId ? undefined : bot.approvalGrant,
       modelSelection: structuredClone(task.modelSelection ?? bot.modelSelection),
       resumeCursors: structuredClone(task.resumeCursors),
@@ -2053,6 +2056,7 @@ export class Store {
     const bot = this.bot(botId);
     const task = this.taskByThread(botId, threadId);
     if (!bot || !task) return null;
+    patch = { ...patch, ...taskWorkTargetPatch(bot, patch) };
     if (patch.projectId !== undefined && !this.project(botId, patch.projectId)) return null;
     const revocation = keptRevocation(threadApproval(task, bot), threadApproval({ ...task, ...patch }, bot), patch);
     this.commitBotChange(bot, "the thread change", () => {
@@ -2067,7 +2071,7 @@ export class Store {
       if (task.routineRunId) task.unread = false;
       if (bot.threadId === threadId) this.mirrorActiveTask(bot, task);
       bot.unread = bot.tasks!.some(taskCountsAsBotUnread);
-    }, revocation && (() => Object.assign(task, revocation)), !touchesPermissions(patch));
+    }, revocation && (() => Object.assign(task, revocation)), !touchesPermissions(patch) && !Object.hasOwn(patch, "workTarget"));
     this.emit({ type: "bot", botId });
     return task;
   }

@@ -89,12 +89,6 @@ test("the talk bridge asks main over its own channels with only what it understa
   assert.deepEqual(invocations.slice(before), [["talk-shortcut:state"], ["talk-shortcut:set", { enabled: false, key: "ctrl-shift-space" }], ["call:active", true], ["call:active", false]]);
 });
 
-test("account prepare asks for the secure address over its own channel and sends nothing from the page", async () => {
-  const before = invocations.length;
-  await exposed.api.companionAccount.prepare({ endpoint: "https://evil.example.test" });
-  assert.deepEqual(invocations.slice(before), [["companion-account:prepare"]]);
-});
-
 test("onOpenAppSettings subscribes to the exact app:open-settings channel, forwards every emit, and unsubscribes cleanly", () => {
   // main.mjs sends "app:open-settings"; a different name would leave the shortcut inert while menu tests still pass.
   const cbCalls = [];
@@ -124,6 +118,6 @@ test("legacy settings destinations resolve to general settings", () => {
 });
 
 test("the self-hosted bridge excludes official cloud and organization services", () => {
-  for (const key of ["cloudAccount", "cloudAdd", "cloudPlan", "organization", "accounts", "accountSheet", "companyBackups", "cloudSendPage", "home"]) assert.equal(exposed.api[key], undefined, key);
+  for (const key of ["updatesConsent", "cloudAccount", "cloudAdd", "cloudPlan", "organization", "accounts", "accountSheet", "companyBackups", "cloudSendPage", "home"]) assert.equal(exposed.api[key], undefined, key);
   for (const key of ["environments", "workspaces", "computerSharing", "companion"]) assert.equal(typeof exposed.api[key], "object", key);
 });

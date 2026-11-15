@@ -16,7 +16,7 @@ import { HALLOWEEN_BODY_IDS } from "../../shared/halloween-bodies";
 import type { BotBodyId } from "../../shared/bot-body";
 import { BotAvatar, MausAvatar } from "./Avatar";
 import { AvatarImageGenerator } from "./AvatarImageGenerator";
-import { AvatarFraming, OrganizationAvatarIcons, RESET_MASCOT_PATCH, useAvatarImage, type AvatarPatch } from "./avatar-editing";
+import { AvatarFraming, RESET_MASCOT_PATCH, useAvatarImage, type AvatarPatch } from "./avatar-editing";
 import { t } from "@/lib/i18n";
 import { bodyName, colorName, expressionName } from "@/lib/mascot-names";
 import { MascotFaceColorPicker } from "./MascotFaceColorPicker";
@@ -48,7 +48,6 @@ export function BotProfileAvatarCard({
       </div>
 
       <div className="p-3">
-        <OrganizationAvatarIcons busy={busy} onUpload={(file) => void upload(file)} />
         {crop !== "mascot" && bot.avatarUrl ? (
           <AvatarFraming bot={bot} disabled={busy} onPatch={onPatch} />
         ) : (

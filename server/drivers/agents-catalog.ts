@@ -275,6 +275,8 @@ const TOOL_DEFINITIONS = [
     inputSchema: { type: "object", additionalProperties: false, properties: {
       surface: { type: "string", enum: ["auto", "cloud", "vm", "local", "browser"],
         description: "auto = suitable configured computer, cloud = the bot's cloud computer or self-hosted VPS, vm = isolated Local VM, local = user's own desktop, browser = built-in browser. Omit to list." },
+      computer_id: { type: "string", description: "A connected computer ID from list_shared_computers or this tool's workTargets options. Choose this or surface." },
+      cwd: { type: "string", description: "Optional absolute working directory on the connected computer." },
     } },
   },
   {

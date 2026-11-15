@@ -3,11 +3,13 @@ import { z } from "zod";
 import type { DeviceLinks, LinkedComputer } from "./device-links.ts";
 import { awayNotice, deviceWord, lendScreenSteps, LENT_PLATFORMS, type LentComputers, type LentPlatform } from "./lent-computers.ts";
 import type { LentCopies } from "./lent-copies.ts";
+import { ComputerAccess, type ComputerAccessMode } from "./computer-access.ts";
 export { LentComputers } from "./lent-computers.ts";
 
 const folder = z.object({ id: z.string().uuid(), name: z.string().min(1).max(120), write: z.boolean(), path: z.string().max(2048).optional() }).strict();
 export const sharedComputerRegistration = z.object({
   id: z.string().uuid(), name: z.string().min(1).max(120), environmentId: z.string().uuid(),
+  grantRevision: z.string().uuid().optional(),
   folders: z.array(folder).max(20), terminal: z.boolean(), computer: z.boolean(),
   /** The desktop owner delegates file grants to the connected server's current bot/conversation permissions. */
   botPermissions: z.literal(true).optional(),
@@ -68,15 +70,8 @@ const jobDeadlineMs = (registration: Registration, operation: Operation) =>
     : operation.action === "run_command" && registration.commandTimeouts ? (operation.timeout_seconds ?? COMMAND_SECONDS) * 1000 + 15_000 : 45_000;
 /** The registering session alone may poll, answer and disconnect; only that person's bot turns may see or use it. */
 export type SharedComputerOwner = { session: string; person: string };
-export type SharedComputerStatus = {
-  id: string; name: string; online: boolean; busy: boolean; lastSeenAt: number;
-  scopes: { folders: { id: string; name: string; write: boolean }[]; terminal: boolean; screen: boolean; internet: boolean; chrome: boolean };
-};
-/** A computer lent now or before: what the person's own Cloud page shows, online or not, across restarts. */
-export type KnownLentComputer = {
-  id: string; name: string; platform: "darwin" | "win32" | "linux" | null; online: boolean; busy: boolean; lent: boolean;
-  lastSeenAt: number; lastUsedAt: number | null; scopes: { folders: number; terminal: boolean; screen: boolean; internet: boolean; chrome: boolean };
-};
+export type { SharedComputerStatus, KnownLentComputer } from "../shared/connected-computers.ts";
+import type { SharedComputerStatus, KnownLentComputer } from "../shared/connected-computers.ts";
 type Job = {
   id: string; operation: AuthorizedComputerOperation; active: () => boolean; sent: boolean; leased: boolean; resolve: (result: unknown) => void; reject: (error: Error) => void;
   timer: NodeJS.Timeout; delivery?: NodeJS.Timeout;
@@ -169,7 +164,9 @@ export class SharedComputers {
   changed: () => void = () => {};
   /** On the person's own Cloud, the bots' tool that asks them to turn on what their computer doesn't give now. */
   askTool: string | null = null;
-  constructor(sessionLive: (id: string) => boolean, lent?: LentComputers, links?: Pick<DeviceLinks, "drop">, copies?: Pick<LentCopies, "away" | "answer">) {
+  private readonly access: ComputerAccess;
+  constructor(sessionLive: (id: string) => boolean, lent?: LentComputers, links?: Pick<DeviceLinks, "drop">, copies?: Pick<LentCopies, "away" | "answer">, access = new ComputerAccess()) {
+    this.access = access;
     this.sessionLive = sessionLive; this.lent = lent; this.links = links; this.copies = copies;
   }
   private static key(session: string, id: string) { return `${session}\n${id}`; }
@@ -180,22 +177,27 @@ export class SharedComputers {
     const old = this.computers.get(key);
     if (old) {
       this.authorize(registration.id, owner.session, secret);
+      if (old.registration.grantRevision !== registration.grantRevision) {
+        for (const job of old.jobs.values()) this.finish(old, job, failure("This computer's permissions changed. Inspect any in-flight action before retrying."));
+      }
       // Its link was let in for the internet connection and Chrome as lent then: lent or taken back since, the link starts over.
       if ((old.registration.internet === true) !== (registration.internet === true) || (old.registration.chrome === true) !== (registration.chrome === true)) this.links?.drop(key);
       old.registration = registration; old.seen = Date.now();
+      this.access.registered(owner.person, registration.id, registration.grantRevision);
       this.remember(registration, old.owner.person);
       this.changed();
       return;
     }
     this.reap();
-    // A new id from the same session replaces its entry; no other session can reach, replace or squat this key.
     for (const [stale, entry] of this.computers) {
-      if (entry.owner.session !== owner.session) continue;
+      if (entry.registration.id !== registration.id || entry.owner.person !== owner.person) continue;
+      if (!timingSafeEqual(Buffer.from(entry.secret), Buffer.from(secret))) throw failure("The computer credential changed; reconnect with its saved identity", 403);
       this.computers.delete(stale); entry.wake?.(); this.links?.drop(stale);
       for (const job of entry.jobs.values()) this.finish(entry, job, failure("This computer's access changed. An in-flight action may have completed; inspect before retrying."));
     }
     if (this.computers.size >= TOTAL) throw failure("Too many shared computers");
     this.computers.set(key, { registration, owner: { ...owner }, secret, seen: Date.now(), jobs: new Map(), polls: 0 });
+    this.access.registered(owner.person, registration.id, registration.grantRevision);
     this.remember(registration, owner.person);
     this.changed();
   }
@@ -210,6 +212,7 @@ export class SharedComputers {
     }
   }
   private online(entry: Computer) { return this.sessionLive(entry.owner.session) && Date.now() - entry.seen < 40_000; }
+  private usable(entry: Computer) { return this.online(entry) && this.access.mode(entry.owner.person, entry.registration.id) === "enabled"; }
   /** The desktop takes a 401 or 403 for a lost sign-in and signs in again, so a stopping server answers 503. */
   private authorize(id: string, session: string, secret: string) {
     if (this.closed) throw failure(RESTARTING, 503);
@@ -219,14 +222,29 @@ export class SharedComputers {
   }
   /** Some computer is lent here, online or away: only then do the bots of a server that takes its admins' computers see the tools. */
   anyLent(): boolean { return this.computers.size > 0 || (this.lent?.any() ?? false); }
+  accessMode(person: string | null, id: string): ComputerAccessMode { return person ? this.access.mode(person, id) : "revoked"; }
+  setAccess(person: string | null, id: string, mode: ComputerAccessMode): void {
+    const entries = [...this.computers.values()].filter(entry => entry.registration.id === id && entry.owner.person === person);
+    if (!person || (!entries.length && !this.lent?.list(person).some(item => item.id === id))) throw failure("Computer not found", 404);
+    if (mode === "enabled" && this.access.mode(person, id) === "revoked") throw failure("Enable access again on that computer to renew its authorization", 409);
+    this.access.set(person, id, mode, entries[0]?.registration.grantRevision);
+    for (const entry of entries) {
+      if (mode !== "enabled") {
+        for (const job of entry.jobs.values()) this.finish(entry, job, failure("Computer access was paused or revoked"));
+        this.links?.drop(SharedComputers.key(entry.owner.session, id));
+      }
+      entry.wake?.();
+    }
+    this.changed();
+  }
   list(principal: string | null) {
     if (!principal) return [];
-    return [...this.computers.values()].filter(entry => entry.owner.person === principal && this.online(entry)).map(({ registration: { platform, ...rest } }) => ({ ...rest, ...(platform ? { device: deviceWord(platform) } : {}) }));
+    return [...this.computers.values()].filter(entry => entry.owner.person === principal && this.usable(entry)).map(({ registration: { platform, ...rest } }) => ({ ...rest, ...(platform ? { device: deviceWord(platform) } : {}) }));
   }
   /** What each of this person's online computers lends: its apps and screen, its terminal. */
   lendingNow(principal: string | null): { id: string; name: string; platform?: LentPlatform; computer: boolean; terminal: boolean }[] {
     if (!principal) return [];
-    return [...this.computers.values()].filter(entry => entry.owner.person === principal && this.online(entry))
+    return [...this.computers.values()].filter(entry => entry.owner.person === principal && this.usable(entry))
       .map(({ registration: { id, name, platform, computer, terminal } }) => ({ id, name, ...(platform ? { platform } : {}), computer, terminal }));
   }
   /** The computer of this person's that `runsOn` names: online now (and what it lends), else as last known, else neither.
@@ -237,18 +255,18 @@ export class SharedComputers {
   } {
     if (!principal) return { online: null, known: null };
     const names = (environments: readonly string[] | undefined, name: string) => environments?.includes(runsOn.environmentId) ?? name === runsOn.label;
-    const entry = [...this.computers.values()].find((candidate) => candidate.owner.person === principal && this.online(candidate) && names(candidate.registration.environments, candidate.registration.name));
+    const entry = [...this.computers.values()].find((candidate) => candidate.owner.person === principal && this.usable(candidate) && names(candidate.registration.environments, candidate.registration.name));
     const record = this.lent?.list(principal).find((candidate) => names(candidate.environments, candidate.name));
     return {
       online: entry ? { id: entry.registration.id, name: entry.registration.name, platform: entry.registration.platform ?? null, terminal: entry.registration.terminal, mcpServers: entry.registration.mcpServers === true } : null,
-      known: record ? { name: record.name, platform: record.platform, lent: record.stoppedAt === null } : null,
+      known: record ? { name: record.name, platform: record.platform, lent: record.stoppedAt === null && this.access.mode(principal, record.id) !== "revoked" } : null,
     };
   }
   /** This person's online computers that run MCP servers for this server, each with the session that lent it and its first
    * install's environment id: where a server added here that needs their computer is marked as running. */
   mcpLenders(principal: string | null): { id: string; name: string; platform: LentPlatform | null; session: string; environmentId: string; seen: number }[] {
     if (!principal) return [];
-    return [...this.computers.values()].filter((entry) => entry.owner.person === principal && this.online(entry) && entry.registration.mcpServers === true && entry.registration.environments?.length)
+    return [...this.computers.values()].filter((entry) => entry.owner.person === principal && this.usable(entry) && entry.registration.mcpServers === true && entry.registration.environments?.length)
       .map((entry) => ({ id: entry.registration.id, name: entry.registration.name, platform: entry.registration.platform ?? null, session: entry.owner.session, environmentId: entry.registration.environments![0]!, seen: entry.seen }))
       .sort((a, b) => b.seen - a.seen);
   }
@@ -259,7 +277,7 @@ export class SharedComputers {
     return (this.lent?.list(principal) ?? []).map(record => {
       const entry = live.find(candidate => candidate.registration.id === record.id);
       return { id: record.id, name: record.name, platform: record.platform, online: entry ? this.online(entry) : false, busy: (entry?.jobs.size ?? 0) > 0,
-        lent: record.stoppedAt === null, lastSeenAt: entry ? Math.max(entry.seen, record.lastSeenAt) : record.lastSeenAt, lastUsedAt: record.lastUsedAt,
+        lent: record.stoppedAt === null && this.access.mode(principal, record.id) !== "revoked", access: this.access.mode(principal, record.id), lastSeenAt: entry ? Math.max(entry.seen, record.lastSeenAt) : record.lastSeenAt, lastUsedAt: record.lastUsedAt,
         scopes: { folders: record.folders, terminal: record.terminal, screen: record.screen, internet: record.internet === true, chrome: record.chrome === true } };
     });
   }
@@ -294,15 +312,18 @@ export class SharedComputers {
   /** The registered computer behind a device link: the same session and secret as its poll. */
   linkable(id: string, session: string, secret: string): LinkedComputer {
     const entry = this.authorize(id, session, secret);
+    if (this.access.mode(entry.owner.person, id) !== "enabled") throw failure("Computer access is paused or revoked", 403);
     entry.seen = Date.now();
     return { key: SharedComputers.key(session, id), person: entry.owner.person, internet: entry.registration.internet === true, chrome: entry.registration.chrome === true, seenAs: null,
-      live: () => this.sessionLive(session), used: () => this.lent?.used(entry.owner.person, id) };
+      live: () => this.sessionLive(session) && this.access.mode(entry.owner.person, id) === "enabled", used: () => this.lent?.used(entry.owner.person, id) };
   }
   status(principal: string | null): SharedComputerStatus[] {
     if (!principal) return [];
     this.reap();
     return [...this.computers.values()].filter(entry => entry.owner.person === principal).map(entry => ({
       id: entry.registration.id, name: entry.registration.name, online: this.online(entry), busy: entry.jobs.size > 0, lastSeenAt: entry.seen,
+      botPermissions: entry.registration.botPermissions === true,
+      ...(entry.registration.platform ? { platform: entry.registration.platform } : {}), access: this.access.mode(principal, entry.registration.id),
       scopes: {
         folders: entry.registration.folders.map(({ id, name, write }) => ({ id, name, write })),
         terminal: entry.registration.terminal, screen: entry.registration.computer, internet: entry.registration.internet === true, chrome: entry.registration.chrome === true,
@@ -318,6 +339,7 @@ export class SharedComputers {
     this.lent?.seen(entry.owner.person, id);
     const next = () => {
       if (entry.polls !== mine || gone?.aborted) return null;
+      if (this.access.mode(entry.owner.person, id) !== "enabled") return null;
       for (const job of entry.jobs.values()) {
         if (!job.active()) { this.finish(entry, job, failure("The requesting turn ended")); continue; }
         if (!job.sent) { this.send(entry, job); return { id: job.id, operation: job.operation }; }
@@ -374,6 +396,9 @@ export class SharedComputers {
   async request(operation: AuthorizedComputerOperation, principal: string | null, active: () => boolean,
     authorize?: (registration: Registration, operation: Operation) => Promise<ComputerAuthorization>): Promise<unknown> {
     if (!principal) throw failure("This conversation cannot use a shared computer: only a conversation started by the person who shared it can.", 403);
+    if (this.access.mode(principal, operation.computer_id) !== "enabled") throw failure("Computer access is paused or revoked", 403);
+    const turnActive = active;
+    active = () => turnActive() && this.access.mode(principal, operation.computer_id) === "enabled";
     const lent = () => [...this.computers.values()].find(candidate => candidate.registration.id === operation.computer_id && candidate.owner.person === principal);
     for (const deadline = Date.now() + RECONNECT_WAIT_MS; ;) {
       const known = lent();

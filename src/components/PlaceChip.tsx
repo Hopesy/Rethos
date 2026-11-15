@@ -1,3 +1,4 @@
+import { targetLabel, useWorkTarget } from "@/lib/work-target";
 import { Check } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
@@ -29,8 +30,8 @@ export function usePlaceViews(bot: Bot): Record<Place, { view: PlaceView; reacha
   const entry = (place: Place) => {
     const view = placeViewFor(placeFacts({ bot, place, seat, config: state.config, instances: state.instances, local }));
     const policy = (place === "cloud" ? allowed[backend] : place === "vm" ? allowed.localVm : place === "local" ? allowed.thisComputer : true)
-      && placeOffered(place, state.config);
-    const listed = placeOffered(place, state.config) && !(place === "local" && pageOnRemoteServer(capabilities));
+      && placeOffered(place, state.config, bot);
+    const listed = placeOffered(place, state.config, bot) && !(place === "local" && pageOnRemoteServer(capabilities));
     return { view, policy, listed, reachable: policy && !placeBlocked(view) };
   };
   return { cloud: entry("cloud"), vm: entry("vm"), local: entry("local"), browser: entry("browser") };
@@ -44,23 +45,24 @@ export function usePlaceAvailability(bot: Bot): PlaceAvailability {
 /** The place chip as one + menu entry with the same choices, for a phone composer that has no room for the chip. */
 export function usePlaceMenuItem({ bot, task, disabled = false, onPin }: {
   bot: Bot;
-  task?: Pick<Task, "surface" | "surfaceAuto"> | null;
+  task?: Pick<Task, "surface" | "surfaceAuto" | "workTarget"> | null;
   disabled?: boolean;
   onPin: (surface: Place | null) => void;
 }): SidebarMenuItem {
   const places = usePlaceViews(bot);
+  const target = useWorkTarget(bot, true);
   const effective = effectivePlace(bot, task);
   const pin = personPin(task);
-  const pinned = Boolean(pin);
+  const pinned = Boolean(pin || target.status?.pinnedTarget);
   const off = effective === "off";
   const botDefault = bot.computer ?? "auto";
   const followsAuto = botDefault === "auto";
   const check = <Check size={14} className="text-accent" aria-hidden="true" />;
-  const choose = (surface: Place | null) => { if (surface !== (pin ?? null)) onPin(surface); };
+  const choose = (surface: Place | null) => { if (surface === null && target.status?.pinnedTarget) void target.save(null); else if (surface !== (pin ?? null) || target.selected.kind === "connected") onPin(surface); };
   return {
     key: "place",
     label: t("computer.worksOn"),
-    subtitle: t(placeLabelKey(effective)),
+    subtitle: target.selected.kind === "connected" ? targetLabel(target.selected, target.status) : t(placeLabelKey(effective)),
     icon: <PlaceIcon place={effective} size={16} aria-hidden="true" />,
     disabled: disabled || off,
     onSelect: () => {},
@@ -74,6 +76,11 @@ export function usePlaceMenuItem({ bot, task, disabled = false, onPin }: {
         trailing: !pinned ? check : undefined,
         onSelect: () => choose(null),
       },
+      ...(target.status?.options ?? []).filter(option => option.target.kind === "connected").map(option => ({
+        key: 'connected:' + option.label, label: option.label, disabled: !option.available,
+        note: option.ready ? t("computer.connected.online") : t("computer.connected.offline"),
+        onSelect: () => { void target.save(option.target); },
+      })),
       ...PLACES.filter((place) => places[place].listed).map((place): SidebarMenuItem => {
         const { view, reachable, policy } = places[place];
         return {
@@ -97,7 +104,7 @@ const DESCRIPTION: Record<Place, "computer.dest.cloudDesc" | "computer.dest.vmDe
 
 export function PlaceChip({ bot, task, live, disabled = false, onPin }: {
   bot: Bot;
-  task?: Pick<Task, "surface" | "surfaceAuto"> | null;
+  task?: Pick<Task, "surface" | "surfaceAuto" | "workTarget"> | null;
   live: boolean;
   disabled?: boolean;
   onPin: (surface: Place | null) => void;
@@ -106,11 +113,12 @@ export function PlaceChip({ bot, task, live, disabled = false, onPin }: {
   const motion = useMenuMotion(open);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const places = usePlaceViews(bot);
+  const target = useWorkTarget(bot, true);
   const effective = effectivePlace(bot, task);
   const pin = personPin(task);
-  const pinned = Boolean(pin);
+  const pinned = Boolean(pin || target.status?.pinnedTarget);
   const off = effective === "off";
-  const label = t(placeLabelKey(effective));
+  const label = target.selected.kind === "connected" ? targetLabel(target.selected, target.status) : t(placeLabelKey(effective));
   const showLive = live && effective !== "off" && effective !== "auto";
   const title = off ? t("place.offHint") : disabled ? t("place.busy") : pinned ? t("place.pinnedHere") : t("place.fromBot");
 
@@ -123,7 +131,7 @@ export function PlaceChip({ bot, task, live, disabled = false, onPin }: {
     return () => { document.removeEventListener("mousedown", outside); document.removeEventListener("keydown", escape); };
   }, [open]);
 
-  const choose = (surface: Place | null) => { setOpen(false); if (surface !== (pin ?? null)) onPin(surface); };
+  const choose = (surface: Place | null) => { setOpen(false); if (surface === null && target.status?.pinnedTarget) void target.save(null); else if (surface !== (pin ?? null) || target.selected.kind === "connected") onPin(surface); };
   const botDefault = bot.computer ?? "auto";
   const followsAuto = botDefault === "auto";
 
@@ -167,6 +175,14 @@ export function PlaceChip({ bot, task, live, disabled = false, onPin }: {
               </span>
               {!pinned && <Check size={14} className="mt-0.5 shrink-0 text-accent" aria-hidden="true" />}
             </button>
+            {(target.status?.options ?? []).filter(option => option.target.kind === "connected").map(option => <button
+              key={option.target.kind === "connected" ? option.target.computerId : option.label} type="button" role="menuitemradio"
+              aria-checked={target.selected.kind === "connected" && option.target.kind === "connected" && target.selected.computerId === option.target.computerId}
+              disabled={!option.available || target.saving} className="rounded-md px-2 py-1.5 text-left text-[13px] hover:bg-menu-hover disabled:opacity-50"
+              onClick={() => { void target.save(option.target).then(saved => { if (saved) setOpen(false); }); }}>
+              {option.label} · {t(option.ready ? "computer.connected.online" : "computer.connected.offline")}
+            </button>)}
+            {target.error && <p role="alert" className="px-2 text-[12px] text-danger">{target.error}</p>}
             {PLACES.filter((place) => places[place].listed).map((place) => {
               const selected = pin === place;
               const { view, reachable, policy } = places[place];

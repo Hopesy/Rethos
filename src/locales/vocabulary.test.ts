@@ -56,11 +56,7 @@ const isSource = (name: string) => /\.(?:ts|tsx|mjs|cjs|js)$/.test(name) && !/\.
 
 /** No snippet keeps the word file-wide; otherwise only literals containing the snippet. */
 const ALLOWED: ReadonlyArray<{ file: string; snippet?: string; why: string }> = [
-  { file: "shared/credential-request.ts", snippet: "when Boat is selected", why: "the card that asks for a person's own Boat key" },
-  { file: "server/boat-create-idempotency.ts", snippet: "unnamed Boat", why: "own-key repair: boat.dev's own name for a machine" },
-  { file: "src/lib/boat-offer.ts", snippet: "MausBot introduced me", why: "the email a person sends Boat to claim its credit" },
   { file: "server/workspace-backup.ts", snippet: "OMB-WORKSPACE-1", why: "a backup file's format marker" },
-  { file: "electron/company-backups.mjs", snippet: "OMB-WORKSPACE-1", why: "a backup file's format marker" },
 ];
 
 function* sources(dir: string): Generator<string> {
@@ -154,23 +150,15 @@ describe("one name per thing", () => {
   it("copy that points at a control names it exactly as the control is labelled", () => {
     const e = en as Record<string, string>;
     const source = (file: string) => readFileSync(join(ROOT, file), "utf8");
-    const myCloud = /CLOUD_HOME_NAME = "([^"]+)"/.exec(source("electron/cloud-home.mjs"))?.[1];
     const thisComputer = /id: "workspace-local", label: t\("([^"]+)"\)/.exec(source("electron/environments.cjs"))?.[1];
     const serverMenuLocal = /\{ label: t\("([^"]+)"\), type: "radio", checked: !active/.exec(source("electron/menu.mjs"))?.[1];
-    expect([myCloud, thisComputer, serverMenuLocal]).toEqual([e["cloudSetup.myCloud"], "place.local", "place.local"]);
+    expect([thisComputer, serverMenuLocal]).toEqual(["place.local", "place.local"]);
     type Text = (key: string) => string;
     const label = (key: string) => (text: Text) => text(key);
-    const cloud = () => myCloud!;
     const settings = (section: string) => (text: Text) => `${text("settings.title")} → ${text(section)}`;
     const withoutEllipsis = (key: string) => (text: Text) => text(key).replace(/…$/, "");
     const pointers: Array<[string, Array<(text: Text) => string>]> = [
-      ["cloudHome.connectHelp", [label("place.local")]],
-      ["cloudPhone.step1", [cloud]],
-      ["cloudAccount.onCloudSignIn", [label("cloudAccount.signInAgain")]],
-      ["cloudAccount.storageFailed", [label("cloudAccount.signOut")]],
-      ["cloudAccount.codeExpired", [label("cloudAccount.signIn")]],
       ["computer.routines.offWarning", [label("routines.runsOn.boat")]],
-      ["native.dialog.org.consHosted", [label("native.menu.server")]],
       ["native.dialog.unreachable.detail", [label("native.menu.server")]],
       ["native.boot.folderMissing.body", [label("native.menu.server")]],
       ["native.boot.unhealthy.body", [label("native.menu.server")]],

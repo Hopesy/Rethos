@@ -15,14 +15,15 @@ import { shortPath } from "@/lib/short-path";
 import { isOwnThreadFolder } from "../../../shared/thread-folder";
 import { useDesktopCapabilities } from "../DesktopCapabilities";
 import { CloudBackendPicker } from "../CloudBackendPicker";
+import { ConnectedComputers } from "../ConnectedComputers";
+import { WorkTargetPicker } from "../WorkTargetPicker";
+import { targetLabel, useWorkTarget } from "@/lib/work-target";
 import { Switch } from "../SettingsPrimitives";
 import { PhoneAppsCard } from "./PhoneAppsCard";
 import { ProposalStatus } from "./ProposalStatus";
 import { ToolSelectionCard } from "./ToolSelectionCard";
 import { BotApiCard } from "./BotApiCard";
 import { ToolBudgetLine } from "./ToolBudgetLine";
-import { useCloudPlan } from "../ProIntroduction";
-import { xResearchAction } from "@/lib/cloud-plan";
 import { useBotApps } from "./useBotApps";
 import {
   classifyConnectorTool,
@@ -73,6 +74,7 @@ export function WorkingFolder({ bot }: { bot: Bot }) {
   const task = bot.tasks?.find((t) => t.threadId === bot.threadId);
   const pinned = task?.cwd;
   const pinnedElsewhere = pinned !== undefined && (pinned ?? undefined) !== bot.cwd && !isOwnThreadFolder(pinned, bot.id, bot.threadId);
+  if (bot.workTarget?.kind === "connected") return null;
 
   return (
     <div className="rounded-xl bg-card p-4">
@@ -481,20 +483,18 @@ function ConnectorToolsGrants({
  * treg key or a Cloud plan's research credential, and switchable off per bot. */
 function ResearchCard({ bot, patch }: { bot: Bot; patch: (patch: { xResearch: boolean }) => void }) {
   const { state, dispatch } = useStore();
-  const connecting = xResearchAction(useCloudPlan()?.view ?? null) === "connecting" && state.config?.xResearch?.unavailable !== true;
-  const ownKey = state.config?.treg?.configured === true, included = state.config?.xResearch?.included === true;
-  const available = ownKey || included;
+  const available = state.config?.treg?.configured === true;
   const on = bot.xResearch !== false;
-  const line = !available ? t(connecting ? "research.connecting" : "research.addKeyShort")
-    : !on ? t("research.off") : t(ownKey ? "research.ownOn" : "research.planOn");
+  const line = !available ? t("research.addKeyShort")
+    : !on ? t("research.off") : t("research.ownOn");
   return (
     <div className="flex items-center justify-between gap-4 rounded-xl bg-card p-4" data-testid="access-x-research">
       <div>
         <div className="flex items-center gap-1 text-[15px] font-medium text-ink">{t("research.title")}
-          {!available && !connecting && <SettingsHelp label={t("research.title")}>{t("research.addKey")}</SettingsHelp>}
+          {!available && <SettingsHelp label={t("research.title")}>{t("research.addKey")}</SettingsHelp>}
         </div>
         <div className="mt-0.5 text-[13px] text-ink-secondary">{line}</div>
-        {!available && !connecting && (
+        {!available && (
           <button type="button" className="ui-button mt-2" onClick={() => dispatch(openKeySettings("treg"))}>
             {t("research.openKeys")}
           </button>
@@ -681,6 +681,7 @@ export function AccessSection({
   const worksOn = placeViewFor(placeFacts({
     bot, place: bot.computer ?? "auto", seat: placeSeat, config: state.config, instances: state.instances,
   }));
+  const workTarget = useWorkTarget(bot);
   // The same list the Vault tab shows: Composio's connected accounts plus the native Email connection.
   const apps = useBotApps(bot);
   const inventoryReady = apps.phase === "ready";
@@ -694,7 +695,7 @@ export function AccessSection({
   return (
     <div className="flex flex-col gap-4">
       {shows("worksOn") && <div className="rounded-xl bg-card p-4" data-testid="access-works-on">
-        <div className="text-[15px] font-medium text-ink">{t("access.worksOn", { name: bot.name, short: worksOn.short })}</div>
+        <div className="text-[15px] font-medium text-ink">{t("access.worksOn", { name: bot.name, short: bot.workTarget?.kind === "connected" ? targetLabel(workTarget.selected, workTarget.status) : worksOn.short })}</div>
         <ProposalStatus bot={bot} kind="owner" />
         <button
           type="button"
@@ -706,9 +707,11 @@ export function AccessSection({
         >
           {t("place.action.openComputerPanel")}
         </button>
-        <CloudPreference bot={bot} patch={patch} />
+        {!draft && <WorkTargetPicker bot={bot} />}
+        {bot.workTarget?.kind !== "connected" && <CloudPreference bot={bot} patch={patch} />}
       </div>}
 
+      {shows("worksOn") && <ConnectedComputers bot={bot} />}
       {shows("folder") && <WorkingFolder bot={bot} />}
 
       {shows("apps") && <div className="rounded-xl bg-card p-4">

@@ -12,8 +12,8 @@ function setup(over = {}) {
     places: () => [{ id: "local", local: true }, { id: "a", origin: "https://a.test" }, { id: "b", origin: "https://b.test" }],
     activeId: () => "local",
     local: async (route) => { asked.push(["local", route]); return answer(200, { count: counts.local }); },
-    cloudFetch: async (url, init) => { asked.push([url, init.headers["x-omb-background"]]); const origin = new URL(url).origin; return counts[origin] === null ? answer(404, {}) : answer(200, { count: counts[origin] }); },
-    asleep: () => false, shown: () => true, changed: () => { changes += 1; },
+    cloudFetch: async (url, init) => { asked.push([url, init.credentials]); const origin = new URL(url).origin; return counts[origin] === null ? answer(404, {}) : answer(200, { count: counts[origin] }); },
+    shown: () => true, changed: () => { changes += 1; },
     setTimer: (run, ms) => { tick = { run, ms }; return {}; },
     ...over,
   });
@@ -38,26 +38,11 @@ test("a place with something waiting fires, and only once the window shows anoth
   assert.equal(f.changes(), 2);
 });
 
-test("asks each Cloud as background work, so asking never counts as the person using it", async () => {
+test("reads each saved server with its own session", async () => {
   const f = setup();
   await f.watch.look();
-  assert.deepEqual(f.asked.find(([url]) => url === "https://a.test/api/inbox/count"), ["https://a.test/api/inbox/count", "1"]);
+  assert.deepEqual(f.asked.find(([url]) => url === "https://a.test/api/inbox/count"), ["https://a.test/api/inbox/count", "include"]);
   assert.deepEqual(f.asked.find(([url]) => url === "local"), ["local", "/api/inbox/count"]);
-});
-
-test("never asks a sleeping Cloud, which any request would wake; it keeps the last number", async () => {
-  let asleep = false;
-  const f = setup({ asleep: (origin) => asleep && origin === "https://a.test" });
-  f.counts["https://a.test"] = 1;
-  f.watch.waiting("a");
-  await f.watch.look();
-  assert.equal(f.watch.waiting("a"), true);
-  asleep = true;
-  f.asked.length = 0;
-  f.counts["https://a.test"] = 0;
-  await f.watch.look();
-  assert.equal(f.asked.some(([url]) => String(url).startsWith("https://a.test")), false);
-  assert.equal(f.watch.waiting("a"), true);
 });
 
 test("an older place with no inbox has nothing waiting, and one that can't be reached keeps its number", async () => {

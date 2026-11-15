@@ -74,14 +74,9 @@ function railKeepsItsSize() {
 if (typeof window !== "undefined") {
   for (const type of ["resize", "DOMContentLoaded"]) window.addEventListener(type, () => { leaveRailRoom(); railKeepsItsSize(); });
 }
-const REMOTE_SAFE = new Set(["platform", "app", "getCapabilities", "onCapabilitiesChanged", "applySkin", "setUnreadCount", "permStatus", "workspaces", "rail", "desktopNotices", "desktopNotifications", "desktopAnalytics", "desktopLanguage", "updatesConsent", "windowControls", "onOpenAppSettings", "windowFrame"]);
-/** My Cloud's own page once it is the person's home (main checks the sender again): it is this app's page then. */
-const HOME_PAGE = ["home", "onChatLink", "onPackageInstall", "exportDiagnostics", "openLogsFolder", "openAtLogin", "callActive"];
+const REMOTE_SAFE = new Set(["platform", "app", "getCapabilities", "onCapabilitiesChanged", "applySkin", "setUnreadCount", "permStatus", "workspaces", "rail", "desktopNotices", "desktopNotifications", "desktopAnalytics", "desktopLanguage", "windowControls", "onOpenAppSettings", "windowFrame"]);
 function updaterOffered() {
   try { return ipcRenderer.sendSync("update:offered") === true; } catch { return false; }
-}
-function homePage() {
-  try { return ipcRenderer.sendSync("home:page") === true; } catch { return false; }
 }
 function savedAnalyticsChoice() {
   try { const saved = ipcRenderer.sendSync("desktop-analytics:read"); return typeof saved === "boolean" ? saved : null; } catch { return null; }
@@ -97,35 +92,7 @@ ipcRenderer.on("desktop-language:changed", (_event, language) => {
   languageChoice = language;
   for (const listener of languageListeners) listener(language);
 });
-const onHomePage = !isLocalPage && homePage();
-const remoteKeys = isLocalPage ? REMOTE_SAFE : new Set([...REMOTE_SAFE, ...(updaterOffered() ? ["updater"] : []), ...(onHomePage ? HOME_PAGE : [])]);
-
-// Keep in parity with shared/workspace-backup-client.ts (a sandboxed preload cannot import it).
-const COMPANY_BACKUP_CLIENT_KEYS = [
-  "omb-drafts", "omb-draft-attachments", "omb-draft-send-ids", "omb-draft-channel-modes",
-  "omb-skin", "omb-show-threads", "omb-show-run-card", "omb-send-key", "omb-color-user-bubbles", "omb-chat-width", "openmausbot.sidebarDensity",
-  "openmausbot.sidebarToolsLayout",
-  "openmausbot.sidebarCollapsedSections.v1", "openmausbot.sidebarSectionOrder.v1",
-  "omb-analytics-opt-out", "openmausbot.remote-voice.v1",
-];
-if (isLocalPage && !desktopRemoteClient && process.argv.includes("--omb-company-desktop=1")) {
-  ipcRenderer.on("company-backups:collect-client-state", (_event, request) => {
-    if (!request || typeof request.requestId !== "string" || !/^[a-f0-9-]{36}$/.test(request.requestId)) return;
-    try {
-      // Check the origin again; a later navigation must not export remote data.
-      if (!localOrigin || location.origin !== localOrigin) throw new Error("Not the local workspace");
-      const clientState = {};
-      for (const key of COMPANY_BACKUP_CLIENT_KEYS) {
-        const value = localStorage.getItem(key);
-        if (value !== null) clientState[key] = value;
-      }
-      if (new TextEncoder().encode(JSON.stringify(clientState)).byteLength > 2 * 1024 ** 2) throw new Error("Browser state too large");
-      ipcRenderer.send("company-backups:client-state", { requestId: request.requestId, clientState });
-    } catch {
-      ipcRenderer.send("company-backups:client-state", { requestId: request.requestId, unavailable: true });
-    }
-  });
-}
+const remoteKeys = isLocalPage ? REMOTE_SAFE : new Set([...REMOTE_SAFE, ...(updaterOffered() ? ["updater"] : [])]);
 
 // main passes app.getVersion(): a server's page carries that server's version, so About asks this for the app's own.
 const appVersion = (process.argv.find((arg) => arg.startsWith("--omb-app-version="))?.slice("--omb-app-version=".length) ?? "").slice(0, 64);
@@ -144,6 +111,12 @@ const bridge = {
   app: { version: appVersion, ownPage: isLocalPage },
   // Safe on a cloud page: the person chooses in a native menu, or a circle of the rail main listed (only for this app's
   // page and a hosted Cloud's, never addresses), and only from their click; no saved-list reads, host files or secrets.
+  workspaceMove: {
+    notice: () => ipcRenderer.invoke("workspace-move:notice"),
+    dismiss: () => ipcRenderer.invoke("workspace-move:dismiss"),
+    moveRetry: () => ipcRenderer.invoke("workspace-move:retry"),
+    onNotice: listener => { const receive = (_event, notice) => listener(notice); ipcRenderer.on("workspace-move:notice", receive); return () => ipcRenderer.removeListener("workspace-move:notice", receive); },
+  },
   workspaces: {
     state: () => ipcRenderer.invoke("workspaces:state"),
     menu: (options) => ipcRenderer.invoke("workspaces:menu", ...(options?.from === "howto" ? ["howto"] : [])),
@@ -259,15 +232,6 @@ const bridge = {
   routines: {
     wakeState: () => ipcRenderer.invoke("routines:wake-state"),
     keepAwake: (enabled) => ipcRenderer.invoke("routines:keep-awake", enabled),
-  },
-  /** Secrets stay in the main process; the renderer sees only status and narrow actions. */
-  companionAccount: {
-    state: () => ipcRenderer.invoke("companion-account:state"),
-    requestCode: (email) => ipcRenderer.invoke("companion-account:request-code", email),
-    verifyCode: (email, code) => ipcRenderer.invoke("companion-account:verify-code", email, code),
-    retry: () => ipcRenderer.invoke("companion-account:retry"),
-    prepare: () => ipcRenderer.invoke("companion-account:prepare"),
-    signOut: () => ipcRenderer.invoke("companion-account:sign-out"),
   },
   /** Full/Custom never go through the loopback API, only the embedded server's private utilityProcess port. */
   approvals: {
@@ -456,19 +420,10 @@ const bridge = {
     activity: id => ipcRenderer.invoke("sharing:activity", id),
     servers: () => ipcRenderer.invoke("sharing:servers"),
     allow: id => ipcRenderer.invoke("sharing:allow", id),
-    pause: () => ipcRenderer.invoke("sharing:pause"),
-    resume: () => ipcRenderer.invoke("sharing:resume"),
+    pause: (id) => ipcRenderer.invoke("sharing:pause", id),
+    resume: (id) => ipcRenderer.invoke("sharing:resume", id),
   },
   confirm: message => ipcRenderer.invoke("dialog:confirm", message),
-  /** The window onto My Cloud once it is the person's home: this computer's screen while My Cloud can't be opened, and
-   * on My Cloud's own page a new session when its own has ended. */
-  updatesConsent: {
-    state: () => ipcRenderer.invoke("updates-consent:state"),
-    choose: choice => ipcRenderer.invoke("updates-consent:choose", {
-      status: String(choice?.status),
-      ...(typeof choice?.email === "string" ? { email: choice.email } : {}),
-    }),
-  },
   desktopProfile: {
     systemName: () => ipcRenderer.invoke("desktop-profile:system-name"),
   },

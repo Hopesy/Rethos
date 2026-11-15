@@ -7,12 +7,12 @@ export type Place = "cloud" | "vm" | "local" | "browser";
 export const PLACES: readonly Place[] = ["cloud", "vm", "local", "browser"];
 export type EffectivePlace = Place | "auto" | "off";
 
-export function placeOffered(place: Place, config: { cloudHome?: boolean } | null | undefined): boolean {
-  return !config?.cloudHome || cloudHomeOffersPlace(place);
+export function placeOffered(place: Place, config: { cloudHome?: boolean } | null | undefined, bot?: Pick<Bot, "cloudBackend">): boolean {
+  return (place !== "cloud" || bot?.cloudBackend === "vps") && (!config?.cloudHome || cloudHomeOffersPlace(place));
 }
 
-export function effectivePlace(bot: Pick<Bot, "computer">, task?: Pick<Task, "surface"> | null): EffectivePlace {
-  if (bot.computer === "off") return "off";
+export function effectivePlace(bot: Pick<Bot, "computer" | "workTarget">, task?: Pick<Task, "surface" | "workTarget"> | null): EffectivePlace {
+  if (bot.computer === "off" || bot.workTarget?.kind === "off" || task?.workTarget?.kind === "off") return "off";
   return task?.surface ?? bot.computer ?? "auto";
 }
 

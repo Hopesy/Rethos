@@ -17,7 +17,6 @@ import {
 
 const MAPPINGS: Array<[ConfigCredentialTargetId, CredentialConfig]> = [
   ["xaiApiKey", { xai: { key: "secret" } }],
-  ["boxToken", { box: { token: "secret" } }],
   ["opencodeGoApiKey", { opencodeGo: { apiKey: "secret" } }],
   ["ttsKey", { tts: { key: "secret" } }],
   ["fishAudioKey", { tts: { fishKey: "secret" } }],

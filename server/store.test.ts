@@ -23,7 +23,6 @@ import { hasTeamAuthority } from "./peer-roster.ts";
 import { Store, toWireTask, type BotRecord } from "./store.ts";
 import type { TeamSetupRequest } from "../shared/team-setup.ts";
 import { SECTION_CONTEXTS_FILE, readSectionContext, writeSectionContext } from "./section-context.ts";
-import { TeamComputers } from "./team-computers.ts";
 import { allowsTool } from "../shared/tool-scope.ts";
 
 const selection = (): ModelSelection => ({ instanceId: "claude", model: "claude-sonnet-5" });
@@ -196,42 +195,6 @@ describe("Store", () => {
     expect(new Store(selection).group(room.id)?.memberIds).toEqual([ada.id, cleo.id]);
     expect(JSON.parse(readFileSync(groupsFile, "utf8")).find((g: { id: string }) => g.id === room.id).memberIds)
       .toEqual(JSON.parse(before).find((g: { id: string }) => g.id === room.id).memberIds);
-  });
-
-  it("renames populated teams without changing members, conversations, grants or computer identity", () => {
-    const store = new Store(selection);
-    const chief = store.createBot({ section: "Delivery" });
-    store.setChiefOfStaff(chief.id);
-    const archived = store.createBot({ section: "Delivery" });
-    store.patchBot(archived.id, { hidden: true });
-    const manager = store.createBot({ section: "Office" });
-    store.setChiefOfStaff(manager.id);
-    store.patchBot(manager.id, { managedSections: ["Delivery", " Delivery ", "Other"] });
-    expect(hasTeamAuthority(manager, "Delivery")).toBe(true);
-    const room = store.createGroup("Room", [chief.id], false, "Delivery");
-    const message = store.appendMessage(chief.threadId, { role: "user", kind: "text", text: "Keep this conversation" });
-    writeSectionContext("Delivery", "Shared team instructions");
-    const computers = new TeamComputers(join(DATA_DIR, "team-computers.json"), "5c57ceec-f5aa-4d79-a9c7-0e1f93875e70");
-    const computer = computers.create("Shared desktop");
-    computers.assign(computer.id, "Delivery");
-    expect(store.renameSection("Delivery", "Launch", computers)).toBeUndefined();
-    expect(store.bot(chief.id)).toBe(chief);
-    expect(chief).toMatchObject({ section: "Launch", chiefOfStaff: true });
-    expect(archived).toMatchObject({ section: "Launch", hidden: true });
-    expect(manager.managedSections).toEqual(["Launch", "Other"]);
-    expect(hasTeamAuthority(manager, "Launch")).toBe(true);
-    expect(room.section).toBe("Launch");
-    expect(readSectionContext("Launch")?.text).toBe("Shared team instructions");
-    expect(readSectionContext("Delivery")).toBeNull();
-    expect(computers.forSection("Launch")?.id).toBe(computer.id);
-    const restored = new Store(selection);
-    expect(restored.bot(chief.id)?.section).toBe("Launch");
-    expect(hasTeamAuthority(restored.bot(manager.id)!, "Launch")).toBe(true);
-    expect(restored.group(room.id)?.section).toBe("Launch");
-    expect(restored.messagesFor(chief.threadId)).toContainEqual(message);
-    expect(restored.sections).not.toContain("Delivery");
-    store.setBotsSection([], "Delivery");
-    expect(hasTeamAuthority(manager, "Delivery")).toBe(false);
   });
 
   it("rejects rename conflicts and active work without changing teams", () => {

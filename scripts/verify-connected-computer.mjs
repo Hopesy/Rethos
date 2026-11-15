@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync, existsSync, rmSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
+import { appendFileSync, mkdirSync, readFileSync, writeFileSync, existsSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { build } from 'esbuild';
@@ -60,7 +61,7 @@ process.stdout.write(JSON.stringify({jsonrpc:'2.0',id:q.id,result})+'\\n');});`)
   writeFileSync(configPath, JSON.stringify({ origin: fixture.info.url, environmentId, tokenFile: tokenPath, botPermissions: true, terminal: true,
     folders: [{name:'Sessions',path:folder,write:false}], cua: {command:process.execPath,args:[fakeCua]} }));
   const worker = spawn(process.execPath, [join(work, 'connected-computer.cjs'), configPath], {stdio:['ignore','pipe','pipe'],windowsHide:true});
-  children.push(worker); worker.stdout.resume(); worker.stderr.on('data', chunk => fs.appendFileSync(join(work,'worker.log'),chunk));
+  children.push(worker); worker.stdout.resume(); worker.stderr.on('data', chunk => appendFileSync(join(work,'worker.log'),chunk));
   await until(async () => (await api('GET', '/api/shared-computers')).computers.some(item => item.online));
   computer = (await api('GET', '/api/shared-computers')).computers[0].id;
   const create = async (name, mode) => {
@@ -82,6 +83,32 @@ process.stdout.write(JSON.stringify({jsonrpc:'2.0',id:q.id,result})+'\\n');});`)
   assert(data(await full.op('run_command', { command: 'echo native-computer-fixture' })).output.includes('native-computer-fixture'));
   assert(!(await api('GET', `/api/threads/${full.bot.threadId}/messages`)).messages.some(message => message.card?.tool === 'computer_access'));
   evidence.checks.push('Full: native computer discovered, large session tail read, new directory write and command; no approval card');
+  const targetPath = `/api/bots/${full.bot.id}/work-target`;
+  const deviceTarget = { kind: 'connected', computerId: computer, cwd: outside };
+  await api('PATCH', targetPath, { target: deviceTarget });
+  assert.deepEqual((await api('GET', targetPath)).defaultTarget, deviceTarget);
+  const location = data(await full.op('run_command', { command: 'node -p "process.cwd()"' })).output;
+  assert(location.includes(outside), location);
+  await api('PATCH', targetPath, { target: { kind: 'off' }, threadId: full.bot.threadId });
+  assert((await full.op('read_file', { path: target })).isError);
+  await api('PATCH', targetPath, { target: null, threadId: full.bot.threadId });
+  assert.equal(data(await full.op('read_file', { path: target })).content, 'full access writes here');
+  const otherComputer = randomUUID(), otherSecret = 'b'.repeat(64);
+  const connectorRequest = async (route, body) => {
+    const response = await fetch(fixture.info.url + route, { method: 'POST', headers: { origin: fixture.info.url, 'content-type': 'application/json', authorization: 'Bearer ' + token, 'x-omb-computer-secret': otherSecret }, body: JSON.stringify(body) });
+    assert(response.ok, await response.text());
+  };
+  await connectorRequest('/api/shared-computers/connect', { id: otherComputer, environmentId, name: 'Second fixture desktop', folders: [], terminal: true, computer: true, platform: process.platform });
+  await api('PATCH', targetPath, { target: { kind: 'connected', computerId: otherComputer }, threadId: full.bot.threadId });
+  assert((await full.op('read_file', { path: target })).isError);
+  await connectorRequest(`/api/shared-computers/${otherComputer}/disconnect`, { paused: true });
+  assert((await full.tool('shared_computer', { computer_id: otherComputer, action: 'read_file', path: target })).isError);
+  await api('PATCH', targetPath, { target: null, threadId: full.bot.threadId });
+  await api('PATCH', `/api/shared-computers/${computer}/access`, { mode: 'paused' });
+  assert((await full.op('read_file', { path: target })).isError);
+  await api('PATCH', `/api/shared-computers/${computer}/access`, { mode: 'enabled' });
+  assert.equal(data(await full.op('read_file', { path: target })).content, 'full access writes here');
+  evidence.checks.push('Work target: saved device and cwd, conversation Off/follow-default, second device isolation and offline refusal, server pause/resume');
   await control(['interrupt', '--bot', full.bot.id, '--task', full.bot.threadId]);
   const ask = await create('Ask computer', 'ask');
   assert(data(await ask.op('read_file', { path: join(folder, 'session.jsonl'), max_bytes: 64 })).content.includes('fixture project'));
@@ -98,19 +125,16 @@ process.stdout.write(JSON.stringify({jsonrpc:'2.0',id:q.id,result})+'\\n');});`)
   waiting = ask.op('run_command', { command: 'echo must-not-run' });
   await pendingCard(ask); await control(['interrupt', '--bot', ask.bot.id, '--task', ask.bot.threadId]);
   assert((await waiting).isError); evidence.checks.push('Stop cancels pending authorization and prevents execution');
-  const workerExit = new Promise(resolve => worker.once('exit', resolve)); worker.kill(); await workerExit;
   const savedPath = join(fixture.info.dataDir, 'computer-sharing.json');
-  const saved = JSON.parse(readFileSync(savedPath, 'utf8'));
-  const record = saved.records[environmentId];
-  const disconnected = await fetch(fixture.info.url + '/api/shared-computers/' + computer + '/disconnect', {method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+token,'x-omb-computer-secret':record.secret},body:'{}'});
-  assert(disconnected.ok);
-  record.enabled = false; writeFileSync(savedPath, JSON.stringify(saved));
+  await api('PATCH', `/api/shared-computers/${computer}/access`, { mode: 'revoked' });
+  await until(() => JSON.parse(readFileSync(savedPath, 'utf8')).records[environmentId].enabled === false, 30000);
+  if (worker.exitCode === null) { const workerExit = new Promise(resolve => worker.once('exit', resolve)); worker.kill(); await workerExit; }
   const stoppedWorker = spawn(process.execPath,[join(work,'connected-computer.cjs'),configPath],{stdio:'ignore',windowsHide:true}); children.push(stoppedWorker);
   const stoppedExit = await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(new Error('Stopped worker restarted lending')),5000);stoppedWorker.once('exit',code=>{clearTimeout(timeout);resolve(code);});});
   assert.equal(stoppedExit,0);
   assert.equal(JSON.parse(readFileSync(savedPath,'utf8')).records[environmentId].enabled,false);
-  assert.equal((await api('GET','/api/shared-computers')).computers.length,0);
-  evidence.checks.push('Restart preserves locally revoked access');
+  assert((await api('GET','/api/shared-computers')).computers.every(item => item.access === 'revoked'));
+  evidence.checks.push('Server revocation reaches local saved authorization and remains revoked after connector restart');
   evidence.passed = true;
 } finally {
   for (const child of children) child.kill();

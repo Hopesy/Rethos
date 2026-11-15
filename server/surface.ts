@@ -1,4 +1,5 @@
 import type { Surface } from "../shared/wire.ts";
+import { workTargetLegacyFields, type WorkTarget } from "../shared/work-target.ts";
 import { canWorkOnCloud, type CloudEngine } from "../shared/cloud-computer.ts";
 import { canUseMcpServer } from "../shared/tool-scope.ts";
 import { placeRowText, type PlaceRow, type PlaceSource } from "../shared/place-view.ts";
@@ -54,8 +55,17 @@ export function resolveSurface(input: {
   pinnedSurface?: Surface | null;
   browserOn: boolean;
   botOpened?: boolean;
+  workTarget?: WorkTarget;
 }): SurfacePlan {
-  const plan = placeOf(input);
+  if (input.workTarget?.kind === "connected" && input.destination !== "off") {
+    const { computerId, cwd } = input.workTarget;
+    return { computer: "off", browser: input.browserOn, pinned: null,
+      note: ` Computer work for this conversation is assigned to connected computer ${computerId}. Use shared_computer with that computer_id for its files, commands and desktop tools.${cwd ? ` Its working directory is ${JSON.stringify(cwd)}.` : ""} Paths in those tools belong to that computer. Use select_computer to change targets.` };
+  }
+  const target = input.workTarget;
+  const plan = placeOf(target && input.destination !== "off"
+    ? { ...input, destination: workTargetLegacyFields(target).computer, pinnedSurface: target.kind === "auto" ? input.pinnedSurface : null }
+    : input);
   return input.botOpened ? { ...plan, botOpened: true } : plan;
 }
 

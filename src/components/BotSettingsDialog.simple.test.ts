@@ -99,7 +99,7 @@ vi.mock("./bot-panel/use-memory-doc", () => ({ useMemoryDoc: () => fixture.memor
 vi.mock("./PlaceChip", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./PlaceChip")>()),
   usePlaceViews: () => Object.fromEntries(Object.entries(fixture.places).map(([place, [policy, reachable, short]]) =>
-    [place, { policy, reachable, view: { state: reachable ? "ready" : "blocked", params: {}, short, line: `${short}.`, action: null } }])),
+    [place, { policy, listed: policy, reachable, view: { state: reachable ? "ready" : "blocked", params: {}, short, line: `${short}.`, action: null } }])),
 }));
 vi.mock("./bot-settings/useBotApps", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./bot-settings/useBotApps")>()),
@@ -129,14 +129,14 @@ const { LibraryTab } = await import("./bot-panel/LibraryTab");
 const { ApprovalChip } = await import("./ComposerPlusMenu");
 const { callMode, setCallMode } = await import("@/lib/call-mode");
 const { ComputerTab, WherePage } = await import("./bot-panel/ComputerTab");
-const { PageBody, AppsPage, RoutinesPage, MemoryPage, SkillsPage, FolderPage, BrowserPage } = await import("./bot-panel/pages");
+const { PageBody, AppsPage, RoutinesPage, MemoryPage, SkillsPage, FolderPage, ServerFolderPage, BrowserPage } = await import("./bot-panel/pages");
 const { BrowserLogins } = await import("./bot-panel/browser-logins");
 const { PAGES, sectionTarget } = await import("./bot-panel/page-registry");
 const { openBotSettings } = await import("./bot-panel/panel-link");
 const { PageHeader } = await import("./bot-panel/rows");
 const { ChatShareMenu } = await import("./ChatMoreMenu");
 const { SoulField } = await import("./SoulField");
-const { LocalComputerAutoWarning } = await import("./LocalComputerAutoWarning");
+
 const { ModelPicker } = await import("./ModelPicker");
 const { ThreadModelsLine } = await import("./ThreadModelsLine");
 const { ModelSection } = await import("./bot-settings/ModelSection");
@@ -270,7 +270,7 @@ beforeEach(() => {
   fixture.apps = { phase: "ready", apps: [], connectedSlugs: [] };
   fixture.mcp = { servers: [], error: false };
   fixture.places = {
-    cloud: [true, true, "Cloud desktop"], vm: [true, true, "Private desktop"], local: [true, true, "Your screen"], browser: [true, true, "Web pages only"],
+    cloud: [true, true, "Your remote desktop"], vm: [true, true, "Private desktop"], local: [true, true, "Your screen"], browser: [true, true, "Web pages only"],
   };
   (window as unknown as { ogb?: unknown }).ogb = undefined;
 });
@@ -855,7 +855,7 @@ describe("the Computer tab", () => {
   });
 
   it("values Where it works with the place chosen, and says where it works right now when that differs", () => {
-    expect(rowValue(computer(makeBot({ computer: "cloud" })), "where")).toBe("Cloud desktop");
+    expect(rowValue(computer(makeBot({ computer: "cloud" })), "where")).toBe("Your remote desktop");
     expect(rowValue(computer(makeBot({ computer: "vm" })), "where")).toBe("Private desktop");
     const at = (surface: "local" | "browser" | undefined, extra: Partial<Bot> = {}) =>
       computer(makeBot({ ...extra, tasks: [{ threadId: "thread-scout", title: "Main", ...(surface ? { surface } : {}) }] as Bot["tasks"] })).html;
@@ -883,90 +883,12 @@ describe("the Computer tab", () => {
   });
 });
 
-describe("the Where it works page", () => {
-  const where = (bot: Bot) => capture(() => WherePage({ bot, derived: derived() }));
-  const choices = (rendered: Rendered) => rendered.nodes.filter((node) => node.props["data-panel-choice"] !== undefined)
-    .map((node) => [node.props["data-panel-choice"], node.props.title, Boolean(node.props.disabled), node.props.checked]);
-  const choose = (rendered: Rendered, value: string) => click(find(rendered, "data-panel-choice", value));
-
-  it("offers Let it choose, this computer, the bot's browser, the Cloud desktop and the private desktop, with the chosen one checked", () => {
-    // The tests run on no platform in particular, so this computer is a PC; a Mac says This Mac.
-    expect(choices(where(makeBot()))).toEqual([
-      ["auto", "Let it choose", false, true], ["local", "This PC", false, false], ["browser", "Browser", false, false], ["cloud", "Cloud desktop", false, false],
-      ["vm", "Private desktop", false, false],
-    ]);
-    expect(where(makeBot()).html).toContain('role="radiogroup"');
-  });
-
-  it("saves each place through the bot patch, and sends nothing for the place already chosen", () => {
-    const rendered = where(makeBot());
-    choose(rendered, "cloud");
-    expect(patch).toHaveBeenLastCalledWith({ computer: "cloud" });
-    choose(rendered, "local");
-    expect(patch).toHaveBeenLastCalledWith({ computer: "local" });
-    choose(rendered, "browser");
-    expect(patch).toHaveBeenLastCalledWith({ computer: "browser", browser: true });
-    choose(rendered, "vm");
-    expect(patch).toHaveBeenLastCalledWith({ computer: "vm" });
-    choose(where(makeBot({ computer: "cloud" })), "auto");
-    expect(patch).toHaveBeenLastCalledWith({ computer: null });
-    patch.mockReset();
-    choose(where(makeBot({ computer: "cloud" })), "cloud");
-    expect(patch).not.toHaveBeenCalled();
-  });
-
-  it("shows a bot kept Off as a last, checked choice it cannot pick again", () => {
-    const rendered = where(makeBot({ computer: "off" }));
-    expect(choices(rendered).at(-1)).toEqual(["off", "Off", true, true]);
-    choose(rendered, "off");
-    expect(patch).not.toHaveBeenCalled();
-    choose(rendered, "auto");
-    expect(patch).toHaveBeenLastCalledWith({ computer: null });
-  });
-
-  it("holds a place the bot cannot use with the reason as its hint, and leaves out the Cloud desktop when none is offered", () => {
-    fixture.places.cloud = [true, false, "Not ready"];
-    expect(find(where(makeBot()), "data-panel-choice", "cloud").props).toMatchObject({ disabled: true, hint: "Not ready." });
-    fixture.places.cloud = [false, false, "Not offered"];
-    fixture.places.vm = [false, false, "Not offered"];
-    expect(choices(where(makeBot())).map(([value]) => value)).toEqual(["auto", "local", "browser"]);
-    // A bot already kept on the private desktop still shows it, checked.
-    expect(choices(where(makeBot({ computer: "vm" }))).at(-1)).toEqual(["vm", "Private desktop", true, true]);
-    fixture.places.local = [false, false, "Not offered"];
-    fixture.places.browser = [false, false, "Not offered"];
-    expect(choices(where(makeBot())).map(([value]) => value)).toEqual(["auto"]);
-    expect(choices(where(makeBot({ computer: "browser" }))).map(([value, , disabled]) => [value, disabled])).toEqual([["auto", false], ["browser", true]]);
-  });
-
-  it("names the browser My Chrome when the bot's profile is the person's own Chrome", () => {
-    fixture.storeState = { ...fixture.storeState, config: { browserEngine: { myChrome: true }, browserProfiles: [{ id: "bank", name: "Bank", browser: "chrome" }] } };
-    expect(find(where(makeBot({ browserProfile: "bank" })), "data-panel-choice", "browser").props.title).toBe("My Chrome");
-    expect(find(where(makeBot()), "data-panel-choice", "browser").props.title).toBe("Browser");
-  });
-
-  it("says where the bot works right now when that is not the place chosen", () => {
-    const html = where(makeBot({ computer: "cloud", tasks: [{ threadId: "thread-scout", title: "Main", surface: "local" }] as Bot["tasks"] })).html;
-    expect(html).toContain("Right now: This PC");
-  });
-
-  it("warns before this computer for a bot that decides alone", () => {
-    fixture.derived.approvalMode = "auto";
-    const bot = makeBot();
-    choose(where(bot), "local");
-    expect(patch).not.toHaveBeenCalled();
-    const warning = ofType(where(bot), LocalComputerAutoWarning)!;
-    expect(warning.props.open).toBe(true);
-    (warning.props.onConfirm as () => void)();
-    expect(fixture.dispatch).toHaveBeenLastCalledWith({ type: "updateBot", botId: "scout", patch: { computer: "local", acknowledgeLocalAuto: true } });
-  });
-});
-
 describe("the drill-in pages", () => {
   const PAGE = {
     settings: SettingsPage, apps: AppsPage, routines: RoutinesPage, memory: MemoryPage, skills: SkillsPage, folder: FolderPage, browser: BrowserPage, where: WherePage,
   } as const;
   // The walker reads only what a component returns, so each page is called as the function PageBody picks.
-  const body = (page: keyof typeof PAGE, bot = makeBot()) => capture(() => PAGE[page]({ bot, derived: derived() }) as ReactNode);
+  const body = (page: keyof typeof PAGE, bot = makeBot()) => capture(() => (page === "folder" ? ServerFolderPage({ bot }) : PAGE[page]({ bot, derived: derived() })) as ReactNode);
 
   it("draws one component per Simple page", () => {
     for (const page of Object.keys(PAGE) as Array<keyof typeof PAGE>) {

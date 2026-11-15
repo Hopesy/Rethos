@@ -208,7 +208,6 @@
   "server.memory.starter": "Starter ma miejsce na mniej więcej jedno zadanie naraz. Większy plan uruchamia więcej naraz.",
   "server.planTurns.wait": "Czeka na miejsce: Starter uruchamia w tej chmurze {limit} zadania naraz. Przed tym: {ahead}. Zacznie samo, gdy któreś się skończy, a większy plan uruchamia więcej naraz.",
   "server.planTurns.still": "Nadal czeka: Starter uruchamia {limit} zadania naraz. Przed tym: {ahead}.",
-  "server.botPaused": "Wstrzymany: Starter utrzymuje aktywne {limit} boty. Zmień plan na wyższy, aby go obudzić, albo wybierz inne aktywne boty.",
   "server.teammates.queued.thread": "{bot} jeszcze tego nie zaczął: wcześniejsza tura w tym wątku wciąż trwa.",
   "server.teammates.queued.slots": "{bot} jeszcze tego nie zaczął: uruchamia już {busy} z {limit} wątków naraz.",
   "server.teammates.queued.room": "{bot} jeszcze tego nie zaczął: kończy turę w pokoju.",
@@ -4637,7 +4636,7 @@
   "computer.worksOnHintCloudHome": "Wybierz, gdzie pracuje ten bot. Może też używać twojego komputera, gdy jest na nim otwarty {app}.",
   "computer.destinationAria": "Miejsce docelowe komputera",
   "computer.dest.autoDesc": "Wybierz automatycznie",
-  "computer.dest.cloudDesc": "Pulpit w chmurze",
+  "computer.dest.cloudDesc": "Pulpit na własnym serwerze VPS",
   "computer.dest.vmDesc": "Izolowany pulpit lokalny",
   "computer.dest.localDesc": "Twój ekran i aplikacje",
   "computer.dest.browserDesc": "Tylko strony internetowe",
@@ -5349,7 +5348,7 @@
   "window.maximize": "Maksymalizuj",
   "window.restore": "Przywróć",
   "window.close": "Zamknij",
-  "place.cloud": "Pulpit w chmurze",
+  "place.cloud": "Twój zdalny pulpit",
   "place.vm": "Prywatny pulpit",
   "place.local": "Ten komputer",
   "place.browser": "Przeglądarka",
@@ -6702,8 +6701,6 @@
   "server.meetings.notes.questions": "Otwarte pytania",
   "server.meetings.notes.attendees": "Uczestnicy",
   "server.meetings.notes.transcript": "Pełna transkrypcja jest załączona poniżej.",
-  "server.meetings.nothingHeard": "{reason} Nikt nie powiedział nic, co dałoby się przepisać, więc nie ma notatek.",
-  "server.meetings.endedDetail": "{reason} ({detail})",
   "server.meetings.end.left": "Opuściłem spotkanie.",
   "server.meetings.end.stop_requested": "Ktoś na spotkaniu napisał „@notes stop”, więc wyszedłem.",
   "server.meetings.end.meeting_ended": "Spotkanie się zakończyło.",
@@ -6827,5 +6824,6 @@
   "remote.client.endsDec7": "Ten rodzaj połączenia kończy się 7 grudnia. Potem sparuj ten komputer ponownie z Telefon i urządzenia na drugim komputerze.",
   "phone.code.pairingCode": "Kod parowania",
   "phone.code.typeIntro": "Otwórz aplikację {app} i wpisz ten kod parowania.",
-  "phone.signIn.emailCode": "Kod logowania z Twojego e-maila"
+  "phone.signIn.emailCode": "Kod logowania z Twojego e-maila",
+  "routines.server.desktopRetired": "Usługa hostowanego pulpitu została usunięta. Sprawdź miejsce pracy bota przed ponownym włączeniem tej procedury."
 }

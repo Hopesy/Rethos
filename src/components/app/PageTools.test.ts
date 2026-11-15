@@ -57,7 +57,6 @@ const button = (label: string, within: ParentNode = document) => Array.from(with
 const click = (label: string, within?: ParentNode) => act(async () => { button(label, within).click(); await new Promise((resolve) => setTimeout(resolve, 0)); });
 const chips = () => JSON.parse(host.querySelector("[data-chips]")!.getAttribute("data-chips")!) as unknown[];
 const documents = () => fetchMock.mock.calls.map(([path]) => new URL(path, "http://omb.test")).filter((url) => url.pathname.endsWith("/app"));
-const posts = (ending: string) => fetchMock.mock.calls.filter(([path, init]) => path.endsWith(ending) && init?.method === "POST").map(([, init]) => JSON.parse(String(init!.body)));
 const fromFrame = (data: unknown, source: unknown) => act(async () => {
   window.dispatchEvent(new MessageEvent("message", { data, source: source as MessageEventSource }));
   await new Promise((resolve) => setTimeout(resolve, 0));
@@ -97,7 +96,7 @@ describe("a bot's page in the chat", () => {
     expect(card().querySelector("[data-page-version]")?.textContent).toBe("v1");
     expect(inlineFrame().getAttribute("sandbox")).toBe("allow-scripts allow-forms");
     expect(card().querySelector<HTMLElement>("[data-app-box]")!.style.height).toBe(`${PAGE_HEIGHT.start}px`);
-    for (const label of ["Point", "Share", "Full screen"]) expect(button(label, card()).disabled, label).toBe(false);
+    for (const label of ["Point", "Full screen"]) expect(button(label, card()).disabled, label).toBe(false);
     expect(button("Open in new tab", card()).disabled).toBe(true);
     expect(button("Open in new tab", card()).title).toBe("Share the page to open it in a new tab");
     expect(documents()[0]!.searchParams.get("origin")).toBe(window.location.origin);
@@ -137,29 +136,6 @@ describe("a bot's page in the chat", () => {
     await act(async () => { window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })); });
     expect(button("Point", card()).getAttribute("aria-pressed")).toBe("false");
     expect(posted).toHaveBeenLastCalledWith({ jsonrpc: "2.0", method: "mausbot/point", params: { on: false } }, "*");
-  });
-
-  it("shares the version on screen; the card the server patches shows the link with Copy, opens it, and unpublishes it", async () => {
-    await render(row(payload()));
-    await click("Share", card());
-    await settle();
-    expect(posts("/app/publish")).toEqual([{ rev: 0 }]);
-    await render(row(payload(), LIVE));
-    expect(card().querySelector("[data-page-link]")?.textContent).toContain(LINK);
-    expect(button("Copy link", card())).toBeDefined();
-    expect(button("Open in new tab", card()).disabled).toBe(false);
-    await click("Open in new tab", card());
-    expect(openExternal).toHaveBeenCalledWith(LINK);
-    await click("Update link", card());
-    await settle();
-    expect(card().querySelector("[data-page-link]")?.textContent).toContain("Updated at the same link");
-    await click("Unpublish", card());
-    await settle();
-    expect(fetchMock.mock.calls.some(([path, init]) => path === `/api/published-pages/${LIVE.pageId}/unpublish` && init?.method === "POST")).toBe(true);
-    await render(row(payload(), { ...LIVE, state: "unpublished" }));
-    expect(card().querySelector("[data-page-link]")).toBeNull();
-    expect(card().textContent).toContain("Unpublished. The link no longer opens.");
-    expect(button("Open in new tab", card()).disabled).toBe(true);
   });
 
   it("shows publish_page's link on the page it published", async () => {

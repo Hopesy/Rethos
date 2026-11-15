@@ -7,6 +7,7 @@ import { CREDENTIAL_TARGETS, credentialConfigPatch, desktopCredentialSlot, isCon
 import { KEY_CATALOG, KEY_SECTIONS, keyEntry, keyForInstance, keyMatches, looksLikeOtherKey, savedState, type KeyId } from "./key-catalog";
 
 const NOT_A_PERSONS_KEY: Record<string, string> = {
+  BOX_TOKEN: "a retired credential that is still filtered out of child environments",
   OMB_ANTHROPIC_API_URL: "the address the Anthropic key goes to, set by a hosted install",
   OMB_HOSTED_MODEL_TOKEN: "a hosted install's model token",
   OMB_HOSTED_MODELS: "a hosted install's model list",
@@ -54,7 +55,7 @@ describe("every credential has one home on the keys page", () => {
   // A key saved from a bot's card lands exactly where its Settings row puts it: the same desktop slot, or the same config.
   it("covers every credential a bot can ask for in a chat, saved where Settings saves it", () => {
     const homes: Record<keyof typeof CREDENTIAL_TARGETS, KeyId> = {
-      xaiApiKey: "xai", boxToken: "box", opencodeGoApiKey: "opencodeGo", ttsKey: "elevenlabs", fishAudioKey: "fishAudio", geminiTtsKey: "geminiTts",
+      xaiApiKey: "xai", opencodeGoApiKey: "opencodeGo", ttsKey: "elevenlabs", fishAudioKey: "fishAudio", geminiTtsKey: "geminiTts",
       openaiImageApiKey: "imageOpenai", onePasswordToken: "onePassword", composioApiKey: "composio", openaiApiKey: "openai",
       anthropicApiKey: "anthropic", openrouterApiKey: "openrouter", mistralApiKey: "mistral", cerebrasApiKey: "cerebras", groqApiKey: "groq",
       greenferenceApiKey: "greenference", metaApiKey: "meta", deepseekApiKey: "deepseek",
@@ -103,7 +104,7 @@ describe("searching the keys", () => {
   it("matches a provider's name, what the key is for, and its section's title", () => {
     expect(found("fish")).toEqual(["fishAudio"]);
     expect(found("ElevenLabs")).toEqual(["elevenlabs"]);
-    expect(found("Computers and browser")).toEqual(["box", "vps", "onePassword"]);
+    expect(found("Computers and browser")).toEqual(["vps", "onePassword"]);
     expect(found("voice")).toEqual(expect.arrayContaining(["liveCalls", "liveKey", "elevenlabs", "fishAudio"]));
     expect(found("openai")).toEqual(expect.arrayContaining(["openai", "liveCalls", "liveKey", "imageOpenai"]));
     expect(found("gmail")).toEqual(["composio"]);
@@ -115,9 +116,9 @@ describe("searching the keys", () => {
 describe("a key pasted into the wrong row", () => {
   it("names the provider the key belongs to", () => {
     expect(looksLikeOtherKey(keyEntry("openai"), "sk-ant-api03-abcdefghijkl")?.id).toBe("anthropic");
-    expect(looksLikeOtherKey(keyEntry("box"), "sk-proj-abcdefghijkl")?.id).toBe("openai");
+    expect(looksLikeOtherKey(keyEntry("composio"), "sk-proj-abcdefghijkl")?.id).toBe("openai");
     expect(looksLikeOtherKey(keyEntry("liveCalls"), "gsk_abcdefghijkl")?.id).toBe("groq");
-    expect(looksLikeOtherKey(keyEntry("composio"), "boat_abcdefghijkl")?.id).toBe("box");
+    expect(looksLikeOtherKey(keyEntry("composio"), "boat_abcdefghijkl")).toBeNull();
   });
 
   it("stays quiet for the row's own key and for keys with no telling shape", () => {

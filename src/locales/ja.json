@@ -258,7 +258,6 @@
   "server.memory.starter": "Starter で一度に実行できるタスクはおよそ 1 つです。より大きなプランでは同時にもっと実行できます。",
   "server.planTurns.wait": "順番待ち: この Cloud の Starter では同時に {limit} 件のタスクを実行します。前に {ahead} 件あります。1 件終わると自動で始まります。より大きなプランなら同時にもっと実行できます。",
   "server.planTurns.still": "まだ待機中: Starter では同時に {limit} 件のタスクを実行します。前に {ahead} 件あります。",
-  "server.botPaused": "一時停止中: Starter で起動しておけるボットは {limit} 体です。アップグレードして起こすか、起動しておくボットを入れ替えてください。",
   "server.teammates.queued.thread": "{bot} はまだこれを始めていません。そのスレッドの前のターンが実行中です。",
   "server.teammates.queued.slots": "{bot} はまだこれを始めていません。すでに {limit} 個中 {busy} 個のスレッドを同時に実行しています。",
   "server.teammates.queued.room": "{bot} はまだこれを始めていません。ルームでのターンを終えるところです。",
@@ -5267,7 +5266,7 @@
   "computer.worksOnHintCloudHome": "このボットの作業場所を選びます。お使いのコンピューターで {app} が開いている間は、そのコンピューターも使えます。",
   "computer.destinationAria": "コンピューターの宛先",
   "computer.dest.autoDesc": "自動で選ぶ",
-  "computer.dest.cloudDesc": "クラウド上のデスクトップ",
+  "computer.dest.cloudDesc": "自分の VPS 上のデスクトップ",
   "computer.dest.vmDesc": "隔離されたローカルデスクトップ",
   "computer.dest.localDesc": "あなたの画面とアプリ",
   "computer.dest.browserDesc": "ウェブページのみ",
@@ -6006,7 +6005,7 @@
   "window.maximize": "最大化",
   "window.restore": "元のサイズに戻す",
   "window.close": "閉じる",
-  "place.cloud": "クラウドデスクトップ",
+  "place.cloud": "自分のリモートデスクトップ",
   "place.vm": "専用デスクトップ",
   "place.local": "このコンピューター",
   "place.browser": "ブラウザー",
@@ -7617,8 +7616,6 @@
   "server.meetings.notes.questions": "未解決の質問",
   "server.meetings.notes.attendees": "参加者",
   "server.meetings.notes.transcript": "全文の書き起こしを下に添付しています。",
-  "server.meetings.nothingHeard": "{reason} 書き起こせる発言がなかったため、メモはありません。",
-  "server.meetings.endedDetail": "{reason}（{detail}）",
   "server.meetings.end.left": "会議から退出しました。",
   "server.meetings.end.stop_requested": "会議の誰かが「@notes stop」と入力したため、退出しました。",
   "server.meetings.end.meeting_ended": "会議が終了しました。",
@@ -7742,5 +7739,6 @@
   "remote.client.endsDec7": "この接続方法は 12 月 7 日に終了します。その後は、もう一方のコンピューターの「スマホとデバイス」からこのコンピューターをペアリングし直してください。",
   "phone.code.pairingCode": "ペアリングコード",
   "phone.code.typeIntro": "{app} アプリを開いて、このペアリングコードを入力してください。",
-  "phone.signIn.emailCode": "メールに届いたサインインコード"
+  "phone.signIn.emailCode": "メールに届いたサインインコード",
+  "routines.server.desktopRetired": "ホスト型デスクトップサービスは削除されました。この定期タスクを再び有効にする前に、Bot の作業場所を確認してください。"
 }

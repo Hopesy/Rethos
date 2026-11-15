@@ -16,9 +16,10 @@ const picker = (value: "box" | "vps" = "box") => renderToStaticMarkup(createElem
 describe("CloudBackendPicker", () => {
   afterEach(() => { fixture.config = null; });
 
-  it("offers Boat or a self-hosted VPS on a desktop or self-hosted server", () => {
+  it("offers only a self-hosted remote desktop", () => {
     fixture.config = { cloudHome: false };
-    expect(picker()).toContain("Self-hosted VPS");
+    expect(picker()).toContain("Enable self-hosted remote desktop");
+    expect(picker()).not.toContain("Boat");
   });
 
   it("is hidden on My Cloud", () => {
@@ -26,12 +27,8 @@ describe("CloudBackendPicker", () => {
     expect(picker()).toBe("");
   });
 
-  it.each(["box", "vps"] as const)("offers both backends whichever is chosen (%s)", (value) => {
-    const markup = picker(value);
-    expect(markup).toContain("Boat");
-    expect(markup).toContain("Self-hosted VPS");
-    expect(markup).not.toContain("disabled");
-    expect(markup).not.toMatch(/ACP model provider/);
+  it("hides the setup choice once the self-hosted connection is selected", () => {
+    expect(picker("vps")).toBe("");
   });
 
   it("leaves no message that tells someone to switch backends for an engine", () => {

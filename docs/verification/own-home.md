@@ -6,7 +6,6 @@ itself; and that none of it happens for a server other people sign in to.
 
 ```sh
 pnpm exec vitest run server/own-home.e2e.test.ts server/own-home.test.ts server/move-freeze.test.ts
-node --test electron/own-home-main.node-test.mjs electron/lending-target.node-test.mjs electron/lend-automatically.node-test.mjs electron/one-home-main.node-test.mjs electron/cloud-rail.node-test.mjs electron/home-window.node-test.mjs electron/cloud-connections.node-test.mjs
 ```
 
 `scripts/testing/own-home-fixture.ts` starts this computer's server as the

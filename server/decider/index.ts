@@ -2,7 +2,7 @@ import { userError, type UserError } from "../user-errors.ts";
 // Never throws into a turn: every failure comes back as { ok: false, reason }. The included relay
 // token goes only to the relay's URL, and only with requests the relay accepts.
 import type { AppConfig } from "../config.ts";
-import { deciderCredential } from "../included-services.ts";
+import { deciderCredential } from "../service-credentials.ts";
 import {
   helpersOn, includedAccount, jevAccount, openrouterAccount, sharedOpenRouterKey, workersAiAccount, type HelperAccount,
 } from "./accounts.ts";

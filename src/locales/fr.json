@@ -171,7 +171,6 @@
   "server.memory.starter": "Starter a de la place pour environ une tâche à la fois. Un plan supérieur en exécute davantage en même temps.",
   "server.planTurns.wait": "En attente d'une place : Starter exécute {limit} tâches à la fois sur ce Cloud. Avant celle-ci : {ahead}. Elle démarre d'elle-même dès qu'une se termine, et un plan supérieur en exécute davantage en même temps.",
   "server.planTurns.still": "Toujours en attente : Starter exécute {limit} tâches à la fois. Avant celle-ci : {ahead}.",
-  "server.botPaused": "En pause : Starter garde {limit} bots éveillés. Passez à un plan supérieur pour le réveiller, ou changez les bots éveillés.",
   "server.teammates.queued.thread": "{bot} n'a pas encore commencé : un tour précédent de ce fil est toujours en cours.",
   "server.teammates.queued.slots": "{bot} n'a pas encore commencé : {busy} fils sur {limit} sont déjà en cours en même temps.",
   "server.teammates.queued.room": "{bot} n'a pas encore commencé : il termine un tour dans un salon.",
@@ -1857,7 +1856,7 @@
   "computer.worksOnHintCloudHome": "Choisissez où ce bot travaille. Il peut aussi utiliser votre ordinateur tant que {app} y est ouvert.",
   "computer.destinationAria": "Destination de l'ordinateur",
   "computer.dest.autoDesc": "Choisir automatiquement",
-  "computer.dest.cloudDesc": "Un bureau dans le cloud",
+  "computer.dest.cloudDesc": "Un bureau sur votre propre VPS",
   "computer.dest.vmDesc": "Bureau local isolé",
   "computer.dest.localDesc": "Votre écran et vos apps",
   "computer.dest.browserDesc": "Pages web uniquement",
@@ -2124,7 +2123,7 @@
   "canvasComputers.computer": "bureau",
   "canvasComputers.assign": "Attribuer un bureau",
   "canvasComputers.unassign": "Retirer le bureau",
-  "place.cloud": "Bureau cloud",
+  "place.cloud": "Votre bureau distant",
   "place.vm": "Bureau privé",
   "place.offHint": "« Travaille sur » est désactivé pour ce bot. Modifiez-le dans le panneau Écran.",
   "place.view.auto.lineMyCloud": "Utilise le navigateur intégré. Dans un chat, il démarre son bureau cloud tout seul quand une tâche a besoin d'apps de bureau.",
@@ -3156,8 +3155,6 @@
   "server.meetings.notes.questions": "Questions ouvertes",
   "server.meetings.notes.attendees": "Participants",
   "server.meetings.notes.transcript": "La transcription complète est jointe ci-dessous.",
-  "server.meetings.nothingHeard": "{reason} Personne n'a rien dit que je puisse transcrire, il n'y a donc pas de notes.",
-  "server.meetings.endedDetail": "{reason} ({detail})",
   "server.meetings.end.left": "J'ai quitté la réunion.",
   "server.meetings.end.stop_requested": "Quelqu'un dans la réunion a tapé « @notes stop », alors je suis parti.",
   "server.meetings.end.meeting_ended": "La réunion est terminée.",
@@ -3281,5 +3278,6 @@
   "remote.client.endsDec7": "Ce type de connexion prend fin le 7 décembre. Ensuite, appairez à nouveau cet ordinateur depuis Téléphone et appareils sur l'autre ordinateur.",
   "phone.code.pairingCode": "Code d'appairage",
   "phone.code.typeIntro": "Ouvrez l'app {app} et saisissez ce code d'appairage.",
-  "phone.signIn.emailCode": "Code de connexion reçu par e-mail"
+  "phone.signIn.emailCode": "Code de connexion reçu par e-mail",
+  "routines.server.desktopRetired": "Le service de bureau hébergé a été supprimé. Vérifiez le lieu de travail du bot avant de réactiver cette routine."
 }

@@ -3,11 +3,9 @@ import { Check, ExternalLink, Loader2 } from "lucide-react";
 
 import { api, useStore, type ConfigStatus } from "@/state/store";
 import { activeLocale, t } from "@/lib/i18n";
-import { xResearchAction } from "@/lib/cloud-plan";
 import { keyRemoved, keySaved, keySaveFailure, keyTestResult } from "@/lib/product-events";
 import { isXConnectorStatus, type XConnectorStatus, type XIncludedUsage } from "../../shared/x-connector";
 import { looksLikeKey, saveCredential, tregVerdict } from "./keys/key-save";
-import { useCloudPlan } from "./ProIntroduction";
 
 const TREG_URL = "https://treg.to";
 const pill = "inline-flex h-7 min-w-[64px] shrink-0 items-center justify-center gap-2 rounded-full bg-control/80 px-3 text-[13px] font-medium leading-5 text-ink transition-colors hover:bg-raised-hover disabled:opacity-40";
@@ -57,7 +55,6 @@ export function XCard({ refreshKey = 0, onConnection }: {
   const [addingOwn, setAddingOwn] = useState(false);
   const mounted = useRef(true);
   const saveAfterPaste = useRef(false);
-  const connecting = xResearchAction(useCloudPlan()?.view ?? null) === "connecting";
   const ownConfigured = state.config?.treg?.configured === true, includedHeld = state.config?.xResearch?.included === true;
 
   const load = useCallback(async (refresh = false): Promise<void> => {
@@ -150,7 +147,7 @@ export function XCard({ refreshKey = 0, onConnection }: {
   const description = status === null ? t("apps.x.description")
     : using === "own" ? t("apps.x.own")
       : using === "included" ? t("apps.x.included")
-        : connecting && !status.unavailable ? t("apps.x.connecting") : t("apps.x.addKey");
+        : t("apps.x.addKey");
 
   return (
     <div data-app-tile="x" data-x-state={status === null ? "loading" : using ?? "none"} className="flex min-w-0 flex-col rounded-xl px-2 py-2 transition-colors hover:bg-raised/40">

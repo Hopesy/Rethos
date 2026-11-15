@@ -1,12 +1,9 @@
-import { ChevronLeft, FolderOpen, LayoutGrid, Puzzle, Search, UsersRound, X, Zap } from "lucide-react";
+import { ChevronLeft, LayoutGrid, Puzzle, Search, UsersRound, X, Zap } from "lucide-react";
 import { useEffect, useRef, type CSSProperties } from "react";
 
-import { useCloudFilesReady } from "@/lib/cloud-files";
 import { t } from "@/lib/i18n";
 import { useStore } from "@/state/store";
 
-import { CloudRoomCard } from "./CloudRoomCard";
-import { CloudUsageCard } from "./CloudUsageMeter";
 import { useAutomationsNeedYou } from "./SidebarFooterNav";
 import { SidebarPopoverMenu, type SidebarMenuItem } from "./SidebarPopoverMenu";
 import { SidebarProfileMenu } from "./SidebarProfileMenu";
@@ -29,7 +26,6 @@ export function SidebarPhoneHeading({ open, onClose, style }: { open: boolean; o
 export function SidebarPhoneBar() {
   const { state, dispatch } = useStore();
   const automationsNeedYou = useAutomationsNeedYou();
-  const filesReady = useCloudFilesReady();
   const items: SidebarMenuItem[] = [
     {
       key: "automations",
@@ -46,13 +42,6 @@ export function SidebarPhoneBar() {
       active: state.activeView === "team-map",
       onSelect: () => dispatch({ type: "showTeamMap" }),
     },
-    ...(filesReady ? [{
-      key: "files",
-      label: t("sidebar.nav.files"),
-      icon: <FolderOpen size={18} />,
-      active: state.activeView === "files",
-      onSelect: () => dispatch({ type: "showFiles" }),
-    }] : []),
     {
       key: "apps",
       label: t("sidebar.nav.apps"),
@@ -63,8 +52,6 @@ export function SidebarPhoneBar() {
   ];
   return (
     <div data-sidebar-phone-bar className="border-t border-hairline px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2">
-      <CloudRoomCard />
-      <CloudUsageCard />
       <div className="flex items-center gap-2 not-first:mt-2">
         <div className="min-w-0 flex-1"><SidebarProfileMenu /></div>
         <SidebarPopoverMenu

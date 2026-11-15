@@ -102,3 +102,9 @@ both old MCP entries. Evidence is in
 Regression results: 66 file/permission/session/environment tests, 103 catalog
 and native-connection tests, and 46 desktop tests passed, with 2 platform skips.
 Type checks, server/UI builds, scoped lint and locale validation passed.
+
+## Work targets and server access
+
+Bot defaults and conversation pins use the owner-scoped work-target API. A connected target carries a stable computer ID and optional working folder; Windows folders are validated with Windows path rules. Clearing a conversation pin follows the bot again. Off applies to files, terminal and desktop operations.
+
+The native fixture also covers target selection, a second device, offline refusal, pause/resume and persisted revocation. The browser verification exercises the real WorkTargetPicker, AccessSection, ComputerPanel and ConnectedComputers against an isolated server. Check persistence after reload, simple/advanced transitions, the conversation Off/follow flow, server-scoped pause/resume, keyboard-accessible help and a 390px viewport. Evidence for 0.1.162 is stored in .Rethos-temp/work-location/browser-verification.json and target-mobile.png.

@@ -113,6 +113,18 @@ test("declining access invalidates a pending grant", async t => {
   assert.deepEqual(f.connects, []);
 });
 
+test("permission saves retain the computer identity and replace its grant revision", async t => {
+  const f = await fixture(t);
+  await f.sharing.save(f.env, { folders: [], computer: true, terminal: false }, f.info);
+  const before = (await f.records())[f.env.id];
+  await f.sharing.save(f.env, { folders: [], computer: true, terminal: true }, f.info);
+  const after = (await f.records())[f.env.id];
+  assert.equal(after.id, before.id);
+  assert.equal(after.secret, before.secret);
+  assert.notEqual(after.grantRevision, before.grantRevision);
+  assert.equal(after.terminal, true);
+});
+
 test("a change to another environment leaves a pending grant valid", async t => {
   const f = await fixture(t);
   const held = f.holdIdentity();

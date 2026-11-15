@@ -9,7 +9,7 @@ import { editionForMembers, editionStatus, entitled } from "../enterprise.ts";
 import { fleetAvailable, fleetRequest, fleetSocketPath } from "../fleet-client.ts";
 import { noteKeyAccepted, noteKeyRejected } from "../key-rejections.ts";
 import { loadPlanUsage, planAccountsFromInstances } from "../plan-usage.ts";
-import { tregProviderApi } from "../included-services.ts";
+import { tregProviderApi } from "../service-credentials.ts";
 import { checkProviderKey, PROVIDER_KEY_KINDS, providerBaseUrl, type ProviderKeyKind } from "../provider-key-check.ts";
 import { checkTregKey } from "../research.ts";
 import type { Store } from "../store.ts";

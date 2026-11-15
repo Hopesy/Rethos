@@ -8,13 +8,15 @@ import { placeHasIssue, worksOnSimpleLabel } from "@/lib/place-view";
 import { useOwnerOrAdmin } from "@/lib/use-owner-or-admin";
 import { api, useStore, type Bot } from "@/state/store";
 import { BotAvatar } from "../Avatar";
+import { WorkTargetPicker } from "../WorkTargetPicker";
+import { targetLabel, useWorkTarget } from "@/lib/work-target";
+import { ConnectedComputers } from "../ConnectedComputers";
 import { useDesktopCapabilities } from "../DesktopCapabilities";
-import { LocalComputerAutoWarning } from "../LocalComputerAutoWarning";
 import { usePlaceViews } from "../PlaceChip";
 import { screenFramePreview } from "../ScreenFrame";
-import type { BotPatch, useBotSettingsDerived } from "../bot-settings/useBotSettingsDerived";
+import type { useBotSettingsDerived } from "../bot-settings/useBotSettingsDerived";
 import type { SimplePageId } from "./page-registry";
-import { Card, NavRow, RadioRow } from "./rows";
+import { Card, NavRow } from "./rows";
 
 type Derived = ReturnType<typeof useBotSettingsDerived>;
 type PlaceChoice = "auto" | Place | "off";
@@ -56,7 +58,7 @@ function usePlaceChoices(bot: Bot) {
   const { capabilities } = useDesktopCapabilities();
   const platform = capabilities.host?.platform ?? "other";
   const placeViews = usePlaceViews(bot);
-  const current: PlaceChoice = bot.computer ?? "auto";
+  const current: PlaceChoice = bot.computer && bot.computer !== "off" && !placeViews[bot.computer].listed ? "auto" : bot.computer ?? "auto";
   const myChrome = state.config?.browserEngine?.myChrome === true
     && (state.config?.browserProfiles ?? []).some((profile) => profile.id === bot.browserProfile && profile.browser === "chrome");
   const placeLabel = (place: Place) => (place === "browser" && myChrome ? t("settings.profiles.myChrome") : worksOnSimpleLabel(place, platform));
@@ -66,7 +68,7 @@ function usePlaceChoices(bot: Bot) {
   };
   const options: PlaceOption[] = [
     { value: "auto", label: t("computer.simple.dest.letItChoose") },
-    ...(placeViews.local.policy ? [choice("local")] : []),
+    ...(placeViews.local.policy && placeViews.local.listed ? [choice("local")] : []),
     ...(placeViews.browser.policy || current === "browser" ? [choice("browser")] : []),
     ...(placeViews.cloud.policy ? [choice("cloud")] : []),
     // Offered as in the Screen panel and the composer, so a bot can be kept on the private desktop from here too.
@@ -74,56 +76,14 @@ function usePlaceChoices(bot: Bot) {
     ...(current === "off" ? [{ value: current, label: OFF_LABEL(), disabled: true }] : []),
   ];
   const liveSurface = bot.tasks?.find((task) => task.threadId === bot.threadId)?.surface;
-  const usingNow = liveSurface && liveSurface !== current ? placeLabel(liveSurface) : null;
+  const usingNow = liveSurface && liveSurface !== current && placeViews[liveSurface].listed ? placeLabel(liveSurface) : null;
   const currentLabel = options.find((option) => option.value === current)?.label
     ?? (current === "auto" || current === "off" ? undefined : placeLabel(current));
   return { options, current, currentLabel, usingNow };
 }
 
-export function WherePage({ bot, derived }: { bot: Bot; derived: Derived }) {
-  const { dispatch } = useStore();
-  const { options, current, usingNow } = usePlaceChoices(bot);
-  const [localAutoWarning, setLocalAutoWarning] = useState<{ botId: string; patch: BotPatch } | null>(null);
-  const { patch, approvalMode } = derived;
-  const choosePlace = (value: PlaceChoice) => {
-    if (value === current || value === "off") return;
-    if (value === "local" && approvalMode === "auto") {
-      setLocalAutoWarning({ botId: bot.id, patch: { computer: "local", acknowledgeLocalAuto: true } });
-      return;
-    }
-    patch(value === "browser" ? { computer: "browser", browser: true } : { computer: value === "auto" ? null : value });
-  };
-
-  return (
-    <>
-      <Card>
-        <div role="radiogroup" aria-label={t("computer.simple.whereWorks", { name: bot.name })} className="flex flex-col divide-y divide-ink/[0.05]">
-          {options.map((option) => (
-            <RadioRow
-              key={option.value}
-              data-panel-choice={option.value}
-              title={option.label}
-              hint={option.hint}
-              checked={current === option.value}
-              disabled={option.disabled}
-              onClick={() => choosePlace(option.value)}
-            />
-          ))}
-        </div>
-      </Card>
-      {usingNow && <p data-panel-using-now className="mx-1 text-[13px] text-ink-secondary">{t("computer.simple.usingNow", { place: usingNow })}</p>}
-      <LocalComputerAutoWarning
-        open={localAutoWarning !== null}
-        onCancel={() => setLocalAutoWarning(null)}
-        onConfirm={() => {
-          const target = localAutoWarning;
-          setLocalAutoWarning(null);
-          if (!target) return;
-          dispatch({ type: "updateBot", botId: target.botId, patch: target.patch });
-        }}
-      />
-    </>
-  );
+export function WherePage({ bot }: { bot: Bot; derived: Derived }) {
+  return <><WorkTargetPicker bot={bot} /><ConnectedComputers bot={bot} /></>;
 }
 
 export function ComputerTab({ bot, derived, onOpen }: { bot: Bot; derived: Derived; onOpen: (page: SimplePageId) => void }) {
@@ -132,6 +92,7 @@ export function ComputerTab({ bot, derived, onOpen }: { bot: Bot; derived: Deriv
   const { browserEnabled } = derived;
   const signedIn = useSignedInCount(bot, browserEnabled && bot.computer !== "off" && ownerOrAdmin !== false);
   const { currentLabel, usingNow } = usePlaceChoices(bot);
+  const workTarget = useWorkTarget(bot);
   const screenOf = t("computer.screenOf", { name: bot.name });
 
   const screen = [...bot.messages].reverse().find((message) => message.kind === "screen" && (message.hasImage || message.png));
@@ -175,7 +136,7 @@ export function ComputerTab({ bot, derived, onOpen }: { bot: Bot; derived: Deriv
           icon={Monitor}
           title={t("computer.simple.whereWorks", { name: bot.name })}
           hint={usingNow ? t("computer.simple.usingNow", { place: usingNow }) : undefined}
-          value={currentLabel}
+          value={bot.workTarget?.kind === "connected" ? targetLabel(workTarget.selected, workTarget.status) : currentLabel}
           onClick={() => onOpen("where")}
         />
         <NavRow
@@ -186,6 +147,7 @@ export function ComputerTab({ bot, derived, onOpen }: { bot: Bot; derived: Deriv
           onClick={() => onOpen("browser")}
         />
       </Card>
+      <ConnectedComputers bot={bot} />
     </div>
   );
 }
