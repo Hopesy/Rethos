@@ -1,0 +1,121 @@
+import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import { mkdirSync, readFileSync, writeFileSync, existsSync, rmSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { createInterface } from 'node:readline';
+import { build } from 'esbuild';
+import { launchVerificationServer, runControlOmb } from './control-omb.ts';
+
+
+const work = resolve('.Rethos-temp/connected-computer'); mkdirSync(work, { recursive: true });
+process.env.TEMP = work; process.env.TMP = work; process.env.TMPDIR = work;
+const evidence = { checks: [], commands: [] }, children = [];
+let fixture, token, computer, folder, outside;
+const oldToken = process.env.OPENMAUSBOT_TOKEN;
+const api = async (method, route, body, authenticated = true) => {
+  const r = await fetch(fixture.info.url + route, { method, headers: { origin: fixture.info.url, 'content-type': 'application/json', ...(authenticated && token ? { authorization: 'Bearer ' + token } : {}) }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+  const value = await r.json(); assert(r.ok, `${route}: ${JSON.stringify(value)}`); return value;
+};
+const until = async (fn, ms = 10000) => { const deadline = Date.now() + ms; while (Date.now() < deadline) { const value = await fn(); if (value) return value; await new Promise(resolve => setTimeout(resolve, 30)); } throw new Error('Condition timed out'); };
+const control = async args => { const result = await runControlOmb([...args, '--url', fixture.info.url]); evidence.commands.push({ args, result }); return result; };
+async function clientFor(bot) {
+  const dump = join(fixture.info.dataDir, 'fake-claude-dump.json'); if (existsSync(dump)) rmSync(dump);
+  assert.equal((await control(['send', '--bot', bot.id, '--task', bot.threadId, '--text', 'Inspect the connected fixture computer.'])).success, true);
+  await until(() => existsSync(dump));
+  const agents = JSON.parse(readFileSync(dump, 'utf8')).mcpConfig.mcpServers.agents;
+  const child = spawn(agents.command, agents.args, { env: { PATH: process.env.PATH, HOME: fixture.info.dataDir, ...agents.env }, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
+  children.push(child); child.stderr.resume();
+  const waiting = new Map(); let id = 0;
+  createInterface({ input: child.stdout }).on('line', line => { const data = JSON.parse(line); waiting.get(data.id)?.(data); });
+  const rpc = (method, params) => new Promise((resolve, reject) => {
+    const key = ++id; const timer = setTimeout(() => reject(new Error('MCP timeout: ' + method)), 20000);
+    waiting.set(key, value => { clearTimeout(timer); waiting.delete(key); resolve(value); });
+    child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: key, method, params }) + '\n');
+  });
+  await rpc('initialize', { protocolVersion: '2024-11-05' });
+  const tool = async (name, args = {}) => (await rpc('tools/call', { name, arguments: args })).result;
+  return { bot, tool, op: (action, args = {}) => tool('shared_computer', { computer_id: computer, action, ...args }) };
+}
+const data = result => { assert(!result.isError, JSON.stringify(result)); return JSON.parse(result.content[0].text); };
+const pendingCard = async client => until(async () => (await api('GET', `/api/threads/${client.bot.threadId}/messages`)).messages.findLast(message => message.card?.tool === 'computer_access' && !message.card.answered && !message.card.dismissed));
+const answer = async (client, card, behavior) => api('POST', `/api/threads/${client.bot.threadId}/respond`, { requestId: card.card.requestId, behavior });
+try {
+  await build({ entryPoints: ['deploy/desktop/connected-computer.mjs'], outfile: join(work, 'connected-computer.cjs'), bundle: true, platform: 'node', target: 'node24', format: 'cjs' });
+  fixture = await launchVerificationServer({ ...process.env, FAKE_CLAUDE_MODE: 'hang' }); evidence.fixture = fixture.info;
+  const paired = await api('POST', '/api/auth/pairing', { label: 'Native computer fixture', scopes: ['admin', 'client'] }, false);
+  token = (await api('POST', '/api/auth/pair', { code: paired.code }, false)).token;
+  process.env.OPENMAUSBOT_TOKEN = token;
+  folder = join(fixture.info.dataDir, 'sessions'); outside = join(fixture.info.dataDir, 'other-project');
+  mkdirSync(folder); mkdirSync(outside);
+  writeFileSync(join(folder, 'session.jsonl'), 'fixture project\n' + 'old history\n'.repeat(300000) + '最新结果：完成\n');
+  writeFileSync(join(outside, 'notes.txt'), 'original notes');
+  const configPath = join(fixture.info.dataDir, 'computer.json');
+  const tokenPath = join(fixture.info.dataDir, 'token.txt'); writeFileSync(tokenPath, token);
+  const fakeCua = join(fixture.info.dataDir, 'fake-cua.mjs');
+  writeFileSync(fakeCua, `import { createInterface } from 'node:readline';
+createInterface({input:process.stdin}).on('line', line => {const q=JSON.parse(line);if(q.id===undefined)return;
+let result=q.method==='initialize'?{protocolVersion:'2024-11-05',capabilities:{tools:{}},serverInfo:{name:'fixture',version:'1'}}:q.method==='tools/list'?{tools:[{name:'list_apps',description:'Fixture apps',inputSchema:{type:'object',properties:{}}}]}:{content:[{type:'text',text:'fixture desktop apps'}]};
+process.stdout.write(JSON.stringify({jsonrpc:'2.0',id:q.id,result})+'\\n');});`);
+  const environmentId = (await api('GET', '/.well-known/openmausbot/environment')).environmentId;
+  writeFileSync(configPath, JSON.stringify({ origin: fixture.info.url, environmentId, tokenFile: tokenPath, botPermissions: true, terminal: true,
+    folders: [{name:'Sessions',path:folder,write:false}], cua: {command:process.execPath,args:[fakeCua]} }));
+  const worker = spawn(process.execPath, [join(work, 'connected-computer.cjs'), configPath], {stdio:['ignore','pipe','pipe'],windowsHide:true});
+  children.push(worker); worker.stdout.resume(); worker.stderr.on('data', chunk => fs.appendFileSync(join(work,'worker.log'),chunk));
+  await until(async () => (await api('GET', '/api/shared-computers')).computers.some(item => item.online));
+  computer = (await api('GET', '/api/shared-computers')).computers[0].id;
+  const create = async (name, mode) => {
+    const bot = (await api('POST', '/api/bots', { name })).bot;
+    if (mode === 'ask') await api('PATCH', `/api/bots/${bot.id}`, { approvalMode: 'ask' });
+    return clientFor(bot);
+  };
+  const full = await create('Full computer', 'full');
+  const listed = data(await full.tool('list_shared_computers'));
+  assert(listed.computers.some(item => item.id === computer && item.botPermissions));
+  assert(data(await full.op('computer_tools')).tools.some(tool => tool.name === 'list_apps'));
+  assert((await full.op('computer_call', {tool_name:'list_apps',arguments:{}})).content[0].text.includes('fixture desktop apps'));
+  evidence.checks.push('Bundled native worker: desktop tool discovery and execution use the same computer');
+  const read = data(await full.op('read_file', { path: join(folder, 'session.jsonl'), tail: true, max_bytes: 128 }));
+  assert(read.content.includes('最新结果：完成'));
+  const target = join(outside, 'created.txt');
+  assert(data(await full.op('write_file', { path: target, content: 'full access writes here' })).written);
+  assert.equal(readFileSync(target, 'utf8'), 'full access writes here');
+  assert(data(await full.op('run_command', { command: 'echo native-computer-fixture' })).output.includes('native-computer-fixture'));
+  assert(!(await api('GET', `/api/threads/${full.bot.threadId}/messages`)).messages.some(message => message.card?.tool === 'computer_access'));
+  evidence.checks.push('Full: native computer discovered, large session tail read, new directory write and command; no approval card');
+  await control(['interrupt', '--bot', full.bot.id, '--task', full.bot.threadId]);
+  const ask = await create('Ask computer', 'ask');
+  assert(data(await ask.op('read_file', { path: join(folder, 'session.jsonl'), max_bytes: 64 })).content.includes('fixture project'));
+  let waiting = ask.op('read_file', { path: join(outside, 'notes.txt') });
+  let card = await pendingCard(ask); assert(card.card.subtitle.includes(outside));
+  await answer(ask, card, 'allow'); assert.equal(data(await waiting).content, 'original notes');
+  assert.equal(data(await ask.op('read_file', { path: join(outside, 'notes.txt') })).content, 'original notes');
+  waiting = ask.op('write_file', { path: join(outside, 'notes.txt'), content: 'must be denied' });
+  card = await pendingCard(ask); await answer(ask, card, 'deny'); assert((await waiting).isError);
+  assert.equal(readFileSync(join(outside, 'notes.txt'), 'utf8'), 'original notes');
+  evidence.checks.push('Ask: allowed root reads directly; new directory prompts once per request; write escalation denied without changing the file');
+  const forged = await ask.op('read_file', { path: join(outside, 'notes.txt'), file_scope: { root: resolve('/'), write: true } });
+  assert(forged.isError); evidence.checks.push('Model-supplied authorization refused');
+  waiting = ask.op('run_command', { command: 'echo must-not-run' });
+  await pendingCard(ask); await control(['interrupt', '--bot', ask.bot.id, '--task', ask.bot.threadId]);
+  assert((await waiting).isError); evidence.checks.push('Stop cancels pending authorization and prevents execution');
+  const workerExit = new Promise(resolve => worker.once('exit', resolve)); worker.kill(); await workerExit;
+  const savedPath = join(fixture.info.dataDir, 'computer-sharing.json');
+  const saved = JSON.parse(readFileSync(savedPath, 'utf8'));
+  const record = saved.records[environmentId];
+  const disconnected = await fetch(fixture.info.url + '/api/shared-computers/' + computer + '/disconnect', {method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+token,'x-omb-computer-secret':record.secret},body:'{}'});
+  assert(disconnected.ok);
+  record.enabled = false; writeFileSync(savedPath, JSON.stringify(saved));
+  const stoppedWorker = spawn(process.execPath,[join(work,'connected-computer.cjs'),configPath],{stdio:'ignore',windowsHide:true}); children.push(stoppedWorker);
+  const stoppedExit = await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(new Error('Stopped worker restarted lending')),5000);stoppedWorker.once('exit',code=>{clearTimeout(timeout);resolve(code);});});
+  assert.equal(stoppedExit,0);
+  assert.equal(JSON.parse(readFileSync(savedPath,'utf8')).records[environmentId].enabled,false);
+  assert.equal((await api('GET','/api/shared-computers')).computers.length,0);
+  evidence.checks.push('Restart preserves locally revoked access');
+  evidence.passed = true;
+} finally {
+  for (const child of children) child.kill();
+  writeFileSync(join(work, 'bundled-verification.json'), JSON.stringify(evidence, null, 2));
+  await fixture?.close();
+  if (oldToken === undefined) delete process.env.OPENMAUSBOT_TOKEN; else process.env.OPENMAUSBOT_TOKEN = oldToken;
+}
+console.log(JSON.stringify({ passed: evidence.passed, checks: evidence.checks, log: evidence.fixture.logPath }));

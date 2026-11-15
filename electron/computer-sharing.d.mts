@@ -6,6 +6,8 @@ export interface SharingState {
   computer: boolean;
   /** Lent to a server of the person's own, which they allowed here: no maintainer flag, and Pause holds it. */
   own?: boolean;
+  /** Explicitly follow this own server's bot/conversation permissions for local file access. */
+  botPermissions?: boolean;
   /** Lending is paused from the OpenMausBot icon's menu or Settings. */
   paused?: boolean;
   connected?: boolean;
@@ -160,7 +162,7 @@ export function createComputerSharing(options: {
    * false when it is not a server of the person's own. */
   ownOffer(env: Workspace): Promise<Identity | null | false>;
   /** The person allowed a server of their own to use this computer. */
-  lendOwn(env: Workspace, input: Partial<Pick<SharingState, "folders" | "terminal" | "computer">>): Promise<SharingState>;
+  lendOwn(env: Workspace, input: Partial<Pick<SharingState, "folders" | "terminal" | "computer" | "botPermissions">>): Promise<SharingState>;
   /** Not now: nothing is lent, and this pairing is not asked again. */
   declineOwn(env: Workspace, identity: Identity): void;
   forget(env: Workspace): void;

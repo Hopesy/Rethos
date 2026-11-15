@@ -109,7 +109,7 @@ export async function validateSharedFolders(folders, { homeEdits = false } = {})
   return result;
 }
 
-const JOB_KEYS = new Set(["computer_id", "action", "folder_id", "path", "content", "encoding", "expected_sha256", "old_text", "new_text", "command", "timeout_seconds", "tool_name", "arguments", "server"]);
+const JOB_KEYS = new Set(["computer_id", "action", "folder_id", "path", "content", "encoding", "expected_sha256", "old_text", "new_text", "command", "timeout_seconds", "tool_name", "arguments", "server", "file_scope", "offset", "tail", "max_bytes", "file_id", "limit", "sort"]);
 const JOB_ACTIONS = new Set(["list_files", "read_file", "write_file", "edit_file", "append_file", "delete_file", "run_command", "computer_tools", "computer_call", ...LENT_MCP_ACTIONS]);
 const optionalText = (value, max) => value === undefined || (typeof value === "string" && value.length <= max);
 /** Refuses malformed input only; the grant still decides whether the operation is allowed. */
@@ -123,6 +123,12 @@ export function validSharedOperation(operation, computerId) {
     (operation.encoding === undefined || operation.encoding === "utf8" || operation.encoding === "base64") &&
     (operation.expected_sha256 === undefined || (typeof operation.expected_sha256 === "string" && /^[a-f0-9]{64}$/.test(operation.expected_sha256))) &&
     optionalText(operation.command, 8000) && validCommandSeconds(operation.timeout_seconds) && optionalText(operation.tool_name, 256) &&
+    (operation.file_scope === undefined || (operation.file_scope && typeof operation.file_scope === "object" && Object.keys(operation.file_scope).every(key => key === "root" || key === "write") && typeof operation.file_scope.root === "string" && operation.file_scope.root.length <= 2048 && typeof operation.file_scope.write === "boolean")) &&
+    (operation.offset === undefined || (Number.isSafeInteger(operation.offset) && operation.offset >= 0)) &&
+    (operation.tail === undefined || typeof operation.tail === "boolean") &&
+    (operation.max_bytes === undefined || (Number.isInteger(operation.max_bytes) && operation.max_bytes >= 4 && operation.max_bytes <= 32768)) &&
+    (operation.limit === undefined || (Number.isInteger(operation.limit) && operation.limit >= 1 && operation.limit <= 100)) &&
+    (operation.sort === undefined || operation.sort === "name" || operation.sort === "modified") && optionalText(operation.file_id, 160) &&
     (operation.arguments === undefined || (Boolean(operation.arguments) && typeof operation.arguments === "object" && !Array.isArray(operation.arguments))) &&
     (LENT_MCP_ACTIONS.has(operation.action) ? validLentMcpServer(operation.server) : operation.server === undefined);
 }
@@ -374,7 +380,7 @@ export function createComputerSharing({ file, fetch: fetchImpl, environments, lo
     // A server of the person's own says what it takes from them in their own sign-in's answer (`lending`), never before pairing.
     const offered = { ...descriptor.capabilities, ...(ownServerSession(auth) && auth.lending && typeof auth.lending === "object" ? auth.lending : {}) };
     if (required && offered.sharedComputers !== true) throw new Error(UPDATE_SERVER);
-    return { supported: offered.sharedComputers === true, auth, info: { sessionId: auth.id, environmentId: descriptor.environmentId }, details: offered.lendingDetails === true, link: offered.deviceLink === true, chrome: offered.myChromeLink === true, timeouts: offered.commandTimeouts === true, long: offered.longCommands === true, edits: offered.fileEdits === true, asks: offered.computerAsks === true, mcp: offered.lentMcp === true };
+    return { supported: offered.sharedComputers === true, auth, info: { sessionId: auth.id, environmentId: descriptor.environmentId }, details: offered.lendingDetails === true, link: offered.deviceLink === true, chrome: offered.myChromeLink === true, timeouts: offered.commandTimeouts === true, long: offered.longCommands === true, edits: offered.fileEdits === true, asks: offered.computerAsks === true, mcp: offered.lentMcp === true, botPermissions: offered.botPermissions === true };
   };
   const identity = async env => {
     await requireEnabled();
@@ -387,8 +393,8 @@ export function createComputerSharing({ file, fetch: fetchImpl, environments, lo
    * server the move chose (lending-target.mjs `own:<environment id>`). */
   const ownHomeId = env => { const current = cloud(env); return current?.origin === env.origin && current.accountId?.startsWith("own:") ? current.accountId.slice(4) : null; };
   /** What the server says it takes, remembered for its connect; a server of the person's own never gets the device link. */
-  const takes = (env, { details, link, chrome: takesChrome, timeouts, long, edits, mcp }) => {
-    for (const [set, on] of [[supportsDetails, details], [supportsLink, link], [supportsChrome, takesChrome], [supportsTimeouts, timeouts], [supportsLong, long], [supportsEdits, edits], [supportsMcp, mcp]]) {
+  const takes = (env, { details, link, chrome: takesChrome, timeouts, long, edits, mcp, botPermissions }) => {
+    for (const [set, on] of [[supportsDetails, details], [supportsLink, link], [supportsChrome, takesChrome], [supportsTimeouts, timeouts], [supportsLong, long], [supportsEdits, edits], [supportsMcp, mcp], [supportsBotPermissions, botPermissions]]) {
       if (on) set.add(env.id); else set.delete(env.id);
     }
   };
@@ -417,6 +423,7 @@ export function createComputerSharing({ file, fetch: fetchImpl, environments, lo
   const supportsTimeouts = new Set();
   const supportsLong = new Set();
   const supportsEdits = new Set();
+  const supportsBotPermissions = new Set();
   /** My Cloud's browsers reach the web through this computer while lending runs; never while My Cloud sleeps, so a
    * sleeping Cloud is never dialled. */
   const keepLink = async (env, grant, signal) => {
@@ -484,11 +491,13 @@ export function createComputerSharing({ file, fetch: fetchImpl, environments, lo
           const present = new Set((await existingFolders(grant.folders, validateSharedFolders)).map(folder => folder.id));
           const folders = grant.folders.filter(folder => present.has(folder.id));
           const effectiveGrant = { ...grant, folders, protectedPaths: protectedRoots };
+          if (grant.botPermissions && !supportsBotPermissions.has(env.id)) throw new Error("Update this server to use bot-managed computer permissions");
           await gate();
           awake();
           await request(env, "/api/shared-computers/connect", {
             id: grant.id, name: os.hostname().slice(0, 120), environmentId: grant.environmentId,
-            folders: folders.map(({ id, name, write }) => ({ id, name, write })), terminal: grant.terminal, computer: grant.computer,
+            folders: folders.map(({ id, name, write, path: folderPath }) => ({ id, name, write, ...(grant.botPermissions ? { path: folderPath } : {}) })), terminal: grant.terminal, computer: grant.computer,
+            ...(grant.botPermissions ? { botPermissions: true } : {}),
             // So My Cloud's bots say "your PC" on Windows and "your Mac" only on a Mac; only a server that takes it gets it.
             ...(supportsDetails.has(env.id) && LENT_PLATFORMS.has(process.platform) ? { platform: process.platform } : {}),
             ...(grant.cloud && supportsLink.has(env.id) ? { internet: lendsInternet(grant) } : {}),
@@ -608,6 +617,7 @@ export function createComputerSharing({ file, fetch: fetchImpl, environments, lo
   const state = id => {
     const grant = records[id];
     return { enabled: grant?.enabled === true, folders: Array.isArray(grant?.folders) ? grant.folders : [], terminal: grant?.terminal === true, computer: grant?.computer === true,
+      ...(grant?.botPermissions ? { botPermissions: true } : {}),
       ...(grant?.own ? { own: true, ...(paused ? { paused: true } : {}) } : {}), ...status.get(id) };
   };
   // `resumes`: lending waits (for the Cloud sign-in, say) and resumes by itself, so the server keeps it as lent, not stopped.
@@ -826,8 +836,9 @@ export function createComputerSharing({ file, fetch: fetchImpl, environments, lo
       if (closed) throw new Error("Lending is unavailable while the app is closing.");
       const info = await ownIdentity(env);
       const folders = await validateSharedFolders(input?.folders ?? []);
-      const grant = { ...info, id: randomUUID(), secret: randomBytes(32).toString("hex"), enabled: true, own: true, folders, terminal: input?.terminal === true, computer: input?.computer === true };
-      if (!folders.length && !grant.terminal && !grant.computer) throw new Error("Choose at least one folder or capability to share");
+      if (input?.botPermissions === true && !supportsBotPermissions.has(env.id)) throw new Error("Update this server to use bot-managed computer permissions");
+      const grant = { ...info, id: randomUUID(), secret: randomBytes(32).toString("hex"), enabled: true, own: true, folders, terminal: input?.terminal === true, computer: input?.computer === true, ...(input?.botPermissions === true ? { botPermissions: true } : {}) };
+      if (!folders.length && !grant.terminal && !grant.computer && !grant.botPermissions) throw new Error("Choose at least one folder or capability to share");
       if (grantVersions.get(env.id) !== version) return state(env.id);
       disconnect(env, records[env.id]);
       store({ ...records, [env.id]: grant }); run(env, grant); changed(); return state(env.id);

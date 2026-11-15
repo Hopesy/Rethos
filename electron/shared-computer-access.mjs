@@ -1,18 +1,20 @@
-// The server sends requests, never paths to grant, commands to install or permission changes: only the saved grant decides.
 import fs from "node:fs/promises";
 import { constants } from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
 import readline from "node:readline";
+import { fileIdentity as identify, protectedIdentities, assertOutsideProtected, sharedPath, openSharedFile } from "./shared-file-path.mjs";
+export { protectedIdentities, assertOutsideProtected, sharedPath } from "./shared-file-path.mjs";
 import { lentScreenArguments, lentScreenToolListing } from "./lent-screen-tools.mjs";
 import { typeOneCharacterAtATime, typesInOneBurst } from "./paced-typing.mjs";
 import { helperMissing } from "./lent-screen-failures.mjs";
 import { commandPath } from "./shell-path.mjs";
 import { LENT_MCP_ACTIONS, lentMcpRefusal } from "./lent-mcp.mjs";
+import { listSharedFiles, readSharedRange, SHARED_EDIT_LIMIT } from "./shared-file-read.mjs";
 
 /** Reads stay under the 4 MB body that carries a result to the server (base64 of 2 MiB is 2.8 MB); writes stay small. */
-const READ_LIMIT = 2 * 1024 * 1024;
+const READ_LIMIT = SHARED_EDIT_LIMIT;
 const WRITE_LIMIT = 256 * 1024;
 const OUTPUT_LIMIT = 256 * 1024;
 // A process the command left running in the background can hold its output pipes open long after the command ended,
@@ -24,7 +26,6 @@ const PIPE_GRACE_MS = 1000;
 const STOP_GRACE_MS = 5000;
 /** The server reads a result body of at most 4,000,000 bytes. */
 const RESULT_LIMIT = 3_900_000;
-const PROTECTED = "Desktop credentials and sharing settings cannot be accessed through a shared folder";
 const GIT_INTERNALS = "Files inside .git cannot be changed through a shared folder: git runs commands from its configuration and hooks";
 const HOME_SETTINGS = "The home folder's hidden files, Library and AppData cannot be changed through a shared folder: shells, git and apps run what they hold";
 
@@ -74,44 +75,6 @@ function editedText(current, oldText, newText) {
   if (before.indexOf(oldText, at + 1) >= 0) throw new Error("old_text occurs more than once: include more of the surrounding text");
   return Buffer.from(before.slice(0, at) + newText + before.slice(at + oldText.length), "utf8");
 }
-const absent = error => error.code === "ENOENT" || error.code === "ENOTDIR";
-const identify = async candidate => { const info = await fs.stat(candidate, { bigint: true }); return `${info.dev}:${info.ino}`; };
-
-/** {dev, ino}, never path text; a root a fresh install has not created yet is skipped. */
-export async function protectedIdentities(roots) {
-  const identities = new Set();
-  for (const root of roots ?? []) {
-    if (typeof root !== "string" || !root) continue;
-    try { identities.add(await identify(await fs.realpath(root))); }
-    catch (error) { if (!absent(error)) throw error; }
-  }
-  return identities;
-}
-
-/** A write may create a file that does not exist yet, so walk from the nearest existing ancestor. */
-export async function assertOutsideProtected(identities, target) {
-  if (!identities.size) return;
-  let current = path.resolve(target);
-  for (;;) {
-    try { current = await fs.realpath(current); break; }
-    catch (error) {
-      if (!absent(error)) throw error;
-      const parent = path.dirname(current);
-      if (parent === current) return;
-      current = parent;
-    }
-  }
-  for (;;) {
-    let identity;
-    try { identity = await identify(current); }
-    catch (error) { if (!absent(error)) throw error; }
-    if (identity !== undefined && identities.has(identity)) throw new Error(PROTECTED);
-    const parent = path.dirname(current);
-    if (parent === current) return;
-    current = parent;
-  }
-}
-
 const text = value => ({ content: [{ type: "text", text: typeof value === "string" ? value : JSON.stringify(value) }] });
 
 const POSIX_PATH = /(?:\/[^/\s]+)+/g;
@@ -125,27 +88,6 @@ const basenameMessage = message => {
   return original.replace(WINDOWS_FOLDERS, "").replace(POSIX_PATH, matched => matched.slice(matched.lastIndexOf("/") + 1));
 };
 export const sharedComputerError = error => ({ ...text(basenameMessage(error?.message ?? "Computer action failed")), isError: true });
-
-export async function sharedPath(folder, relative = "") {
-  if (typeof relative !== "string" || relative.length > 2048 || /[\\:\0]/.test(relative) || path.isAbsolute(relative) || relative.split("/").some(part => part === "..")) throw new Error("Use a relative path inside the shared folder");
-  const root = await fs.realpath(folder.path);
-  if (root !== folder.path) throw new Error("Shared folder moved. Choose it again in Settings.");
-  let target = root;
-  const parts = relative.split("/").filter(part => part && part !== ".");
-  for (const [index, part] of parts.entries()) {
-    target = path.join(target, part);
-    let stat = null;
-    try { stat = await fs.lstat(target); }
-    catch (error) {
-      if (error.code === "ENOTDIR") throw new Error(`${parts.slice(0, index).join("/")} is a file, not a folder`);
-      if (error.code !== "ENOENT") throw error;
-    }
-    if (stat?.isSymbolicLink()) throw new Error("Symbolic links cannot be followed in shared folders");
-    // Windows answers ENOENT, not ENOTDIR, past a file, so a file with more of the path after it is refused here.
-    if (stat && !stat.isDirectory() && index < parts.length - 1) throw new Error(`${parts.slice(0, index + 1).join("/")} is a file, not a folder`);
-  }
-  return target;
-}
 
 /** One level at a time, so a folder swapped for a link between two levels is refused, not followed. */
 async function makeMissingFolders(folder, relative) {
@@ -308,12 +250,27 @@ export async function executeSharedOperation(grant, operation, signal, cua, lent
     return (await cua()).call(operation, signal);
   }
   if (!["list_files", "read_file", "write_file", "edit_file", "append_file", "delete_file"].includes(operation.action)) throw new Error("Unsupported shared-computer operation");
-  const folder = grant.folders.find(entry => entry.id === operation.folder_id);
+  const managed = grant.botPermissions === true && grant.own === true && operation.file_scope;
+  let folder, relative = operation.path;
+  if (managed) {
+    if (typeof managed.root !== "string" || !path.isAbsolute(managed.root) || !path.isAbsolute(relative ?? "")) throw new Error("Invalid computer file scope");
+    const root = await fs.realpath(managed.root);
+    relative = path.relative(root, path.resolve(relative));
+    if (path.isAbsolute(relative) || relative === ".." || relative.startsWith(".." + path.sep)) throw new Error("The path is outside its approved directory");
+    relative = relative.split(path.sep).join("/");
+    folder = { path: root, write: managed.write === true };
+    operation = { ...operation, path: relative };
+  } else {
+    if (operation.file_scope) throw new Error("Bot-managed file permissions are not enabled on this computer");
+    folder = grant.folders.find(entry => entry.id === operation.folder_id);
+  }
   if (!folder) throw new Error("This folder has not been shared with this server");
   const target = await sharedPath(folder, operation.path);
-  const protectedRoots = await protectedIdentities(grant.protectedPaths);
+  const protectedRoots = await protectedIdentities(managed ? [] : grant.protectedPaths);
   await assertOutsideProtected(protectedRoots, target);
   signal.throwIfAborted();
+  if (managed && operation.action === "list_files") return text(await listSharedFiles(folder, relative, operation));
+  if (managed && operation.action === "read_file") return text(await readSharedRange(folder, relative, operation));
   if (operation.action === "list_files") {
     const entries = await fs.readdir(target, { withFileTypes: true });
     const shown = await Promise.all(entries.slice(0, 200).map(async entry => {
@@ -328,8 +285,8 @@ export async function executeSharedOperation(grant, operation, signal, cua, lent
   const write = operation.action === "write_file", edit = operation.action === "edit_file", append = operation.action === "append_file";
   const remove = operation.action === "delete_file", changes = write || edit || append || remove;
   if (changes && folder.write !== true) throw new Error("This folder is read-only");
-  if (changes && insideGitInternals(folder.path, operation.path ?? "")) throw new Error(GIT_INTERNALS);
-  if (changes && folder.home === true && insideHomeSettings(operation.path ?? "")) throw new Error(HOME_SETTINGS);
+  if (!managed && changes && insideGitInternals(folder.path, operation.path ?? "")) throw new Error(GIT_INTERNALS);
+  if (!managed && changes && folder.home === true && insideHomeSettings(operation.path ?? "")) throw new Error(HOME_SETTINGS);
   let data;
   if (write) {
     if (typeof operation.content !== "string") throw new Error("Give file content to write");
@@ -352,17 +309,9 @@ export async function executeSharedOperation(grant, operation, signal, cua, lent
   if (write) opening = operation.expected_sha256 ? constants.O_RDWR : constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL;
   else if (edit) opening = constants.O_RDWR;
   else if (append) opening = constants.O_RDWR | constants.O_CREAT;
-  const flags = opening | (constants.O_NOFOLLOW ?? 0) | (constants.O_NONBLOCK ?? 0);
-  const file = await fs.open(target, flags, 0o600);
+  const { file, stat } = await openSharedFile(folder, operation.path, protectedRoots, opening);
   try {
-    const stat = await file.stat({ bigint: true });
-    if (!stat.isFile() || stat.nlink !== 1n || stat.size > READ_LIMIT) throw new Error("Only regular, single-link files up to 2 MiB can be shared");
-    await sharedPath(folder, operation.path);
-    const named = await fs.lstat(target, { bigint: true });
-    if (named.ino !== stat.ino || named.dev !== stat.dev || named.isSymbolicLink()) throw new Error("The file changed while opening it; retry after inspecting the folder");
-    // Re-decide containment against the opened descriptor's own identity, not the spelling.
-    if (protectedRoots.has(`${stat.dev}:${stat.ino}`)) throw new Error(PROTECTED);
-    await assertOutsideProtected(protectedRoots, target);
+    if (stat.size > READ_LIMIT) throw new Error("Only regular, single-link files up to 2 MiB can be shared");
     let current = Buffer.alloc(0);
     if (!write || operation.expected_sha256) {
       const buffer = Buffer.alloc(READ_LIMIT + 1);

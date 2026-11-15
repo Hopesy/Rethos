@@ -59,7 +59,7 @@ export function installServerLending({ ipcMain, guard, sharing, dialogs, validat
     const env = saved(id);
     const mine = await requireOwnOrFlag(env);
     const info = mine ? null : await sharing().identity(env);
-    const grant = { folders: await validate(input?.folders), terminal: input?.terminal === true, computer: input?.computer === true };
+    const grant = { folders: await validate(input?.folders), terminal: input?.terminal === true, computer: input?.computer === true, ...(mine && input?.botPermissions === true ? { botPermissions: true } : {}) };
     if (!(await dialogs.confirmServerAccess(env, grant))) return null;
     saved(id);
     return mine ? sharing().lendOwn(env, grant) : sharing().save(env, grant, info);

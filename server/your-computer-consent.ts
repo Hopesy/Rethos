@@ -46,6 +46,7 @@ interface Pending {
   generation: string;
   messageId: string;
   botId?: string;
+  tool: string;
   store: Store;
   resolve: (allowed: boolean, why?: string) => void;
 }
@@ -75,10 +76,27 @@ export function askToUseYourComputer(
   owner: { threadId: string; generation: string },
   call?: YourComputerCall,
 ): Promise<void> {
-  const { store } = bus;
   const { key, params } = yourComputerQuestion(call);
   const title = yourComputerText(key, params);
   const name = bot?.name ?? "The bot";
+  return askForComputerAccess(bus, bot, owner, {
+    title,
+    subtitle: yourComputerText("approval.yourComputer.detail", { name }),
+    tool: YOUR_COMPUTER_TOOL,
+    yourComputer: call ? { ...(call.app ? { app: call.app } : {}), ...(call.site ? { site: call.site } : {}) } : {},
+  });
+}
+
+export const COMPUTER_ACCESS_TOOL = "computer_access";
+
+export function askForComputerAccess(
+  bus: YourComputerBus,
+  bot: Pick<BotRecord, "id" | "name" | "color" | "avatarUrl" | "notifications"> | undefined,
+  owner: { threadId: string; generation: string },
+  description: { title: string; subtitle: string; tool: string; yourComputer?: YourComputerCall },
+): Promise<void> {
+  const { store } = bus;
+  const { title } = description;
   const room = store.groupByThread(owner.threadId);
   const requestId = newId();
   return new Promise<void>((resolve, reject) => {
@@ -88,18 +106,15 @@ export function askToUseYourComputer(
       kind: "options",
       ...(room && bot ? { from: { botId: bot.id, name: bot.name, color: bot.color } } : {}),
       card: {
-        title,
-        subtitle: yourComputerText("approval.yourComputer.detail", { name }),
+        ...description,
         options: ["Allow once", "Deny"],
         requestId,
         requestType: "permission",
-        tool: YOUR_COMPUTER_TOOL,
-        yourComputer: call ? { ...(call.app ? { app: call.app } : {}), ...(call.site ? { site: call.site } : {}) } : {},
       },
     });
     pending.set(requestId, {
-      threadId: owner.threadId, generation: owner.generation, messageId: message.id, botId: bot?.id, store,
-      resolve: (allowed, why) => (allowed ? resolve() : reject(new YourComputerDeclined(why ?? YOUR_COMPUTER_DECLINED))),
+      threadId: owner.threadId, generation: owner.generation, messageId: message.id, botId: bot?.id, store, tool: description.tool,
+      resolve: (allowed, why) => (allowed ? resolve() : reject(new YourComputerDeclined(why ?? (description.tool === YOUR_COMPUTER_TOOL ? YOUR_COMPUTER_DECLINED : "The requested computer access was declined.")))),
     });
     if (bot) {
       const task = store.projectBotForTask(bot.id, owner.threadId);
@@ -134,14 +149,14 @@ export function cancelYourComputerAsks(threadId: string, generation?: string): v
 
 /** What the screen call is told while the person has not answered this generation's ask. */
 export function yourComputerWaiting(threadId: string, generation: string): string | undefined {
-  for (const entry of pending.values()) if (entry.threadId === threadId && entry.generation === generation) return YOUR_COMPUTER_WAITING;
+  for (const entry of pending.values()) if (entry.threadId === threadId && entry.generation === generation && entry.tool === YOUR_COMPUTER_TOOL) return YOUR_COMPUTER_WAITING;
   return undefined;
 }
 
 /** Asks live in memory only: a card a previous run left open can never be answered, so it is closed at startup. */
 export function dismissStaleYourComputerCards(store: Store): number {
   let dismissed = 0;
-  for (const { threadId, messageId } of optionCardsForTools([YOUR_COMPUTER_TOOL])) {
+  for (const { threadId, messageId } of optionCardsForTools([YOUR_COMPUTER_TOOL, COMPUTER_ACCESS_TOOL])) {
     const card = store.messagesFor(threadId).find((message) => message.id === messageId)?.card;
     if (!card?.requestId || card.answered || card.dismissed || pending.has(card.requestId)) continue;
     if (store.patchMessage(threadId, messageId, { card: { ...card, answered: "deny", dismissed: true } })) dismissed += 1;

@@ -4,9 +4,10 @@
 import { randomUUID } from "node:crypto";
 import nativeText from "./native-text.cjs";
 
-export function serverAccessDetail(env, { folders, terminal, computer }, t = nativeText.englishText.t) {
+export function serverAccessDetail(env, { folders, terminal, computer, botPermissions }, t = nativeText.englishText.t) {
   return [
     t("native.lend.server", { origin: env.origin }),
+    ...(botPermissions ? [t("native.lend.botPermissions")] : []),
     ...folders.map(folder => `${t(folder.write ? "native.lend.readWrite" : "native.lend.readOnly", { path: folder.path })}${folder.home ? ` ${t("native.lend.wholeHome")}` : ""}`),
     t(terminal === true ? "native.lend.terminalOn" : "native.lend.terminalOff"),
     t(computer === true ? "native.lend.computerOn" : "native.lend.computerOff"),

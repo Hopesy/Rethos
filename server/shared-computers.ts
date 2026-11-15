@@ -5,10 +5,12 @@ import { awayNotice, deviceWord, lendScreenSteps, LENT_PLATFORMS, type LentCompu
 import type { LentCopies } from "./lent-copies.ts";
 export { LentComputers } from "./lent-computers.ts";
 
-const folder = z.object({ id: z.string().uuid(), name: z.string().min(1).max(120), write: z.boolean() }).strict();
+const folder = z.object({ id: z.string().uuid(), name: z.string().min(1).max(120), write: z.boolean(), path: z.string().max(2048).optional() }).strict();
 export const sharedComputerRegistration = z.object({
   id: z.string().uuid(), name: z.string().min(1).max(120), environmentId: z.string().uuid(),
   folders: z.array(folder).max(20), terminal: z.boolean(), computer: z.boolean(),
+  /** The desktop owner delegates file grants to the connected server's current bot/conversation permissions. */
+  botPermissions: z.literal(true).optional(),
   /** Sent only to a server that advertises lendingDetails; older servers refuse unknown fields. */
   platform: z.enum(LENT_PLATFORMS).optional(),
   /** Its internet connection, for the bots' browsers; sent only to a server that advertises deviceLink. */
@@ -43,9 +45,16 @@ export const sharedComputerOperation = z.object({
   expected_sha256: z.string().regex(/^[a-f0-9]{64}$/).optional(),
   command: z.string().max(8000).optional(), timeout_seconds: z.number().int().min(1).max(900).optional(), tool_name: z.string().max(256).optional(),
   arguments: z.record(z.string(), z.unknown()).optional(), server: lentMcpServer.optional(),
+  offset: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(), tail: z.boolean().optional(),
+  max_bytes: z.number().int().min(4).max(32768).optional(), file_id: z.string().max(160).optional(),
+  limit: z.number().int().min(1).max(100).optional(), sort: z.enum(["name", "modified"]).optional(),
 }).strict();
-type Registration = z.infer<typeof sharedComputerRegistration>;
-type Operation = z.infer<typeof sharedComputerOperation>;
+export type Registration = z.infer<typeof sharedComputerRegistration>;
+export type Operation = z.infer<typeof sharedComputerOperation>;
+/** Server-authored after the current turn's permission check; absent from the model's operation schema. */
+export type ComputerFileScope = { root: string; write: boolean };
+export type AuthorizedComputerOperation = Operation & { file_scope?: ComputerFileScope };
+export type ComputerAuthorization = { operation: AuthorizedComputerOperation; active(): boolean };
 const COMMAND_SECONDS = 120;
 const OLD_MAX_COMMAND_SECONDS = 240;
 /** The desktop gives a server's first start (a package runner fetching it) 130 seconds and a tool call 300. */
@@ -69,7 +78,7 @@ export type KnownLentComputer = {
   lastSeenAt: number; lastUsedAt: number | null; scopes: { folders: number; terminal: boolean; screen: boolean; internet: boolean; chrome: boolean };
 };
 type Job = {
-  id: string; operation: Operation; active: () => boolean; sent: boolean; leased: boolean; resolve: (result: unknown) => void; reject: (error: Error) => void;
+  id: string; operation: AuthorizedComputerOperation; active: () => boolean; sent: boolean; leased: boolean; resolve: (result: unknown) => void; reject: (error: Error) => void;
   timer: NodeJS.Timeout; delivery?: NodeJS.Timeout;
 };
 type Computer = { registration: Registration; owner: SharedComputerOwner; secret: string; seen: number; jobs: Map<string, Job>; wake?: () => void; polls: number };
@@ -93,7 +102,7 @@ export function responseGone(res: { once(event: "close", listener: () => void): 
 }
 
 /** The desktop's grant is the authority and checks every operation again; the server just never queues work outside what it lends. */
-export function sharedComputerScopeRefusal(registration: Registration, operation: Pick<Operation, "action" | "folder_id" | "server">, askTool: string | null = null): string | null {
+export function sharedComputerScopeRefusal(registration: Registration, operation: Pick<AuthorizedComputerOperation, "action" | "folder_id" | "server" | "file_scope">, askTool: string | null = null): string | null {
   switch (operation.action) {
     case "mcp_tools":
     case "mcp_call": {
@@ -119,6 +128,9 @@ export function sharedComputerScopeRefusal(registration: Registration, operation
     case "edit_file":
     case "append_file":
     case "delete_file": {
+      if (registration.botPermissions && operation.file_scope) {
+        return operation.action === "list_files" || operation.action === "read_file" || operation.file_scope.write ? null : "This folder is read-only.";
+      }
       const lent = registration.folders.find(entry => entry.id === operation.folder_id);
       if (!lent) return "This folder has not been shared with this server.";
       if (operation.action === "list_files" || operation.action === "read_file") return null;
@@ -359,7 +371,8 @@ export class SharedComputers {
     this.changed();
   }
   /** Another person's computer answers exactly like one that does not exist. */
-  async request(operation: Operation, principal: string | null, active: () => boolean): Promise<unknown> {
+  async request(operation: AuthorizedComputerOperation, principal: string | null, active: () => boolean,
+    authorize?: (registration: Registration, operation: Operation) => Promise<ComputerAuthorization>): Promise<unknown> {
     if (!principal) throw failure("This conversation cannot use a shared computer: only a conversation started by the person who shared it can.", 403);
     const lent = () => [...this.computers.values()].find(candidate => candidate.registration.id === operation.computer_id && candidate.owner.person === principal);
     for (const deadline = Date.now() + RECONNECT_WAIT_MS; ;) {
@@ -377,6 +390,16 @@ export class SharedComputers {
       await new Promise(resolve => setTimeout(resolve, 250));
     }
     let entry = lent()!;
+    if (entry.registration.botPermissions && !isMcp(operation)) {
+      if (!authorize) throw failure("This computer requires the current bot's permission check.", 403);
+      const original = entry;
+      const registration = entry.registration;
+      const approved = await authorize(entry.registration, operation);
+      if (lent() !== original || original.registration !== registration || !this.online(original) || !active()) throw failure("This computer or requesting turn changed while waiting for permission.", 409);
+      operation = approved.operation;
+      const wasActive = active;
+      active = () => wasActive() && approved.active() && lent()?.registration === registration;
+    }
     const refusal = sharedComputerScopeRefusal(entry.registration, operation, this.askTool);
     if (refusal) throw failure(refusal, 403);
     if (operation.action === "run_command" && entry.registration.commandTimeouts && !entry.registration.longCommands && (operation.timeout_seconds ?? 0) > OLD_MAX_COMMAND_SECONDS) {

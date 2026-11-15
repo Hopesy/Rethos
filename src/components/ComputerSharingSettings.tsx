@@ -16,6 +16,7 @@ export function ComputerSharingSettings({ workspace, own = false, onClose }: { w
   const [folders, setFolders] = useState<DesktopSharedFolder[]>([]);
   const [terminal, setTerminal] = useState(false);
   const [computer, setComputer] = useState(false);
+  const [botPermissions, setBotPermissions] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [activity, setActivity] = useState<DesktopLendingActivity[] | null>(null);
@@ -23,7 +24,7 @@ export function ComputerSharingSettings({ workspace, own = false, onClose }: { w
   const pending = useRef(false);
   const panel = useRef<HTMLDivElement>(null);
   const apply = (next: DesktopComputerSharing) => {
-    setState(next); setFolders(next.folders); setTerminal(next.terminal); setComputer(next.computer);
+    setState(next); setFolders(next.folders); setTerminal(next.terminal); setComputer(next.computer); setBotPermissions(next.botPermissions === true);
   };
   useEffect(() => {
     mounted.current = true;
@@ -62,6 +63,7 @@ export function ComputerSharingSettings({ workspace, own = false, onClose }: { w
       </div>}
       <fieldset disabled={busy || !state} className="flex flex-col gap-3 disabled:opacity-50">
         <legend className="mb-2 font-medium text-ink">{t("computerSharing.folders")}</legend>
+        {own && <label className="flex items-start gap-2" title={t("computerSharing.botPermissionsHint")}><input className="mt-1" type="checkbox" checked={botPermissions} onChange={event => setBotPermissions(event.target.checked)} /><span>{t("computerSharing.botPermissions")}</span></label>}
         {folders.length === 0 && <p className="text-[12px] text-ink-secondary">{t("computerSharing.noFolders")}</p>}
         {folders.map(folder => <div key={folder.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-hairline/40 p-3">
           <div className="min-w-0 flex-1"><p className="font-medium text-ink">{folder.name}</p><p className="break-all text-[12px] text-ink-secondary">{folder.path}</p></div>
@@ -81,8 +83,8 @@ export function ComputerSharingSettings({ workspace, own = false, onClose }: { w
       </fieldset>
       {(error || state?.error) && <p role="alert" className="text-[12px] text-danger">{error || state?.error}</p>}
       <div className="flex flex-wrap gap-2">
-        <button type="button" disabled={busy || !state || (!folders.length && !terminal && !computer)} onClick={() => void perform(async () => {
-          const next = await bridge.save(workspace.id, { folders, terminal, computer });
+        <button type="button" disabled={busy || !state || (!folders.length && !terminal && !computer && !botPermissions)} onClick={() => void perform(async () => {
+          const next = await bridge.save(workspace.id, { folders, terminal, computer, botPermissions });
           if (mounted.current && next) apply(next);
         })} className="rounded-lg bg-accent px-3 py-2 font-medium text-accent-ink disabled:opacity-50">{t(state?.enabled ? "computerSharing.save" : "computerSharing.share")}</button>
         {state?.enabled && <button type="button" disabled={busy} onClick={() => void perform(async () => {

@@ -22,6 +22,8 @@ export function createSharedComputerRoutes(deps: {
   cloudHomeLender: string | null;
   principal: (auth: RequestAuth) => string | null;
   personKey: (session: Pick<SessionRecord, "id" | "email">) => string;
+  /** Only an owner pairing on a personal server may delegate permissions to its bots. */
+  botPermissions?: (auth: RequestAuth) => boolean;
   /** A Cloud home that agreed to sleep sends the desktop away until it wakes (server/cloud-power.ts). */
   power: () => Pick<CloudPower, "sleeping" | "sleepSignal"> | null;
   /** A Cloud home's device links (a lent computer's internet connection); null elsewhere, where the path 404s. */
@@ -61,6 +63,8 @@ export function createSharedComputerRoutes(deps: {
       const parsed = sharedComputerRegistration.safeParse(body);
       if (!parsed.success) return json(res, 400, { error: "Invalid computer registration" });
       const registration = parsed.data;
+      if (registration.botPermissions && !deps.botPermissions?.(auth)) return json(res, 403, { error: "Bot-managed computer permissions require the server owner's connection." });
+      if (!registration.botPermissions && registration.folders.some(folder => folder.path !== undefined)) return json(res, 400, { error: "Folder paths require bot-managed computer permissions." });
       if (registration.environmentId !== deps.environmentId) return json(res, 409, { error: "Workspace identity changed. Pair again before sharing this computer." });
       if (deps.cloudHomeLender && !auth.scopes.includes("admin")) return json(res, 403, { error: "Only your own computers can be shared with the Cloud. On this computer, choose Open the Cloud in Settings → MausBot Cloud first." });
       deps.computers.register(registration, { session: auth.session.id, person: deps.cloudHomeLender ?? deps.personKey(auth.session) }, secret);

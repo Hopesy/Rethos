@@ -41,6 +41,8 @@ export interface EnvironmentDescriptor {
     longCommands?: true;
     /** A lent computer may say it takes edit_file, append_file and delete_file; only then does this server send them. */
     fileEdits?: true;
+    /** An own-server desktop may opt in to per-bot file permission decisions. */
+    botPermissions?: true;
     /** A lent computer may say it runs the MCP servers saved here that run on it (mcp_tools, mcp_call). Never a team Cloud. */
     lentMcp?: true;
     /** A person's own OMB Cloud home. */
@@ -159,7 +161,7 @@ export function serverInstall(env: NodeJS.ProcessEnv = process.env, script = pro
 
 /** What a server only its one owner signs in to takes from that owner's own desktop by default: told in the owner's own
  * /api/auth/session answer, never in the description anyone may read before pairing. */
-export const OWNER_LENDING = Object.freeze({ sharedComputers: true, lendingDetails: true, commandTimeouts: true, longCommands: true, fileEdits: true, lentMcp: true } as const);
+export const OWNER_LENDING = Object.freeze({ sharedComputers: true, lendingDetails: true, commandTimeouts: true, longCommands: true, fileEdits: true, lentMcp: true, botPermissions: true } as const);
 
 export function environmentDescriptor(input: { environmentId: string; desktopManaged: boolean; emailSignIn?: boolean; sharedComputers?: boolean; cloudHome?: boolean; cloudTeam?: boolean; ownHome?: boolean; label?: string }): EnvironmentDescriptor {
   return {

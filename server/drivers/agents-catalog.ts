@@ -203,16 +203,18 @@ const TOOL_DEFINITIONS = [
   },
   {
     name: "list_shared_computers",
-    description: "List online desktop computers explicitly shared with this workspace, and their allowed folders/capabilities. These are the user's computers, not this server. An offline or unshared computer cannot be accessed. Folder paths use opaque folder IDs and relative paths.",
+    description: "List connected desktop computers and their folders/capabilities. A computer with botPermissions follows this conversation's permission mode and accepts absolute paths on that computer. Other computers use folder IDs and relative paths. Use shared_computer for files, commands and desktop tools on the selected computer.",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
   },
   {
     name: "shared_computer",
-    description: "Use a desktop the user explicitly shared. Get computer_id and folder_id from list_shared_computers. File actions stay in chosen folders; paths are relative. read_file returns sha256, needed as expected_sha256 to overwrite or delete_file. edit_file swaps old_text (once) for new_text; append_file adds content. Binary files: base64 encoding. run_command requires a SEPARATE unrestricted terminal grant and stops after timeout_seconds (default 120, at most 900), returning what it printed so far: run longer jobs in the background with output to a file, then read it. computer_tools lists the native computer-control tools; computer_call invokes one with arguments and needs a SEPARATE computer-control grant. To browse there, open pages with launch_app urls (the person's own browser) and use get_window_state, click and type_text: the browser_* tools need a DevTools endpoint most browsers lack. Never substitute the server's filesystem when this desktop is offline. Actions are not retried: inspect an uncertain outcome before retrying.",
+    description: "Use a connected computer from list_shared_computers. On botPermissions computers, use absolute paths: approved folders are available directly, other directories raise the normal permission card, and Full access permits file reads/writes across the computer. list_files supports sort=modified, limit and offset; read_file supports tail, max_bytes and byte offset for large session logs, with file_id for continued reads. A complete read returns sha256 for expected_sha256 when overwriting or deleting. Other computers use folder_id and relative paths within their grants. edit_file replaces one old_text passage; append_file adds content. Binary files use base64. run_command uses the connected computer's terminal with timeout_seconds (default 120, maximum 900). computer_tools lists its desktop tools; computer_call invokes one. Use this computer's paths and inspect uncertain outcomes before retrying.",
     inputSchema: { type: "object", additionalProperties: false, properties: {
       computer_id: { type: "string" }, action: { type: "string", enum: ["list_files", "read_file", "write_file", "edit_file", "append_file", "delete_file", "run_command", "computer_tools", "computer_call"] },
       folder_id: { type: "string" }, path: { type: "string" }, content: { type: "string" }, encoding: { type: "string", enum: ["utf8", "base64"] }, expected_sha256: { type: "string" },
       old_text: { type: "string" }, new_text: { type: "string" },
+      offset: { type: "integer", minimum: 0 }, tail: { type: "boolean" }, max_bytes: { type: "integer", minimum: 4, maximum: 32768 }, file_id: { type: "string" },
+      limit: { type: "integer", minimum: 1, maximum: 100 }, sort: { type: "string", enum: ["name", "modified"] },
       command: { type: "string" }, timeout_seconds: { type: "integer", minimum: 1, maximum: 900 }, tool_name: { type: "string" }, arguments: { type: "object", additionalProperties: true },
     }, required: ["computer_id", "action"] },
   },

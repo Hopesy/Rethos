@@ -5,8 +5,8 @@ import type { SessionRecord } from "./sessions.ts";
 const hashed = (basis: string) => `p_${createHash("sha256").update(basis).digest("base64url").slice(0, 22)}`;
 
 /** Hashed, so a message or a thread can carry it without handing other members a session id. */
-export function personKey(session: Pick<SessionRecord, "id" | "email">): string {
-  return hashed(session.email ? `email:${session.email.trim().toLowerCase()}` : `session:${session.id}`);
+export function personKey(session: Pick<SessionRecord, "id" | "email" | "loginTokenId">): string {
+  return hashed(session.email ? `email:${session.email.trim().toLowerCase()}` : `session:${session.loginTokenId ?? session.id}`);
 }
 
 /** A person another app relays (the Slack worker's onBehalfOf): the key their own session would have, by email,
