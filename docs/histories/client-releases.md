@@ -1,5 +1,16 @@
 # 客户端发布记录
 
+### Windows 与 Android 0.1.162
+
+2026-11-16 已发布 [Rethos 0.1.162](https://github.com/Hopesy/Rethos/releases/tag/v0.1.162)，Windows、Android 和 VPS 均来自提交 `e0f01c55a7b17e370a84951aeee1ca29f91ec7ee`。本次统一具体电脑与工作目录、Bot/会话目标和按服务器管理的接入权限，并移除商业托管账号、购买、套餐、试用、Boat 执行器及相关后台入口。
+
+- [源码 CI](https://github.com/Hopesy/Rethos/actions/runs/43745559497) 的 40 项检查通过；[联合候选构建](https://github.com/Hopesy/Rethos/actions/runs/43745562476)通过 Windows 实际安装启动、原生电脑权限、Android 7 项模拟器操作和正式签名验证。Linux 打包桌面与三平台浏览器检查通过。
+- 五个公开文件已重新下载，GitHub 摘要与 SHA256SUMS 一致。Windows 内部版本为 0.1.162；APK 为 0.1.162 / 1162，原应用 ID 和签名证书保留，两个 Latest 下载入口指向本版本。Windows 安装程序为 267173222 字节、SHA256 `e6348e8539b4cdb0bc2a9dcb218516adcd964491139ff878d3f12ad6c5ca72f9`；APK 为 2006675 字节、SHA256 `1b1283630c803ccc354959e3e0504d37be7eb028738e1f30cb59e268a1c154a7`。
+- [发布镜像构建与验收](https://github.com/Hopesy/Rethos/actions/runs/43748751129)通过。VPS 已固定镜像 `ghcr.io/hopesy/rethos@sha256:4ff2de694a954136c282a322a77383659d08d34ebb78e3e585c15941aee4da70`，升级前配置与完整数据卷备份在 `/home/zhouhl/rethos-backups/rethos-before-clients-0.1.162-20261115-185434`。原 Token、6 个 Bot 的模型与权限、2 个定时任务的计划和启用状态、7 份记忆/角色文件摘要核对一致。
+- 本机连接器已备份升级，`zhouh` 沿用设备 ID `7a99cb9d-e93a-413b-805e-2d0a3154c726` 和连接凭据重新上线；三个会话目录保持预授权只读，终端、屏幕及跟随 Bot 权限保留。6 个 Bot 的工作位置 API 均提供该电脑；两个旧 MCP 保持移除。
+- 隔离浏览器覆盖具体电脑/目录保存、简易与高级模式、会话关闭/跟随、服务器暂停恢复和 390px 布局；原生连接器覆盖 Full/Ask、拒绝、Stop、设备隔离及撤销后的重启。补齐安装包资源、首次启动默认工作区、初始化顺序和遗留权限回调；浏览器历史测试及连接器权限测试消除主机缓存/内存容量假设，后者在 Windows 与 Linux 均 7/7 通过。
+- 发布与部署证据位于 `.Rethos-temp/release-0.1.162/`；功能验收位于 `.Rethos-temp/work-location/`、`.Rethos-temp/connected-computer/`。[完成计划](../exec-plans/completed/computer-access-and-commercial-removal.md)记录产品契约与验收范围。
+
 ### Windows 与 Android 0.1.161
 
 2026-11-15 已发布 [Rethos 0.1.161](https://github.com/Hopesy/Rethos/releases/tag/v0.1.161)，两端和 VPS 均来自提交 `e3d2b1b714c4a2c84612ca0e5d2829af7a19e0c6`。已连接电脑统一提供文件、终端和 CUA 桌面能力，本机与 VPS 复用同一套 Bot 权限规则；普通模式保留目录申请，完全访问模式按当前系统账号权限执行。

@@ -61,6 +61,14 @@ Their deterministic providers and synthetic desktop use no production chat or
 live screen mutations. Live deployment checks inspect computer registration
 and discover CUA tools read-only; file-write acceptance stays in the fixtures.
 
+## Deployment record, 2026-11-16
+
+Version 0.1.162 runs from source `e0f01c55a7b17e370a84951aeee1ca29f91ec7ee`, pinned to `ghcr.io/hopesy/rethos@sha256:4ff2de694a954136c282a322a77383659d08d34ebb78e3e585c15941aee4da70`. The complete pre-upgrade configuration and stopped data volume are backed up at `/home/zhouhl/rethos-backups/rethos-before-clients-0.1.162-20261115-185434`. Server and Caddy were recreated together, and public health, version and UI assets were checked afterward.
+
+The installed Windows connector was backed up and replaced from the same source. Computer `zhouh` kept its ID, secret, config and three read-only session folders. It reconnected with terminal, screen and per-bot permissions intact. All six bots can select that device through their work-target API. Original token access, six bot configurations, two routine schedules and enabled states, and seven memory/role file hashes matched the pre-upgrade snapshots. The old CUA/file MCP entries remain removed.
+
+Evidence: `.Rethos-temp/release-0.1.162/` contains `deployment.log`, `connector-upgrade.json`, `preservation-after.json`, `memory-after.json`, `computer-production.json`, `targets-production.json` and `web-production.json`. See the [release history](../histories/client-releases.md) for fixed-source CI and public-download verification.
+
 ## Deployment record, 2026-11-15
 
 The VPS runs the official 0.1.161 image from source
