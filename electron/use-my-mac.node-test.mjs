@@ -392,7 +392,7 @@ test("a grant kept from before lending was automatic becomes the automatic one, 
     assert.equal(state.home.connects.at(-1), last, "nothing else is lent on top");
   }
 });
-test("someone who had turned lending off starts Paused: no grant and no link after the sign-in changes or a restart, until Resume", async (t) => {
+test("saved Off survives sign-in, restart and Resume until the person renews its access", async (t) => {
   const state = await fixture(t, { myCloud: true });
   await mkdir(path.dirname(state.file), { recursive: true });
   await writeFile(state.file, JSON.stringify({ version: 1, records: { [env.id]: {
@@ -409,7 +409,10 @@ test("someone who had turned lending off starts Paused: no grant and no link aft
   assert.deepEqual([state.home.connects.length, state.sockets.made.length], [0, 0], "nothing is lent or dialled");
   assert.equal(again.paused(), true);
   await again.resume();
-  await until(() => again.cloudState(env).link === "on", "Resume to lend it");
+  assert.equal(again.cloudState(env).enabled, false);
+  assert.deepEqual([state.home.connects.length, state.sockets.made.length], [0, 0]);
+  await again.saveCloud(env, { folders: [], internet: true });
+  await until(() => again.cloudState(env).link === "on", "explicitly renewed access");
   const third = state.restart();
   third.start();
   assert.equal(third.paused(), false, "a Resume is kept: the old Off never pauses it again");

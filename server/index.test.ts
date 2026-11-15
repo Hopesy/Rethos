@@ -16,7 +16,7 @@ import {
   DhkemP256HkdfSha256,
   HkdfSha256,
 } from "@hpke/core";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import { removeTempDir, waitForExit } from "./testing/cleanup.ts";
@@ -1054,6 +1054,52 @@ afterAll(async () => {
 });
 
 describe("harness HTTP API", () => {
+  afterEach(async () => {
+    // One shared server and store: drain busy holds between tests so a leak fails in its own test, not the next one's 409.
+    const deadline = Date.now() + 15_000;
+    let stuck = { bots: [] as string[], groups: [] as string[], computers: [] as string[] };
+    while (Date.now() < deadline) {
+      const state = (await api("GET", "/api/bots?messages=0")).body;
+      // A bare interrupt reaches only the bot's default thread, so interrupt each busy task's thread explicitly.
+      const bots = state.bots as Array<{
+        id: string;
+        busy?: boolean;
+        tasks?: Array<{ threadId: string; busy?: boolean }>;
+      }>;
+      stuck = {
+        bots: bots.filter((bot) => bot.busy).map((bot) => bot.id),
+        groups: (state.groups as Array<{ id: string; busyBotId?: string | null }>)
+          .filter((group) => group.busyBotId).map((group) => group.id),
+        computers: Object.entries((state.computerControl ?? {}) as Record<string, { held?: boolean }>)
+          .filter(([, snapshot]) => snapshot?.held).map(([id]) => id),
+      };
+      if (!stuck.bots.length && !stuck.groups.length && !stuck.computers.length) break;
+      for (const id of stuck.groups) await api("POST", `/api/groups/${id}/interrupt`, {}).catch(() => undefined);
+      for (const id of stuck.bots) {
+        const busyThreads = bots.find((bot) => bot.id === id)?.tasks
+          ?.filter((task) => task.busy).map((task) => task.threadId) ?? [];
+        if (busyThreads.length) {
+          for (const threadId of busyThreads) {
+            await api("POST", `/api/bots/${id}/interrupt`, { threadId }).catch(() => undefined);
+          }
+        } else {
+          await api("POST", `/api/bots/${id}/interrupt`, {}).catch(() => undefined);
+        }
+      }
+      for (const id of stuck.computers) await api("POST", `/api/bots/${id}/computer/control`, { action: "release" }).catch(() => undefined);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    if (stuck.bots.length || stuck.groups.length || stuck.computers.length) {
+      throw new Error(
+        "leaked busy holds past this test (drain timed out): " +
+        `bots=[${stuck.bots.join(", ")}] groups=[${stuck.groups.join(", ")}] computers=[${stuck.computers.join(", ")}]`,
+      );
+    }
+    // The same 409s defeat the finally blocks that reset config, so scrub a leftover pasted token here too.
+    const config = (await api("GET", "/api/config")).body;
+    if (config.vps?.configured) await api("PUT", "/api/config", { vps: { sshAlias: "" } }).catch(() => undefined);
+  });
+
 
   it("restores a live unanswered provider question after a server restart", async () => {
     const isolatedHome = mkdtempSync(join(tmpdir(), "omb-question-restart-"));

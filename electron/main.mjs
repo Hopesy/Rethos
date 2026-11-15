@@ -407,6 +407,10 @@ import { CREDENTIAL_PATCH, credentialSaveError } from "./credential-patch.mjs";
 /** Second wall after preload's reduced bridge: computer-controlling IPC answers only the local server's UI.
  * Declared before any handler registration (temporal dead zone). */
 const { isLocalSender: senderIsLocal, localOnly, localOnlySync, setLocalOrigin } = localOriginModule;
+const workspaceOnly = (handler) => (event, ...args) => {
+  if (!workspaceSenderAllowed(event, mainWindow?.webContents, environmentsState, rendererOrigin())) throw new Error("These controls are only available in the main desktop window");
+  return handler(event, ...args);
+};
 /** This computer's page, or My Cloud's own page once it is home (home-window.mjs). */
 const localOrHome = (channel, handler) => workspaceOnly(handler);
 
@@ -1814,10 +1818,6 @@ ipcMain.handle("desktop-remote:disconnect", localOnly("desktop-remote:disconnect
   return { active: false };
 }));
 
-const workspaceOnly = (handler) => (event, ...args) => {
-  if (!workspaceSenderAllowed(event, mainWindow?.webContents, environmentsState, rendererOrigin())) throw new Error("These controls are only available in the main desktop window");
-  return handler(event, ...args);
-};
 const localWorkspaceOnly = (channel, handler) => localOnly(channel, workspaceOnly(handler));
 const updaterPageAllowed = event => workspaceSenderAllowed(event, mainWindow?.webContents, environmentsState, rendererOrigin());
 const updaterPageOffered = updaterPageAllowed;
