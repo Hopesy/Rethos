@@ -63,10 +63,12 @@ and discover CUA tools read-only; file-write acceptance stays in the fixtures.
 
 ## Deployment record, 2026-11-15
 
-The VPS runs image `rethos-native-computer:20261115`, based on its previous
-0.1.160 runtime, with the built server and UI. Compose's override selects the
-image. The previous override is backed up as
-`/home/zhouhl/rethos/compose.override.yaml.before-native-20261115T065603Z`.
+The VPS runs the official 0.1.161 image from source
+`e3d2b1b714c4a2c84612ca0e5d2829af7a19e0c6`, pinned to multi-platform digest
+`sha256:54fa5c6a610abcf14d582b6d495fe51ac4a1bd2bf1010e6438da98172e1cd9b7`.
+Both the environment and Compose override select that image. The previous
+configuration and complete data volume are backed up in
+`/home/zhouhl/rethos-backups/rethos-before-clients-0.1.161-20261115-091930`.
 Caddy shares the server's network namespace: recreating the server requires
 recreating Caddy as well. The public health endpoint returned 200 afterward.
 
@@ -88,6 +90,14 @@ under the same evidence directory. The six existing bots reported Full access.
 Removal verification is recorded in `native/mcp-removal.json`: neither old
 entry remains, and the same native computer remains online with its three
 default folders, terminal and screen capabilities.
+
+The official release retained the same computer ID and reconnected it
+automatically after the server restart. Post-deployment checks confirmed
+version 0.1.161, all six bot configurations, both routine schedules and enabled
+states, the original access token, three read-only folders and the removal of
+both old MCP entries. Evidence is in
+`.Rethos-temp/release-0.1.161/computer-production.json`,
+`preservation-after.json`, `web-production.json` and `deployment.log`.
 
 Regression results: 66 file/permission/session/environment tests, 103 catalog
 and native-connection tests, and 46 desktop tests passed, with 2 platform skips.
