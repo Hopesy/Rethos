@@ -83,7 +83,10 @@ async function agentsFor(start: () => Promise<void>, botId: string, threadId?: s
       if (env?.OMB_BOT_ID === botId && (!threadId || env.OMB_THREAD_ID === threadId)) { turn = found; return true; }
     }
     return false;
-  }, { timeout: 15_000 }).toBe(true);
+  }, { timeout: 15_000 }).toBe(true).catch(async cause => {
+    const messages = threadId ? (await api("GET", `/api/threads/${threadId}/messages`, { token: owner })).body.messages : [];
+    throw new Error(`Engine turn was not observed. Messages: ${JSON.stringify(messages?.slice(-6))}\nServer: ${log.slice(-8_000)}`, { cause });
+  });
   return turn.mcpConfig.mcpServers.agents;
 }
 
@@ -116,6 +119,7 @@ beforeAll(async () => {
   home = mkdtempSync(join(tmpdir(), "omb-cloud-lending-"));
   const dataDir = join(home, ".openmausbot");
   mkdirSync(dataDir, { recursive: true });
+  writeFileSync(join(dataDir, "host-memory.json"), JSON.stringify({ totalBytes: 64 * 1024 ** 3, availableBytes: 48 * 1024 ** 3, swapFreeBytes: 0, oomKills: 0, fullStall10: 0 }));
   mkdirSync(turnDumps());
   const cli = join(home, "fixture-claude.mjs");
   writeFileSync(cli, `#!/usr/bin/env node
@@ -143,12 +147,15 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
 let port = 0;
 async function boot() {
   const dataDir = join(home, ".openmausbot");
+  const memoryFixture = process.platform === "linux";
+  const memoryImports = memoryFixture ? ["--import", pathToFileURL(join(SERVER_DIR, "testing", "memory-gate-hooks.mjs")).href] : [];
   const offlinePrelude = `data:text/javascript,${encodeURIComponent('const real = globalThis.fetch; globalThis.fetch = async (url, init) => String(url).startsWith("http://127.0.0.1:") ? real(url, init) : new Response("offline fixture", { status: 503 });')}`;
-  child = spawn(process.execPath, ["--import", offlinePrelude, join(SERVER_DIR, "index.ts")], {
+  child = spawn(process.execPath, ["--import", offlinePrelude, ...memoryImports, join(SERVER_DIR, "index.ts")], {
     cwd: join(SERVER_DIR, ".."),
     env: {
       PATH: process.env.PATH, ...(process.env.SystemRoot ? { SystemRoot: process.env.SystemRoot } : {}),
-      HOME: home, USERPROFILE: home, OMB_DATA_DIR: dataDir, OMB_PORT: String(port), OMB_WEBHOOK_PORT: String(port + 1),
+      HOME: memoryFixture ? dataDir : home, USERPROFILE: memoryFixture ? dataDir : home, OMB_DATA_DIR: dataDir,
+      ...(memoryFixture ? { OMB_TEST_MEMORY_GATE: "1" } : {}), OMB_PORT: String(port), OMB_WEBHOOK_PORT: String(port + 1),
       OMB_CLOUD_ROLE: "home", OMB_CLOUD_MACHINE_ID: "3f9c2a4e-8b1d-4c6e-9a7f-2d5e8c1b0a93", OMB_CLOUD_ADMIN_URL: "https://cloud.example.test",
       OMB_CLOUD_BOOTSTRAP_SECRET: secret, OMB_PUBLIC_URL: `https://${HOST}`,
     },
