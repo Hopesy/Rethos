@@ -61,6 +61,21 @@ test("a goodbye that fails doesn't hold the sign-out up", async (t) => {
   assert.equal(await settledYet(f.sharing.goodbyesDone()), true);
 });
 
+test("renewed access waits for its previous disconnect before reconnecting the same device", async t => {
+  const f = await fixture(t);
+  await f.sharing.saveCloud(f.env, { folders: [], internet: true });
+  await until(() => f.polls > 0, "the lent connection");
+  const id = f.sharing.lentToCloud(f.env).lendingId;
+  f.hold = true;
+  f.sharing.revoke(f.env);
+  const renewed = f.sharing.saveCloud(f.env, { folders: [], internet: true });
+  assert.equal(await settledYet(renewed), false);
+  f.answer.resolve();
+  await renewed;
+  await until(() => f.polls > 1, "the renewed connection");
+  assert.equal(f.sharing.lentToCloud(f.env).lendingId, id);
+});
+
 test("a lending pass under way is waited for too, since its end is what stops the asks' long poll", async (t) => {
   const screen = Promise.withResolvers();
   let held = false;

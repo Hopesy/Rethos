@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { createServer } from "node:http";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -161,7 +160,7 @@ it("queues reports that find the Chief's incidents thread busy, answers them tog
   try {
     // The Chief works on a cloud computer this home has no Boat key for.
     const chief = (await control(["new-bot", "--name", "Clive", "--section", "Ops"])).bot;
-    await api("PATCH", `/api/bots/${chief.id}`, { chiefOfStaff: true, computer: "cloud" });
+    await api("PATCH", `/api/bots/${chief.id}`, { chiefOfStaff: true, computer: "cloud", cloudBackend: "vps" });
     const ada = (await control(["new-bot", "--name", "Ada", "--section", "Ops"])).bot;
     const ben = (await control(["new-bot", "--name", "Ben", "--section", "Ops"])).bot;
     const cara = (await control(["new-bot", "--name", "Cara", "--section", "Ops"])).bot;
@@ -173,7 +172,7 @@ it("queues reports that find the Chief's incidents thread busy, answers them tog
     expect(JSON.stringify(first.prompt)).toContain("Ada's run in its thread #Reconcile the September invoices. failed");
     expect(Object.keys(first.mcpConfig.mcpServers)).toContain("agents");
     expect(Object.keys(first.mcpConfig.mcpServers)).not.toContain("computer");
-    expect(first.systemPrompt).toContain("This turn answers a Team incidents report and the managed computer could not be prepared for it (Bots here can get their own cloud desktops from Boat, a paid service.");
+    expect(first.systemPrompt).toContain("This turn answers a Team incidents report and the managed computer could not be prepared for it");
     expect(first.systemPrompt).toContain("independently mounted MCP tools keep their own targets and permissions");
 
     const failsWhileBusy = async (bot: { id: string; activeTaskId: string }, name: string, request: string) => {
@@ -214,7 +213,7 @@ it("reviews the work it handed on from a report without the Chief's computer, ev
   try {
     // The Chief's Works-on computer cannot start here.
     const chief = (await control(["new-bot", "--name", "Clive", "--section", "Ops"])).bot;
-    await api("PATCH", `/api/bots/${chief.id}`, { chiefOfStaff: true, computer: "cloud" });
+    await api("PATCH", `/api/bots/${chief.id}`, { chiefOfStaff: true, computer: "cloud", cloudBackend: "vps" });
     const ada = (await control(["new-bot", "--name", "Ada", "--section", "Ops"])).bot;
     const cara = (await control(["new-bot", "--name", "Cara", "--section", "Ops"])).bot;
     await useCli(`thread === ${JSON.stringify(ada.activeTaskId)} ? "exit-early" : "slow"`);
@@ -228,8 +227,8 @@ it("reviews the work it handed on from a report without the Chief's computer, ev
     await turnEnded(chief.id, incidents);
 
     await control(["send", "--bot", chief.id, "--task", incidents, "--text", "Any update on the invoices?"]);
-    await expect.poll(async () => (await messages(incidents)).some((m) => m.kind === "activity" && /Connect your Boat account/.test(m.tool?.name ?? "")), { timeout: 20_000 }).toBe(true);
-    const refusals = (await messages(incidents)).filter((m) => m.kind === "activity" && /Connect your Boat account/.test(m.tool?.name ?? "")).length;
+    await expect.poll(async () => (await messages(incidents)).some((m) => m.kind === "activity" && /VPS/.test(m.tool?.name ?? "")), { timeout: 20_000 }).toBe(true);
+    const refusals = (await messages(incidents)).filter((m) => m.kind === "activity" && /VPS/.test(m.tool?.name ?? "")).length;
 
     writeFileSync(file(caraThread, "gate"), "finish");
     await expect.poll(async () => (await messages(incidents)).some((m) =>
@@ -240,117 +239,12 @@ it("reviews the work it handed on from a report without the Chief's computer, ev
     expect(review.systemPrompt).toContain("This turn answers a Team incidents report and the managed computer could not be prepared for it");
     expect((await control(["wait", "--bot", chief.id, "--task", incidents, "--timeout", "30"])).status).toBe("settled");
     const lines = await messages(incidents);
-    expect(lines.filter((m) => m.kind === "activity" && /Connect your Boat account/.test(m.tool?.name ?? "")).length).toBe(refusals);
+    expect(lines.filter((m) => m.kind === "activity" && /VPS/.test(m.tool?.name ?? "")).length).toBe(refusals);
     expect(lines.some((m) => /could not reach/.test(m.tool?.name ?? ""))).toBe(false);
     const reviewReply = lines.findLast((m) => m.role === "bot" && m.kind === "text" && m.turnTerminal);
     expect(lines.indexOf(reviewReply)).toBeGreaterThan(lines.findIndex((m) => m.tool?.name === "Resumed with Cara results, reviewing"));
   } finally {
     await close();
-  }
-}, 150_000);
-
-it("keeps the team computer for a report turn, and reports a run that reaches for one that has gone missing", async () => {
-  // A loopback Boat: the team computer is created, then disappears; one listing can be held open.
-  const boxes: Array<{ id: string; name: string; state: string }> = [];
-  let gone = false;
-  let hold: { held?: () => void; release?: Promise<void> } | null = null;
-  const upstream = createServer(async (req, res) => {
-    const path = new URL(req.url ?? "/", "http://fixture").pathname;
-    let raw = ""; for await (const part of req) raw += part;
-    const body = raw ? JSON.parse(raw) : {};
-    res.setHeader("content-type", "application/json");
-    if (path === "/sandboxes" && req.method === "GET" && hold?.release) {
-      const { held, release } = hold;
-      hold = null;
-      held?.();
-      await release;
-    }
-    if (path === "/sandboxes" && req.method === "POST") {
-      const box = { id: `bx_${boxes.length + 23456789}`, name: body.name, state: "idle" };
-      boxes.push(box);
-      return res.end(JSON.stringify({ sandbox: box }));
-    }
-    if (path === "/sandboxes") return res.end(JSON.stringify({ sandboxes: gone ? [] : boxes }));
-    if (path.endsWith("/desktop")) return res.end(JSON.stringify({ desktopUrl: "https://desktop.fixture.invalid" }));
-    const box = gone ? undefined : boxes.find((row) => path === `/sandboxes/${row.id}`);
-    if (box) {
-      if (req.method === "PATCH" && typeof body.name === "string") box.name = body.name;
-      return res.end(JSON.stringify({ sandbox: box }));
-    }
-    res.statusCode = 404;
-    res.end("{}");
-  });
-  await new Promise<void>((resolve) => upstream.listen(0, "127.0.0.1", resolve));
-  const address = upstream.address();
-  if (!address || typeof address === "string") throw new Error("fixture failed to bind");
-  const { api, control, file, dump, messages, useCli, incidentsThread, close } = await launch(`http://127.0.0.1:${address.port}`);
-  try {
-    // Everyone on Auto inherits the Ops team's shared computer, except Ben, set to Off.
-    const chief = (await control(["new-bot", "--name", "Clive", "--section", "Ops"])).bot;
-    await api("PATCH", `/api/bots/${chief.id}`, { chiefOfStaff: true });
-    const bot = async (name: string) => (await control(["new-bot", "--name", name, "--section", "Ops"])).bot as { id: string; activeTaskId: string };
-    const team = { ada: await bot("Ada"), ben: await bot("Ben"), cara: await bot("Cara"), dan: await bot("Dan") };
-    await api("PATCH", `/api/bots/${team.ben.id}`, { computer: "off" });
-    await useCli(`${JSON.stringify([team.ada.activeTaskId, team.ben.activeTaskId])}.includes(thread) ? "exit-early" : "slow"`);
-    const requestId = randomUUID();
-    await api("POST", "/api/team-computers", { requestId, name: "Ops desktop", acknowledgeCost: true }, undefined, 201);
-    await api("PATCH", `/api/team-computers/${requestId}`, { section: "Ops", acknowledgeSharedAccess: true });
-    const reportRan = (pattern: string) => expect.poll(async () => JSON.stringify((await dump(incidents)).prompt), { timeout: 20_000 }).toContain(pattern);
-    let incidents = "";
-
-    await control(["send", "--bot", team.ada.id, "--text", "Reconcile the September invoices."]);
-    incidents = (await incidentsThread(chief.id)).threadId;
-    const first = await dump(incidents);
-    expect(JSON.stringify(first.prompt)).toContain("Ada's run in its thread #Reconcile the September invoices. failed");
-    expect(Object.keys(first.mcpConfig.mcpServers)).toContain("computer");
-    expect(first.systemPrompt).toContain("Your team shares the cloud computer");
-    expect(first.systemPrompt).not.toContain("could not be prepared");
-    writeFileSync(file(incidents, "gate"), "finish");
-    expect((await control(["wait", "--bot", chief.id, "--task", incidents, "--timeout", "30"])).status).toBe("settled");
-
-    let releaseListing = () => {};
-    const listingHeld = new Promise<void>((resolve) => {
-      hold = { held: resolve, release: new Promise<void>((done) => { releaseListing = done; }) };
-    });
-    const changing = api("PUT", "/api/config", { box: { token: "box_rotated_fixture" } });
-    await listingHeld;
-    await control(["send", "--bot", team.ben.id, "--text", "Draft the vendor letter."]);
-    await reportRan("Ben's run in its thread #Draft the vendor letter. failed");
-    const duringChange = await dump(incidents);
-    expect(Object.keys(duringChange.mcpConfig.mcpServers)).not.toContain("computer");
-    expect(duringChange.systemPrompt).toContain("the managed computer could not be prepared for it (Boat account settings are being updated");
-    expect((await control(["wait", "--bot", chief.id, "--task", incidents, "--timeout", "30"])).status).toBe("settled");
-    releaseListing();
-    await changing;
-
-    gone = true;
-    rmSync(file(incidents, "gate"));
-    // A turn runs without the computer until it reaches for it, which is when a missing one stops it.
-    const reachForComputer = async (threadId: string) => {
-      const env = (await dump(threadId)).mcpConfig.mcpServers.computer.env;
-      await fetch(`${env.OMB_HARNESS_URL}/api/internal/computer/mcp`, {
-        method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${env.OMB_MCP_TOKEN_COMPUTER}` },
-        body: JSON.stringify({ method: "tools/call", params: { name: "screenshot", arguments: {} } }),
-      });
-    };
-    await control(["send", "--bot", team.cara.id, "--text", "File the expense report."]);
-    await reachForComputer(team.cara.activeTaskId);
-    await expect.poll(async () => (await messages(incidents)).some((m) =>
-      m.kind === "activity" && /^Cara hit a problem: its run in its thread #File the expense report\. could not start: .*cloud computer is missing/.test(m.tool?.name ?? ""),
-    ), { timeout: 20_000 }).toBe(true);
-    await reportRan("Cara's run in its thread #File the expense report. could not start");
-    await control(["send", "--bot", team.dan.id, "--text", "Book the venue."]);
-    await reachForComputer(team.dan.activeTaskId);
-    await expect.poll(async () => (await messages(team.dan.activeTaskId)).some((m) => /cloud computer is missing/.test(m.tool?.name ?? "")), { timeout: 20_000 }).toBe(true);
-    expect((await messages(team.dan.activeTaskId)).some((m) => /Waiting for its turn/.test(m.tool?.name ?? ""))).toBe(false);
-    writeFileSync(file(incidents, "gate"), "finish");
-    await reportRan("Dan's run in its thread #Book the venue. could not start");
-    expect((await control(["wait", "--bot", chief.id, "--task", incidents, "--timeout", "30"])).status).toBe("settled");
-    expect((await messages(incidents)).some((m) => /could not reach|error:/.test(m.tool?.name ?? ""))).toBe(false);
-  } finally {
-    await close();
-    upstream.closeAllConnections();
-    await new Promise<void>((resolve) => upstream.close(() => resolve()));
   }
 }, 150_000);
 
@@ -363,7 +257,7 @@ it("adds no push for answering reports that waited, about failures the person al
     const team: Array<{ id: string; activeTaskId: string }> = [];
     for (const name of ["Ada", "Ben", "Cara"]) {
       const bot = (await control(["new-bot", "--name", name, "--section", "Ops"])).bot;
-      await api("PATCH", `/api/bots/${bot.id}`, { computer: "cloud" });
+      await api("PATCH", `/api/bots/${bot.id}`, { computer: "cloud", cloudBackend: "vps" });
       team.push(bot);
     }
     await useCli('"slow"');
@@ -407,7 +301,7 @@ it("keeps a report that waited quiet through the work it hands on, when the pers
     const chief = (await control(["new-bot", "--name", "Clive", "--section", "Ops"])).bot;
     await api("PATCH", `/api/bots/${chief.id}`, { chiefOfStaff: true });
     const ben = (await control(["new-bot", "--name", "Ben", "--section", "Ops"])).bot;
-    await api("PATCH", `/api/bots/${ben.id}`, { computer: "cloud" });
+    await api("PATCH", `/api/bots/${ben.id}`, { computer: "cloud", cloudBackend: "vps" });
     const dan = (await control(["new-bot", "--name", "Dan", "--section", "Ops"])).bot;
     await useCli('"slow"');
     const watch = await pushes();

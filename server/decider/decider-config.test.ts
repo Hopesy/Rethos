@@ -36,14 +36,14 @@ describe("decider config", () => {
     expect(childEnv).toEqual({ PATH: "/usr/bin" });
   });
 
-  it("on Cloud Pro, a key in the environment is the person's own and wins over the included decisions", async () => {
+  it("ignores retired included credentials and uses a configured environment key", async () => {
     const relay = "https://cloud.example.test/api/cloud/services/decider";
     vi.stubEnv("OMB_CLOUD_DECIDER_URL", relay);
     vi.stubEnv("OMB_CLOUD_DECIDER_TOKEN", "omb_decide_included");
     try {
       const fetchImpl = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ answers: { answer: { type: "noul", noul: 0.9 } } })));
       const decider = createDecider({ config: loadConfig, fetch: fetchImpl });
-      expect(describeDecider(loadConfig())).toMatchObject({ configured: true, included: true, enabled: true });
+      expect(describeDecider(loadConfig())).toMatchObject({ configured: false, enabled: false });
       await decider.testKey();
       // the desktop hands the saved key over as env: now it is the one in use
       process.env.OMB_JEV_API_KEY = KEY;
@@ -51,7 +51,7 @@ describe("decider config", () => {
       expect(describeDecider(loadConfig())).toEqual({ provider: "jev", configured: true, enabled: true, jobs: { roomRouting: true } });
       await decider.testKey();
       const calls = fetchImpl.mock.calls.map(([url, init]) => [String(url), (init!.headers as Record<string, string>).authorization]);
-      expect(calls).toEqual([[`${relay}/v1/systemone`, "Bearer omb_decide_included"], ["https://api.typesafe.ai/v1/systemone", `Bearer ${KEY}`]]);
+      expect(calls).toEqual([["https://api.typesafe.ai/v1/systemone", `Bearer ${KEY}`]]);
       expect(readFileSync(join(DATA_DIR, "config.json"), "utf8")).not.toContain("omb_decide_included");
     } finally {
       vi.unstubAllEnvs();

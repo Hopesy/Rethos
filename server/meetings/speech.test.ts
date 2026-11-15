@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
-import { GROQ_API, OPENAI_API, RELAY_ROTATE_MS, speechSource, SpeechRefusal } from "./speech.ts";
+import { GROQ_API, OPENAI_API, speechSource } from "./speech.ts";
 
 const CLOUD = { OMB_CLOUD_VOICE_URL: "https://admin.example.test/api/cloud/services/voice/v1", OMB_CLOUD_VOICE_TOKEN: "omb_voice_relay_token" };
 const ALL_KEYS = { tts: { key: "sk_eleven" }, groq: { key: "gsk_groq" }, openai: { key: "sk-openai" } };
 
 describe("which speech-to-text a meeting uses", () => {
-  it("uses the hosted key only on a Cloud, through its relay, whatever keys the person also has", () => {
-    expect(speechSource(ALL_KEYS, {}, fetch, CLOUD).kind).toBe("relay");
-    expect(speechSource({}, {}, fetch, CLOUD).kind).toBe("relay");
+  it("ignores retired hosted credentials and uses only the configured providers", () => {
+    expect(speechSource(ALL_KEYS, {}, fetch, CLOUD).kind).toBe("eleven");
+    expect(speechSource({}, {}, fetch, CLOUD).kind).toBe("whisper");
   });
 
   it("uses the person's own keys elsewhere: ElevenLabs, then Groq, then OpenAI, then Whisper on the computer", () => {
@@ -19,21 +19,6 @@ describe("which speech-to-text a meeting uses", () => {
 
   it("uses Whisper on the computer when the person asks for it, on a Cloud too", () => {
     expect(speechSource(ALL_KEYS, { local: true }, fetch, CLOUD).kind).toBe("whisper");
-  });
-
-  it("asks the relay for a single-use token with the relay token, and says plainly when the allowance is used up", async () => {
-    const fetchImpl = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
-      expect(String(url)).toBe(`${CLOUD.OMB_CLOUD_VOICE_URL}/single-use-token/realtime_scribe`);
-      expect(new Headers(init?.headers).get("xi-api-key")).toBe(CLOUD.OMB_CLOUD_VOICE_TOKEN);
-      return Response.json({ token: "sutkn_1" });
-    }) as unknown as typeof fetch;
-    const relay = speechSource({}, {}, fetchImpl, CLOUD);
-    if (relay.kind !== "relay") throw new Error("expected the relay");
-    expect(await relay.grant()).toEqual({ kind: "eleven", token: "sutkn_1", rotateMs: RELAY_ROTATE_MS });
-    const used = "Your Pro voice allowance for November, which meeting transcription also uses, is used up. It resets on 1 December.";
-    const refusing = speechSource({}, {}, (async () => Response.json({ detail: { status: "quota_exceeded", message: used } }, { status: 429 })) as unknown as typeof fetch, CLOUD);
-    if (refusing.kind !== "relay") throw new Error("expected the relay");
-    await expect(refusing.grant()).rejects.toThrow(new SpeechRefusal(used));
   });
 
   it("transcribes with Groq or OpenAI from this server, words in milliseconds, segments when there are no words", async () => {

@@ -163,9 +163,7 @@ against isolated servers and renderer fixtures.
 The [loading screen and tray smoke](startup-tray.md) checks the startup close
 button, hidden handoff, tray restore, and Quit in a disposable Electron profile.
 
-The [rail of Clouds](cloud-rail.md) checks the session's list of Clouds, which
-pages may read the rail, opening a place by its id, hiding the rail, and buying
-another Cloud, with a loopback Admin and the real app in a disposable preview.
+The [saved server rail](cloud-rail.md) checks navigation between this computer and self-hosted servers, using isolated fixtures.
 
 The [embedded server recovery smoke](desktop-server-recovery.md) crashes real
 Electron-owned fixture servers, verifies bounded recovery and private access,

@@ -174,16 +174,3 @@ it("a connected-app tool is refused from the moment the rule lands, mid-turn, an
   expect(callsBy()).toBe(before + 1);
   expect(words).toMatch(/Acme does not allow bots to use Gmail\. Ask a team admin\./);
 }, hostTimeout(120_000));
-
-it("a computer it has not claimed yet is refused from the moment the rule lands: the turn stops there, in the rule's words", async () => {
-  const refusal = "Acme does not allow bots to use cloud computers. Ask a team admin.";
-  expect((await team.as(owner, "PATCH", `/api/bots/${botId}`, { computer: "cloud" })).status).toBe(200);
-  try {
-    const { launched, words } = await ruleLandsMidTurn({ allowedComputers: ["vps"] }, [WAIT, { name: "screenshot", server: "computer", input: {} }], "uses a computer", { ended: refusal });
-    expect(Object.keys(launched.mcpConfig?.mcpServers ?? {})).toContain("computer");
-    expect(words).not.toMatch(/didn't start/);
-    expect(words).not.toContain(FINISHED);
-  } finally {
-    expect((await team.as(owner, "PATCH", `/api/bots/${botId}`, { computer: null })).status).toBe(200);
-  }
-}, hostTimeout(120_000));

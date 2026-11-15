@@ -7,7 +7,7 @@ import { parseToolScope, toolScopeWidens } from "../shared/tool-scope.ts"; impor
 import { reorderStable } from "../shared/bot-order.ts"; import { trimOutboundPolicy } from "../shared/outbound.ts";
 import { botOwner, chiefConflict, chiefScope, ownerEmail } from "../shared/bot-owner.ts";
 import { ensureSections, readSections, changeEmptySection } from "./section-context.ts";
-import { botWorkTargetPatch, taskWorkTargetPatch, migrateWorkTargets, resolveWorkTarget, type WorkTarget } from "../shared/work-target.ts";
+import { automaticWorkTargetsToClear, botWorkTargetPatch, taskWorkTargetPatch, legacyWorkTarget, migrateWorkTargets, resolveWorkTarget, type WorkTarget } from "../shared/work-target.ts";
 import { removeBotFolder, soulFile, soulHash, writeSoulMirror } from "./bot-folder.ts";
 import type { BotProfilePatch } from "./bot-profile.ts";
 import { peerAllowKey, type PeerAction } from "./peer-approval-key.ts";
@@ -1544,7 +1544,10 @@ export class Store {
   setBotWorkTarget(id: string, workTarget: WorkTarget): BotRecord | null {
     const bot = this.bot(id);
     if (!bot) return null;
-    commitRegistryChange(bot, "bots.json", "set work location", () => this.saveBots(), () => Object.assign(bot, botWorkTargetPatch(bot, { workTarget })));
+    commitRegistryChange(bot, "bots.json", "set work location", () => this.saveBots(), () => {
+      Object.assign(bot, botWorkTargetPatch(bot, { workTarget }));
+      for (const task of automaticWorkTargetsToClear(bot, workTarget)) Object.assign(task, { workTarget: undefined, surface: undefined, surfaceSource: undefined });
+    });
     this.emit({ type: "bot", botId: id });
     return bot;
   }
@@ -2085,13 +2088,10 @@ export class Store {
 
   clearAutoSurfacePins(botId: string, destination: Destination): number {
     const bot = this.bot(botId);
-    const stale = bot?.tasks?.filter((task) => task.surface !== undefined && task.surfaceSource === "auto" && task.surface !== destination) ?? [];
+    const stale = bot ? automaticWorkTargetsToClear(bot, legacyWorkTarget({ computer: destination, cloudBackend: bot.cloudBackend })) : [];
     if (!bot || !stale.length) return 0;
     this.commitBotChange(bot, "the threads' destinations", () => {
-      for (const task of stale) {
-        task.surface = undefined;
-        task.surfaceSource = undefined;
-      }
+      for (const task of stale) Object.assign(task, { workTarget: undefined, surface: undefined, surfaceSource: undefined });
     });
     this.emit({ type: "bot", botId });
     return stale.length;

@@ -162,57 +162,6 @@ environment; the Boat credential stays in the harness, and the agent process
 holds only a turn-scoped capability that ends with the turn. Tests use
 synthetic image bytes, not a paid Boat account or real desktop input.
 
-## Text-only model connections
+## Scheduled computer work
 
-Tool support is enabled by default for these three API drivers. For a model
-or endpoint that supports only ordinary chat, disable tools explicitly on its
-provider instance using the existing instance settings route:
-
-```http
-PATCH /api/instances/ID
-Content-Type: application/json
-
-{"tools": false}
-```
-
-Use the exact instance ID from `pnpm control:omb models --url URL`, and direct
-the request only to that explicitly selected server. The route accepts this
-setting for OpenAI-compatible, Grok API, and MiniMax API instances, refuses
-changes while the instance is busy, and stores `config.tools` on that instance.
-Set `tools` back to `true` to enable discovery and execution. This affects all
-bots using the instance; use separate configured instances for models with
-different tool support. Configured MCP tools are never silently disabled.
-An otherwise plain turn initially offers the built-in question tool; only an
-explicit unsupported-tools HTTP 400/422 rejection permits one retry without
-that optional tool. Authentication, schema and network failures do not trigger
-this downgrade, nor does a response after any tool call. The next turn offers
-questions again. No fallback replays a requested operation without its tools.
-When a provider refuses a tool call (Groq's `tool_use_failed`, mid-stream or
-as HTTP 400: a tool the model was not given, or arguments that miss the
-schema), nothing ran, so the same request is sent again, up to three attempts
-in all, each shown as a retrying row. Once answer text has streamed the refusal
-ends the turn instead, so one reply never joins two attempts. A turn that runs
-out of attempts says in plain words what happened and what to do next,
-followed by the provider's message. With no earlier tool call in the turn,
-nothing ran and the chat's Retry sends it again; after earlier calls ran, it
-asks only for what's left, since a Retry of the whole request would repeat
-them. A resend never repeats an earlier call: its result is already in the
-request.
-Each refusal's full error object, `failed_generation` included, is written to
-the thread's redacted native log (`native/THREAD.ndjson` in the data
-directory), next to the tool names every request offered.
-
-Cloud routine readiness uses the executing bot’s selected runner (including a
-thread’s model override at dispatch), rather than any available cloud engine.
-The probe checks the bot-owned or inherited team Boat without provisioning or
-waking it. Dispatch repeats the check so a removed key or unavailable Boat fails
-the run before model execution. Explicit Cloud still permits creating/waking
-the bot’s own Boat; a missing assigned team computer requires explicit repair.
-
-Run `pnpm exec vitest run server/routine-requests.test.ts server/openai-boat.e2e.test.ts`
-for target selection and the isolated direct/group/scheduled bridge fixture,
-including credentials removed after scheduling and a Boat outage at dispatch.
-The fixture also holds the Boat readiness response: the execution stays busy,
-`wait` cannot report it settled, and Stop prevents dispatch when the response
-arrives. Readiness is part of generation-owned setup, not an untracked wait
-before turn admission.
+Routines use the bot's configured work target and model. Retired commercial desktop runs stay disabled until the person reviews their target. Verify private VPS routing with `server/vps-routing.test.ts`, routine input with `server/routine-requests.test.ts`, and migration with `server/retired-computer-config.test.ts`. Connected-device routing and cancellation use the [connected-computer fixture](connected-computer.md).

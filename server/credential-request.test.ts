@@ -66,13 +66,13 @@ describe("credential request allowlist", () => {
     expect(credentialIsConfigured({ tts: { key: "" } }, "ttsKey")).toBe(false);
     expect(credentialIsConfigured({ tts: { fishKey: "secret" } }, "fishAudioKey")).toBe(true);
     expect(credentialIsConfigured({ tts: { fishKey: "" } }, "fishAudioKey")).toBe(false);
-    expect(Object.keys(CREDENTIAL_TARGETS)).toHaveLength(18);
+    expect(Object.keys(CREDENTIAL_TARGETS)).toHaveLength(17);
   });
 
   // The desktop's encrypted store has a slot only for these; a provider key goes to the server's config, as Settings does.
   it("names the desktop slot a key is saved in, and none for a provider key or the 1Password token", () => {
     expect(Object.keys(CREDENTIAL_TARGETS).filter((id) => desktopCredentialSlot(id as never)).sort()).toEqual(
-      ["boxToken", "composioApiKey", "fishAudioKey", "geminiTtsKey", "openaiImageApiKey", "opencodeGoApiKey", "ttsKey", "xaiApiKey"],
+      ["composioApiKey", "fishAudioKey", "geminiTtsKey", "openaiImageApiKey", "opencodeGoApiKey", "ttsKey", "xaiApiKey"],
     );
     expect(desktopCredentialSlot("anthropicApiKey")).toBeNull();
     expect(desktopCredentialSlot("onePasswordToken")).toBeNull();

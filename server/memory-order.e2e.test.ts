@@ -55,11 +55,9 @@ it("starts the person's own line ahead of a hand-off that was already waiting fo
   expect(f.ended().indexOf(person.id)).toBeLessThan(f.ended().indexOf(second.id));
 }), 120_000);
 
-it("on Starter, hand-offs to busy bots start at once: one thread per bot holds only what a person or a routine starts", () => fixture(async (f) => {
+it("hand-offs to busy bots start at once when memory is available", () => fixture(async (f) => {
   const bots: any[] = [];
   for (let at = 0; at < 5; at += 1) bots.push(await f.bot(`Teammate ${at}`));
-  writeFileSync(join(f.dataDir, "test-starter"), "");
-  expect((await f.api("/api/config", undefined, "GET")).cloudStarter).toBe(true);
   const [chief, target, other] = bots;
   await f.api(`/api/bots/${chief.id}`, { chiefOfStaff: true, managedSections: ["Team"], acknowledgePeerScope: true }, "PATCH");
   const gate = join(f.dataDir, "target-may-finish");

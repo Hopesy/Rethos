@@ -46,6 +46,7 @@ files:
   - "!electron/resources/Rethos Recorder.app/**"
   - "!**/node_modules/**"
   - src/locales/*.json
+  - shared/place-colors.mjs
   - "!src/locales/source-hashes.json"
   - package.json
 

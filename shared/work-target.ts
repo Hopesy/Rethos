@@ -78,10 +78,19 @@ export function taskWorkTargetPatch(bot: WorkTargetFields, patch: TaskTargetFiel
   if (Object.hasOwn(patch, "workTarget")) {
     const workTarget = patch.workTarget && workTargetSchema.parse(patch.workTarget);
     const computer = workTarget && workTargetLegacyFields(workTarget).computer;
-    return { ...patch, workTarget, surface: computer === "off" ? undefined : computer, surfaceSource: workTarget ? "user" : undefined };
+    return { ...patch, workTarget, surface: computer === "off" ? undefined : computer, surfaceSource: workTarget ? patch.surfaceSource ?? "user" : undefined };
   }
   if (Object.hasOwn(patch, "surface")) return { ...patch, workTarget: patch.surface && patch.surfaceSource !== "auto" ? legacyWorkTarget({ ...bot, computer: patch.surface }) : undefined };
   return patch;
+}
+
+export function automaticWorkTargetsToClear(bot: WorkTargetFields & { tasks?: TaskTargetFields[] }, target: WorkTarget): TaskTargetFields[] {
+  if (target.kind === "auto") return [];
+  return (bot.tasks ?? []).filter(task => {
+    if (task.surfaceSource !== "auto") return false;
+    const pinned = task.workTarget ?? (task.surface && legacyWorkTarget({ computer: task.surface, cloudBackend: bot.cloudBackend }));
+    return Boolean(pinned && workTargetKey(pinned) !== workTargetKey(target));
+  });
 }
 
 /** Upgrade only persisted legacy hosted targets; operational preferences and private paths retain their existing owners. */

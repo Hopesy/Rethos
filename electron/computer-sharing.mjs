@@ -2,7 +2,8 @@ import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
-import { randomBytes, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
+import { computerId as uuid, deviceCredentials, cloudGrant } from "./computer-sharing-grants.mjs";
 import { setTimeout as delay } from "node:timers/promises";
 import { allowedServerOrigin } from "./server-address.mjs";
 import { createSharedCua, executeSharedOperation, personalSecretPaths, sharedComputerError, validCommandSeconds } from "./shared-computer-access.mjs";
@@ -19,7 +20,6 @@ import { LINK_ASLEEP, linkPath } from "./device-link-protocol.mjs";
 import { shareableDrive } from "./shared-drives.mjs";
 import nativeText from "./native-text.cjs";
 
-const uuid = value => typeof value === "string" && /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(value);
 const DATA_VOLUME = "/System/Volumes/Data";
 const identify = async candidate => { const info = await fsp.stat(candidate, { bigint: true }); return `${info.dev}:${info.ino}`; };
 
@@ -450,14 +450,12 @@ export function createComputerSharing({ file, fetch: fetchImpl, environments, lo
     }
   };
   const matches = (grant, info) => grant?.sessionId === info.sessionId && grant?.environmentId === info.environmentId;
-  const deviceCredentials = (env, info, sameOwner = true) => {
-    const previous = records[env.id];
-    const same = sameOwner && previous?.environmentId === info.environmentId && uuid(previous.id) && /^[a-f0-9]{64}$/.test(previous.secret);
-    return { id: same ? previous.id : randomUUID(), secret: same ? previous.secret : randomBytes(32).toString("hex"), grantRevision: randomUUID() };
-  };
-  const replaceGrant = (env, grant) => {
+  const replaceGrant = async (env, grant) => {
+    const version = grantVersions.get(env.id);
     if (records[env.id]?.id === grant.id && records[env.id]?.secret === grant.secret) stop(env.id);
     else disconnect(env, records[env.id]);
+    await Promise.allSettled(goodbyes);
+    if (closed || grantVersions.get(env.id) !== version) return state(env.id);
     store({ ...records, [env.id]: grant }); run(env, grant); changed(); return state(env.id);
   };
   const stop = id => {
@@ -669,14 +667,6 @@ export function createComputerSharing({ file, fetch: fetchImpl, environments, lo
     (grant.cloud
       ? typeof grant.cloud.accountId === "string" && typeof grant.cloud.origin === "string" && (grant.environmentId === null || uuid(grant.environmentId))
       : uuid(grant.sessionId) && uuid(grant.environmentId));
-  const cloudGrant = (env, current, info, { folders = [], screen, internet, terminal, chrome }) => {
-    const kept = records[env.id];
-    const bound = kept?.cloud?.accountId === current.accountId && kept.cloud.origin === env.origin;
-    const identity = bound && info.environmentId === null ? { sessionId: kept.sessionId, environmentId: kept.environmentId } : info;
-    const credentials = deviceCredentials(env, identity, bound);
-    return { ...identity, ...credentials, enabled: true, folders,
-      terminal: terminal === true, computer: screen === true, internet: internet === true, chrome: chrome === true, cloud: { accountId: current.accountId, origin: env.origin } };
-  };
   const verifiedCloud = env => {
     const current = cloud(env);
     return current?.status === "connected" && current.accountId && current.origin === env.origin ? current : null;
@@ -694,8 +684,8 @@ export function createComputerSharing({ file, fetch: fetchImpl, environments, lo
     let info = { sessionId: null, environmentId: null };
     try { info = await cloudIdentity(env); } catch (error) { if (error.problem !== "connect-first") throw error; }
     if (grantVersions.get(env.id) !== version) return cloudState(env);
-    const grant = cloudGrant(env, current, info, { ...input, folders });
-    replaceGrant(env, grant);
+    const grant = cloudGrant(records[env.id], env, current, info, { ...input, folders });
+    await replaceGrant(env, grant);
     return cloudState(env);
   };
   const lendable = folders => Promise.all(folders.map(folder => validateSharedFolders([folder], { homeEdits: true }).then(([checked]) => checked ?? null, () => null)))
@@ -705,7 +695,7 @@ export function createComputerSharing({ file, fetch: fetchImpl, environments, lo
   const lendNow = (env, current, kept, wanted) => {
     changeGrant(env.id);
     const bound = kept?.enabled === true && kept.cloud?.accountId === current.accountId && kept.cloud.origin === env.origin;
-    const grant = cloudGrant(env, current, bound ? { sessionId: kept.sessionId ?? null, environmentId: kept.environmentId ?? null } : { sessionId: null, environmentId: null }, wanted);
+    const grant = cloudGrant(kept, env, current, bound ? { sessionId: kept.sessionId ?? null, environmentId: kept.environmentId ?? null } : { sessionId: null, environmentId: null }, wanted);
     if (bound) grant.grantRevision = kept.grantRevision;
     if (grant.id === kept?.id || (sleepsHere(env) && sleepGate(env).asleep())) stop(env.id); else disconnect(env, kept);
     try { store({ ...records, [env.id]: grant }); } catch { return; }
@@ -839,7 +829,7 @@ export function createComputerSharing({ file, fetch: fetchImpl, environments, lo
       if (!matches(info, fresh)) throw new Error("Server sign-in changed. Review computer access again.");
       const folders = await validateSharedFolders(input.folders);
       await requireEnabled();
-      const grant = { ...fresh, ...deviceCredentials(env, fresh), enabled: true, folders, terminal: input.terminal === true, computer: input.computer === true };
+      const grant = { ...fresh, ...deviceCredentials(records[env.id], fresh), enabled: true, folders, terminal: input.terminal === true, computer: input.computer === true };
       if (!folders.length && !grant.terminal && !grant.computer) throw new Error("Choose at least one folder or capability to share");
       if (grantVersions.get(env.id) !== version) return state(env.id);
       return replaceGrant(env, grant);
@@ -864,7 +854,7 @@ export function createComputerSharing({ file, fetch: fetchImpl, environments, lo
       const info = await ownIdentity(env);
       const folders = await validateSharedFolders(input?.folders ?? []);
       if (input?.botPermissions === true && !supportsBotPermissions.has(env.id)) throw new Error("Update this server to use bot-managed computer permissions");
-      const grant = { ...info, ...deviceCredentials(env, info), enabled: true, own: true, folders, terminal: input?.terminal === true, computer: input?.computer === true, ...(input?.botPermissions === true ? { botPermissions: true } : {}) };
+      const grant = { ...info, ...deviceCredentials(records[env.id], info), enabled: true, own: true, folders, terminal: input?.terminal === true, computer: input?.computer === true, ...(input?.botPermissions === true ? { botPermissions: true } : {}) };
       if (!folders.length && !grant.terminal && !grant.computer && !grant.botPermissions) throw new Error("Choose at least one folder or capability to share");
       if (grantVersions.get(env.id) !== version) return state(env.id);
       return replaceGrant(env, grant);

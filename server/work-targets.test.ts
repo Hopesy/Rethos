@@ -27,12 +27,19 @@ it("persists device and conversation choices, validates owner and platform paths
     expect((await targets.status(bot, "owner", bot.threadId)).selected).toEqual({ kind: "off" });
     targets.set(bot, "owner", null, bot.threadId);
     expect((await targets.status(bot, "owner", bot.threadId)).selected).toEqual(target);
+    const automatic = store.createTask(bot.id, "Automatic selection", false)!;
+    store.patchTask(bot.id, automatic.threadId, { workTarget: { kind: "private", backend: "vm" }, surfaceSource: "auto" });
+    expect(store.projectBotForTask(bot.id, automatic.threadId)?.workTarget).toEqual({ kind: "private", backend: "vm" });
     const save = vi.spyOn(store as unknown as { saveBots(): void }, "saveBots").mockImplementation(() => { throw new Error("disk full"); });
     expect(() => targets.set(bot, "owner", { kind: "browser" })).toThrow(/save.*work location/);
     expect(bot.workTarget).toEqual(target);
+    expect(automatic.workTarget).toEqual({ kind: "private", backend: "vm" });
     expect(() => targets.set(bot, "owner", { kind: "browser" }, bot.threadId)).toThrow();
     expect(store.taskByThread(bot.id, bot.threadId)?.workTarget).toBeUndefined();
     save.mockRestore();
+    targets.set(bot, "owner", { kind: "browser" });
+    expect(automatic.workTarget).toBeUndefined();
+    expect(automatic.surface).toBeUndefined();
     computers.setAccess("owner", a.id, "revoked");
     expect(() => targets.set(bot, "owner", target)).toThrow(/current owner/);
   } finally { computers.close(); }

@@ -140,7 +140,7 @@ it("executes real read-only folder requests through the real agent MCP and conne
   evidence.push("real MCP → paired HTTP → local read, with write/terminal/screen/traversal denied");
 });
 
-it("explicit edits and terminal work; old credentials and other sessions cannot impersonate the desktop", async () => {
+it("explicit edits and terminal work retain device credentials and reject other sessions", async () => {
   const old = storedGrant();
   await connector.save(env, { folders: [{ ...folder, write: true }], terminal: true, computer: false }, await connector.identity(env));
   await expect.poll(() => connector.state(env.id).connected, { timeout: 8000 }).toBe(true);
@@ -151,7 +151,10 @@ it("explicit edits and terminal work; old credentials and other sessions cannot 
   const grant = storedGrant();
   const auth = { authorization: `Bearer ${pairing.token}` };
   expect((await api("POST", `/api/shared-computers/${grant.id}/lease`, {}, auth)).status).toBe(403);
-  expect((await api("POST", `/api/shared-computers/${old.id}/lease`, {}, { ...auth, "x-omb-computer-secret": old.secret })).status).toBe(403);
+  expect(grant.id).toBe(old.id);
+  expect(grant.secret).toBe(old.secret);
+  expect(grant.grantRevision).not.toBe(old.grantRevision);
+  expect((await api("POST", `/api/shared-computers/${grant.id}/lease`, {}, { ...auth, "x-omb-computer-secret": "0".repeat(64) })).status).toBe(403);
   const second = await api("POST", "/api/auth/pairing", { label: "Other desktop" });
   const other = (await api("POST", "/api/auth/pair", { code: second.body.code })).body;
   expect((await api("POST", `/api/shared-computers/${grant.id}/lease`, {}, { authorization: `Bearer ${other.token}`, "x-omb-computer-secret": grant.secret })).status).toBe(403);
@@ -238,8 +241,8 @@ it("a bot whose computer is off cannot drive the lent screen, even when screen c
   try {
     const refused = await operation("computer_tools");
     expect(refused.isError).toBe(true);
-    expect(refused.content[0].text).toContain("This bot has no computer");
-    expect(data(await operation("list_files")).entries.length).toBeGreaterThan(0);
+    expect(refused.content[0].text).toContain("Computer access is off for this bot.");
+    expect((await operation("list_files")).isError).toBe(true);
   } finally {
     expect((await api("PATCH", `/api/bots/${bot.id}`, { computer: null })).status).toBe(200);
   }

@@ -1577,7 +1577,7 @@ describe("credential env preference", () => {
     process.env.OMB_OPENAI_IMAGE_KEY = "env-image";
     const cfg = loadConfig();
     expect(cfg.xai).toEqual({ key: "env-xai", url: "https://api.example.test/v1" });
-    expect(cfg.box).toEqual({ token: "env-box" });
+    expect(cfg.box).toBeUndefined();
     expect(cfg.opencodeGo).toEqual({ apiKey: "env-ocg" });
     expect(cfg.tts).toEqual({ key: "env-tts", fishKey: "env-fish", voice: "narrator" });
     expect(cfg.imageGen).toEqual({ key: "env-image" });
@@ -1621,7 +1621,7 @@ describe("credential env preference", () => {
       }
       process.env.BOX_TOKEN = "box_own";
       process.env.OMB_TTS_KEY = "sk-own";
-      expect(loadConfig()).toMatchObject({ box: { token: "box_own" }, tts: { key: "sk-own" } });
+      expect(loadConfig()).toMatchObject({ tts: { key: "sk-own" } });
       expect(JSON.stringify(instanceConfigs(loadConfig()))).not.toContain("box_own");
     } finally {
       vi.unstubAllEnvs();
@@ -1890,7 +1890,7 @@ describe("credential env preference", () => {
     });
     expect(process.env.XAI_API_KEY).toBe("just-saved");
     expect(process.env.COMPOSIO_API_KEY).toBe("ak_just_saved");
-    expect(process.env.BOX_TOKEN).toBeUndefined();
+    expect(process.env.BOX_TOKEN).toBe("boot-injected");
     expect(process.env.OMB_TTS_KEY).toBeUndefined();
     expect(process.env.OMB_FISH_AUDIO_API_KEY).toBeUndefined();
   });

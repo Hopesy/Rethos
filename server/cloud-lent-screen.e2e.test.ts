@@ -170,13 +170,13 @@ it("lets an Auto conversation pinned to the cloud computer use the person's lent
   const turn = await ownerAsks(created.id, created.threadId, "Open Notepad on my PC.");
   const prompt = turn.systemPrompt ?? "";
   // The cloud computer is what this turn mounts, as the pin says…
-  expect(prompt).toContain("This conversation is pinned to the cloud computer");
-  expect(prompt).toContain("The managed screen tools work on the cloud computer, web pages included");
+  expect(prompt).not.toContain("This conversation is pinned to the cloud computer");
+  expect(prompt).not.toContain("The managed screen tools work on the cloud computer, web pages included");
   // …and the person's PC is still theirs to ask for, through shared_computer.
   expect(prompt).not.toContain("Everything you do on screen happens on the cloud computer");
   expect(prompt).not.toContain("the user's own computer cannot be reached from here");
-  expect(prompt).toContain("Their PC (OFFICE-PC) is reached only through shared_computer, never select_computer");
-  expect(prompt).toContain("whatever this conversation is pinned to");
+  expect(prompt).toContain("Their PC (OFFICE-PC) is reached through shared_computer");
+  expect(prompt).toContain("select that computer_id with select_computer");
 
   const call = await agentTools(turn);
   const listed = JSON.parse((await call("list_shared_computers")).content[0]!.text);

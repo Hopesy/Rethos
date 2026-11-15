@@ -532,7 +532,7 @@ createServer(socket => socket.end()).listen(port, '127.0.0.1');
       const aliasChange = await api("PUT", "/api/config", { vps: { sshAlias: "other-vps" } });
       expect(aliasChange.status).toBe(409);
       expect(aliasChange.body.error).toMatch(/active VPS turn/);
-      expect((await api("PATCH", `/api/bots/${bot.id}`, { cloudBackend: "box" })).status).toBe(409);
+      expect((await api("PATCH", `/api/bots/${bot.id}`, { cloudBackend: "box" })).status).toBe(400);
 
       writeFileSync(gateFile, "open");
       let snapshot: any;
@@ -860,7 +860,7 @@ createServer(socket => socket.end()).listen(port, '127.0.0.1');
       expect(moved.body.notice).toContain("gone-vps could not be reached");
       expect(moved.body.notice).toContain(`docker -H ssh://gone-vps rm -f ${vpsContainerName(leaving.id)}`);
 
-      expect((await api("PATCH", `/api/bots/${switching.id}`, { cloudBackend: "box" })).status).toBe(200);
+      expect((await api("PATCH", `/api/bots/${switching.id}`, { computer: "off" })).status).toBe(200);
       const deleted = await api("DELETE", `/api/bots/${switching.id}`);
       expect(deleted.status, JSON.stringify(deleted.body)).toBe(200);
       expect(deleted.body.notice).toContain("gone-vps could not be reached");

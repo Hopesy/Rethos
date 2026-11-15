@@ -123,7 +123,6 @@ describe("removing the Computer engine", () => {
   let boatServer: Server;
   const rows: Array<{ id: string; name: string; state: string }> = [];
   let boatCalls = 0;
-  let boxesCreated = 0;
   /** Calls to Boat's own agent: the place no turn may ever go. */
   const agentCalls: string[] = [];
   const boatPort = () => (boatServer.address() as { port: number }).port;
@@ -148,7 +147,6 @@ describe("removing the Computer engine", () => {
         return res.end(JSON.stringify({ ok: false, code: "provider_not_configured", message: "Claude login required" }));
       }
       if (path === "/sandboxes" && req.method === "POST") {
-        boxesCreated++;
         const row = { id: `bx_2345678${"abcdefgh"[rows.length]}`, name: body.name, state: "idle" }; rows.push(row);
         return res.end(JSON.stringify({ sandbox: row }));
       }
@@ -225,29 +223,29 @@ describe("removing the Computer engine", () => {
 
     const movedStarter = await server.bot(starter.id);
     expect(movedStarter.modelSelection).toEqual(replacement);
-    expect(movedStarter.computer).toBe("cloud");
+    expect(movedStarter.computer).toBeUndefined();
     expect(movedStarter.fallback ?? []).toEqual([]);
     expect(movedStarter.threadId).toBe(main);
     expect(movedStarter.tasks.find((task: any) => task.threadId === other).modelSelection).toEqual(replacement);
-    const starterLine = `${starter.name} now uses ${ENGINE_NAME}. ${REMOVED} ${starter.name} still works on its cloud desktop.`;
-    const otherLine = `This conversation now uses ${ENGINE_NAME}. ${REMOVED} It still works on ${starter.name}'s cloud desktop.`;
+    const starterLine = `${starter.name} now uses ${ENGINE_NAME}. ${REMOVED}`;
+    const otherLine = `This conversation now uses ${ENGINE_NAME}. ${REMOVED}`;
     expect(await server.moveLines(main)).toEqual([starterLine]);
     expect(await server.moveLines(other)).toEqual([otherLine]);
 
     const movedAuto = await server.bot(auto.id);
     expect(movedAuto.modelSelection).toEqual(replacement);
-    expect(movedAuto.computer).toBe("cloud");
-    expect(await server.moveLines(auto.threadId)).toEqual([`Atlas now uses ${ENGINE_NAME}. ${REMOVED} Atlas still works on its cloud desktop.`]);
+    expect(movedAuto.computer).toBeUndefined();
+    expect(await server.moveLines(auto.threadId)).toEqual([`Atlas now uses ${ENGINE_NAME}. ${REMOVED}`]);
 
     const movedMixed = await server.bot(mixed.id);
     expect(movedMixed.modelSelection).toEqual(mixed.modelSelection);
     expect(movedMixed.computer).toBeUndefined();
     expect(await server.moveLines(mixed.threadId)).toEqual([]);
     expect(await server.moveLines(mixedConversation.threadId))
-      .toEqual([`This conversation now uses ${ENGINE_NAME}. ${REMOVED} It still works on Iris's cloud desktop.`]);
+      .toEqual([`This conversation now uses ${ENGINE_NAME}. ${REMOVED}`]);
     const mixedTask = movedMixed.tasks.find((task: any) => task.threadId === mixedConversation.threadId);
     expect(mixedTask.modelSelection).toEqual(replacement);
-    expect(mixedTask).toMatchObject({ surface: "cloud", surfaceAuto: true });
+    expect(mixedTask.surface).toBeUndefined();
 
     const defaults = await server.api("GET", "/api/bot-defaults");
     expect(defaults.defaults.profile.modelSelection).toEqual(replacement);
@@ -263,18 +261,6 @@ describe("removing the Computer engine", () => {
     expect(await server.moveLines(other)).toEqual([otherLine]);
     expect(await server.moveLines(auto.threadId)).toHaveLength(1);
     expect(await server.moveLines(mixedConversation.threadId)).toHaveLength(1);
-
-    const cloudTurn = await server.turn(starter.id, main, "Take a screenshot of the cloud computer.");
-    expect(cloudTurn.argv[cloudTurn.argv.indexOf("--model") + 1]).toBe(replacement.model);
-    expect(cloudTurn.mcpConfig.mcpServers.computer.args).toEqual([expect.stringMatching(/harness-mcp-proxy\.(?:ts|js)$/), "computer"]);
-    expect(boxesCreated).toBe(1);
-    expect(agentCalls).toEqual([]);
-
-    const { task: atlasNew } = await server.api("POST", `/api/bots/${auto.id}/tasks`, {});
-    const autoMovedTurn = await server.turn(auto.id, atlasNew.threadId, "Take a screenshot of the cloud computer.");
-    expect(autoMovedTurn.mcpConfig.mcpServers.computer.args).toEqual([expect.stringMatching(/harness-mcp-proxy\.(?:ts|js)$/), "computer"]);
-    expect(boxesCreated).toBe(2);
-    expect(agentCalls).toEqual([]);
 
     await server.api("PATCH", `/api/bots/${starter.id}`, { computer: null });
     const callsBeforeAuto = boatCalls;
@@ -316,7 +302,7 @@ describe("removing the Computer engine", () => {
     await expect.poll(async () => (await server.bot(starter.id)).modelSelection, { timeout: 15_000 })
       .toEqual({ instanceId: "later", model });
     expect(await server.moveLines(starter.threadId)).toEqual([
-      `${starter.name} now uses ${ENGINE_NAME}. ${REMOVED} ${starter.name} still works on its cloud desktop.`,
+      `${starter.name} now uses ${ENGINE_NAME}. ${REMOVED}`,
     ]);
     await server.stop();
   }, 120_000);
@@ -341,9 +327,9 @@ describe("removing the Computer engine", () => {
     rmSync(teams);
     await server.send(starter.id, starter.threadId, "hello");
     await expect.poll(async () => (await server.bot(starter.id)).modelSelection.instanceId, { timeout: 15_000 }).toBe("claude");
-    expect((await server.bot(starter.id)).computer).toBe("cloud");
+    expect((await server.bot(starter.id)).computer).toBeUndefined();
     expect(await server.moveLines(starter.threadId)).toEqual([
-      `${starter.name} now uses ${ENGINE_NAME}. ${REMOVED} ${starter.name} still works on its cloud desktop.`,
+      `${starter.name} now uses ${ENGINE_NAME}. ${REMOVED}`,
     ]);
     await server.stop();
   }, 120_000);
@@ -367,8 +353,7 @@ describe("removing the Computer engine", () => {
     expect(moved.modelSelection).toEqual({ instanceId: "chat", model: "chat-model" });
     expect(moved.computer).toBeUndefined();
     expect(await server.moveLines(starter.threadId)).toEqual([
-      `${starter.name} now uses Chat Only. ${REMOVED} Chat Only can't use a desktop, so ${starter.name} no longer works ` +
-      "on its cloud desktop. To use it again, choose a model that can use a desktop.",
+      `${starter.name} now uses Chat Only. ${REMOVED}`,
     ]);
     await server.stop();
   }, 120_000);

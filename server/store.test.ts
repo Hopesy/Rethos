@@ -1089,13 +1089,13 @@ describe("Store", () => {
     writeFileSync(join(DATA_DIR, "bots.json"), JSON.stringify(raw));
 
     const reloaded = new Store(selection);
-    expect(reloaded.bot(boat.id)?.cloudBackend).toBe("box");
+    expect(reloaded.bot(boat.id)?.cloudBackend).toBeUndefined();
     expect(reloaded.bot(vps.id)?.cloudBackend).toBe("vps");
     expect(reloaded.bot(invalid.id)?.cloudBackend).toBeUndefined();
     expect(reloaded.bot(absent.id)?.cloudBackend).toBeUndefined();
 
     const saved: BotRecord[] = JSON.parse(readFileSync(join(DATA_DIR, "bots.json"), "utf8"));
-    expect(saved.find((bot) => bot.id === boat.id)?.cloudBackend).toBe("box");
+    expect(saved.find((bot) => bot.id === boat.id)?.cloudBackend).toBeUndefined();
     expect(saved.find((bot) => bot.id === vps.id)?.cloudBackend).toBe("vps");
     expect(saved.find((bot) => bot.id === invalid.id)).not.toHaveProperty("cloudBackend");
     expect(saved.find((bot) => bot.id === absent.id)).not.toHaveProperty("cloudBackend");

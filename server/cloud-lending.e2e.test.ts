@@ -447,6 +447,7 @@ it("the person's Mac, lent by itself through the real connector, is usable by th
   expect((await call("shared_computer", { computer_id: status[0].id, folder_id: folder.id, action: "read_file", path: "plan.md" })).isError).toBe(true);
   // The tests after this one start from a desktop that lent nothing, not a paused one.
   connector.close();
+  connector = undefined;
   rmSync(dirname(file), { recursive: true, force: true });
   rmSync(folderPath, { recursive: true, force: true });
 }, hostTimeout(60_000));
@@ -481,6 +482,8 @@ it("My Cloud remembers a lent computer across its restart, says it is offline by
   const folderPath = realpathSync(mkdtempSync(join(tmpdir(), "omb-cloud-lent-again-")));
   writeFileSync(join(folderPath, "plan.md"), "from the computer");
   const env = { id: "my-cloud", name: "My Cloud", origin: base };
+  connector?.revoke(env);
+  await connector?.goodbyesDone();
   connector?.close();
   connector = lend(env);
   await connector.saveCloud(env, { folders: [{ id: randomUUID(), name: "Plans", path: folderPath, write: false }], screen: false });
@@ -506,13 +509,13 @@ it("My Cloud remembers a lent computer across its restart, says it is offline by
   await waitForExit(child, { signal: "SIGTERM" });
   await boot();
   const known = (await api("GET", "/api/shared-computers", { token: owner })).body.known;
-  expect(known).toEqual([expect.objectContaining({ id, platform: process.platform, online: false, lent: true, scopes: { folders: 1, terminal: false, screen: false, internet: false, chrome: false } })]);
+  expect(known.filter((computer: { id: string }) => computer.id === id)).toEqual([expect.objectContaining({ id, platform: process.platform, online: false, lent: true, scopes: { folders: 1, terminal: false, screen: false, internet: false, chrome: false } })]);
   call = await ask();
   // The turn's own instructions name the computer the same way.
   expect(turn.systemPrompt).toContain(`If they ask for something on their ${device} (`);
   const away = JSON.parse((await call("list_shared_computers")).content[0].text);
   expect(away.computers).toEqual([]);
-  expect(away.offline).toEqual([expect.objectContaining({ device, lent: true })]);
+  expect(away.offline).toEqual(expect.arrayContaining([expect.objectContaining({ device, lent: true })]));
   expect(away.say).toMatch(new RegExp(`^Their ${device} .+ is shared with the Cloud but offline \\(last online \\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d UTC\\)`, "u"));
   expect(away.say, "on the person's own Cloud the bot asks with a card instead of explaining the fix").toContain("If the request needs it, call ask_for_computer");
   const refused = await call("shared_computer", { computer_id: id, action: "list_files", folder_id: randomUUID(), path: "." });
@@ -525,7 +528,7 @@ it("My Cloud remembers a lent computer across its restart, says it is offline by
   await connector.saveCloud(env, { folders: [], screen: true });
   await expect.poll(() => connector!.cloudState(env).connected, { timeout: 8000 }).toBe(true);
   connector.pause();
-  await expect.poll(async () => (await api("GET", "/api/shared-computers", { token: owner })).body.known, { timeout: 5000 })
+  await expect.poll(async () => (await api("GET", "/api/shared-computers", { token: owner })).body.known.filter((computer: { id: string }) => computer.id === id), { timeout: 5000 })
     .toEqual([expect.objectContaining({ online: false, lent: false, scopes: { folders: 0, terminal: false, screen: true, internet: false, chrome: false } })]);
   call = await ask();
   expect(JSON.parse((await call("list_shared_computers")).content[0].text).say).toMatch(new RegExp(`^Their ${device} .+ no longer shares itself with the Cloud: Rethos on it is paused`, "u"));
@@ -542,6 +545,8 @@ it("a computer lending while My Cloud restarts waits for it, never asks to open 
   const env = { id: "my-cloud", name: "My Cloud", origin: base };
   const problems: string[] = [];
   let signIns = 0;
+  connector?.revoke(env);
+  await connector?.goodbyesDone();
   connector?.close();
   connector = lend(env, {
     reconnect: async () => { signIns++; return false; },
@@ -564,6 +569,8 @@ it("a computer lending while My Cloud restarts waits for it, never asks to open 
 
 it("a Mac signed in to My Cloud is lent by itself, its home folder with editing, and the menu bar's Pause takes it back until Resume", async () => {
   const env = { id: "my-cloud", name: "My Cloud", origin: base };
+  connector?.revoke(env);
+  await connector?.goodbyesDone();
   connector?.close();
   const macHome = realpathSync(mkdtempSync(join(tmpdir(), "omb-automatic-home-")));
   mkdirSync(join(macHome, "Documents"));
@@ -589,6 +596,8 @@ it("a Mac signed in to My Cloud is lent by itself, its home folder with editing,
 
 it("paused, the PC still hears a bot that needs it: one card in the chat, the app's own prompt once, and Turn on on the card turns it on so the bot's call carries on", async () => {
   const env = { id: "my-cloud", name: "My Cloud", origin: base };
+  connector?.revoke(env);
+  await connector?.goodbyesDone();
   connector?.close();
   const pcHome = realpathSync(mkdtempSync(join(tmpdir(), "omb-asks-home-")));
   rmSync(join(home, "desktop-profile"), { recursive: true, force: true });

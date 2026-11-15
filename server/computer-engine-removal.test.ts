@@ -45,10 +45,6 @@ describe("moving saved bots off the engine", () => {
   const newBotDefault = () => ({ instanceId: "claude", model: "claude-model" });
   const replacement = { instanceId: "claude", model: "claude-model" };
   const removed = new Set(["computer"]);
-  /** This server has a Boat account, the bot's cloud backend is Boat, and no
-   * team computer serves its section: on Auto, the removed engine ran on the
-   * bot's own cloud computer. */
-  const boat = { driverKind: "claudeAgent", canWorkOnCloud: true, keepCloud: (bot: BotRecord) => bot.cloudBackend !== "vps" };
   const noBoat = { driverKind: "claudeAgent", canWorkOnCloud: true, keepCloud: () => false };
   /** The same server, but the engine a new bot gets has no computer tools:
    * an OpenAI-compatible endpoint without computer use, like Mistral. */
@@ -58,47 +54,28 @@ describe("moving saved bots off the engine", () => {
     const store = new Store(newBotDefault);
     const bot = store.createBot({ modelSelection: { instanceId: "computer", model: "claude-fable-5" } }, { seedMessages: false });
     const other = store.createBot({ modelSelection: { instanceId: "codex", model: "codex-model" } }, { seedMessages: false });
-    store.patchBot(bot.id, { computer: "cloud", fallback: [{ instanceId: "computer", model: "sonnet" }, { instanceId: "codex", model: "codex-model" }] });
+    store.patchBot(bot.id, { computer: "local", fallback: [{ instanceId: "computer", model: "sonnet" }, { instanceId: "codex", model: "codex-model" }] });
     const second = store.createTask(bot.id, "Second", false)!;
     store.patchTask(bot.id, second.threadId, { modelSelection: { instanceId: "computer", model: "gpt-5.4" } });
     store.setResumeCursor(bot.id, "computer", "boat-prompt-run", bot.threadId);
     store.setResumeCursor(bot.id, "codex", "codex-session", bot.threadId);
 
-    const moves = store.retireInstances(removed, replacement, boat);
+    const moves = store.retireInstances(removed, replacement, noBoat);
     expect(moves).toHaveLength(2);
     expect(moves).toEqual(expect.arrayContaining([
-      { botId: bot.id, threadId: bot.threadId, scope: "bot", cloud: true, noComputer: false, askNow: false },
-      { botId: bot.id, threadId: second.threadId, scope: "conversation", cloud: true, noComputer: false, askNow: false },
+      { botId: bot.id, threadId: bot.threadId, scope: "bot", cloud: false, noComputer: false, askNow: false },
+      { botId: bot.id, threadId: second.threadId, scope: "conversation", cloud: false, noComputer: false, askNow: false },
     ]));
 
     const reloaded = new Store(newBotDefault);
     const moved = reloaded.bot(bot.id)!;
     expect(moved.modelSelection).toEqual(replacement);
-    expect(moved.computer).toBe("cloud");
+    expect(moved.computer).toBe("local");
     expect(moved.fallback).toEqual([{ instanceId: "codex", model: "codex-model" }]);
     expect(reloaded.taskByThread(bot.id, second.threadId)?.modelSelection).toEqual(replacement);
     expect(reloaded.taskByThread(bot.id, bot.threadId)?.resumeCursors).toEqual({ codex: "codex-session" });
     expect(reloaded.bot(other.id)?.modelSelection).toEqual({ instanceId: "codex", model: "codex-model" });
-    expect(reloaded.retireInstances(removed, replacement, boat)).toEqual([]);
-  });
-
-  it("keeps an Auto bot on its cloud computer, where the removed engine always ran", () => {
-    const store = new Store(newBotDefault);
-    const auto = store.createBot({ modelSelection: { instanceId: "computer", model: "claude-fable-5" } }, { seedMessages: false });
-    const vps = store.createBot({ modelSelection: { instanceId: "computer", model: "claude-fable-5" } }, { seedMessages: false });
-    store.patchBot(vps.id, { cloudBackend: "vps" });
-    const local = store.createBot({ modelSelection: { instanceId: "computer", model: "claude-fable-5" } }, { seedMessages: false });
-    store.patchBot(local.id, { computer: "local" });
-
-    const moves = store.retireInstances(removed, replacement, boat);
-
-    const reloaded = new Store(newBotDefault);
-    expect(reloaded.bot(auto.id)?.computer).toBe("cloud");
-    expect(moves.find(move => move.botId === auto.id)?.cloud).toBe(true);
-    expect(reloaded.bot(vps.id)?.computer).toBeUndefined();
-    expect(moves.find(move => move.botId === vps.id)?.cloud).toBe(false);
-    expect(reloaded.bot(local.id)?.computer).toBe("local");
-    expect(moves.find(move => move.botId === local.id)?.cloud).toBe(false);
+    expect(reloaded.retireInstances(removed, replacement, noBoat)).toEqual([]);
   });
 
   it("leaves an Auto bot on Auto when this server has no cloud computers", () => {
@@ -108,26 +85,6 @@ describe("moving saved bots off the engine", () => {
       { botId: auto.id, threadId: auto.threadId, scope: "bot", cloud: false, noComputer: false, askNow: false },
     ]);
     expect(new Store(newBotDefault).bot(auto.id)?.computer).toBeUndefined();
-  });
-
-  it("moves only the conversation that was on the engine, and keeps it on the cloud computer", () => {
-    const store = new Store(newBotDefault);
-    const bot = store.createBot({ modelSelection: { instanceId: "codex", model: "codex-model" } }, { seedMessages: false });
-    const second = store.createTask(bot.id, "On the engine", false)!;
-    store.patchTask(bot.id, second.threadId, { modelSelection: { instanceId: "computer", model: "gpt-5.4" } });
-
-    expect(store.retireInstances(removed, replacement, boat)).toEqual([
-      { botId: bot.id, threadId: second.threadId, scope: "conversation", cloud: true, noComputer: false, askNow: false },
-    ]);
-
-    const reloaded = new Store(newBotDefault);
-    expect(reloaded.bot(bot.id)?.modelSelection).toEqual({ instanceId: "codex", model: "codex-model" });
-    expect(reloaded.bot(bot.id)?.computer).toBeUndefined();
-    const task = reloaded.taskByThread(bot.id, second.threadId)!;
-    expect(task.modelSelection).toEqual(replacement);
-    expect(task.surface).toBe("cloud");
-    expect(task.surfaceSource).toBe("auto");
-    expect(reloaded.taskByThread(bot.id, bot.threadId)?.surface).toBeUndefined();
   });
 
   it("carries every level the new engine runs, Full included, as every engine switch does (#2697)", () => {
@@ -202,47 +159,6 @@ describe("moving saved bots off the engine", () => {
     expect(moves.find(move => move.botId === local.id)).toMatchObject({ cloud: false, noComputer: false });
   });
 
-  it("tells a Cloud the person chose apart from Auto when the new engine can't use a computer", () => {
-    const store = new Store(newBotDefault);
-    const cloud = store.createBot({ modelSelection: { instanceId: "computer", model: "claude-fable-5" } }, { seedMessages: false });
-    store.patchBot(cloud.id, { computer: "cloud" });
-    const pinned = store.createBot({ modelSelection: { instanceId: "computer", model: "claude-fable-5" } }, { seedMessages: false });
-    store.patchTask(pinned.id, pinned.threadId, { surface: "cloud", surfaceSource: "user" });
-
-    const moves = store.retireInstances(removed, replacement, chatOnly);
-
-    const reloaded = new Store(newBotDefault);
-    expect(reloaded.bot(cloud.id)?.computer).toBe("cloud");
-    expect(moves.find(move => move.botId === cloud.id)).toMatchObject({ scope: "bot", cloud: false, noComputer: "works-on" });
-    expect(reloaded.bot(pinned.id)?.computer).toBeUndefined();
-    expect(reloaded.taskByThread(pinned.id, pinned.threadId)).toMatchObject({ surface: "cloud", surfaceSource: "user" });
-    expect(moves.find(move => move.botId === pinned.id)).toMatchObject({ scope: "bot", cloud: false, noComputer: "pin" });
-  });
-
-  it("clears a moved conversation's Auto-recorded cloud pin when the new engine can't use a computer", () => {
-    const store = new Store(newBotDefault);
-    const auto = store.createBot({ modelSelection: { instanceId: "computer", model: "claude-fable-5" } }, { seedMessages: false });
-    store.patchTask(auto.id, auto.threadId, { surface: "cloud", surfaceSource: "auto" });
-    const cloud = store.createBot({ modelSelection: { instanceId: "computer", model: "claude-fable-5" } }, { seedMessages: false });
-    store.patchBot(cloud.id, { computer: "cloud" });
-    store.patchTask(cloud.id, cloud.threadId, { surface: "cloud", surfaceSource: "auto" });
-    const kept = store.createTask(auto.id, "On Codex", false)!;
-    store.patchTask(auto.id, kept.threadId, { modelSelection: { instanceId: "codex", model: "codex-model" }, surface: "cloud", surfaceSource: "auto" });
-
-    const moves = store.retireInstances(removed, replacement, chatOnly);
-
-    const reloaded = new Store(newBotDefault);
-    const place = (botId: string, threadId: string) => {
-      const task = reloaded.taskByThread(botId, threadId)!;
-      return { surface: task.surface, surfaceSource: task.surfaceSource };
-    };
-    expect(place(auto.id, auto.threadId)).toEqual({ surface: undefined, surfaceSource: undefined });
-    expect(moves.find(move => move.threadId === auto.threadId)).toMatchObject({ cloud: false, noComputer: "auto" });
-    expect(place(cloud.id, cloud.threadId)).toEqual({ surface: undefined, surfaceSource: undefined });
-    expect(moves.find(move => move.threadId === cloud.threadId)).toMatchObject({ cloud: false, noComputer: "works-on" });
-    expect(place(auto.id, kept.threadId)).toEqual({ surface: "cloud", surfaceSource: "auto" });
-  });
-
   it("changes nothing when the save fails, so the next try moves the bot", () => {
     const store = new Store(newBotDefault);
     const bot = store.createBot({ modelSelection: { instanceId: "computer", model: "claude-fable-5" } }, { seedMessages: false });
@@ -250,15 +166,15 @@ describe("moving saved bots off the engine", () => {
     mkdirSync(DATA_DIR, { recursive: true });
     writeFileSync(SECTION_CONTEXTS_FILE, "not json");
 
-    expect(() => store.retireInstances(removed, replacement, boat)).toThrow();
+    expect(() => store.retireInstances(removed, replacement, noBoat)).toThrow();
     expect(store.bot(bot.id)).toMatchObject({ modelSelection: { instanceId: "computer", model: "claude-fable-5" } });
     expect(store.bot(bot.id)?.computer).toBeUndefined();
 
     rmSync(SECTION_CONTEXTS_FILE, { force: true });
-    expect(store.retireInstances(removed, replacement, boat)).toEqual([
-      { botId: bot.id, threadId: bot.threadId, scope: "bot", cloud: true, noComputer: false, askNow: false },
+    expect(store.retireInstances(removed, replacement, noBoat)).toEqual([
+      { botId: bot.id, threadId: bot.threadId, scope: "bot", cloud: false, noComputer: false, askNow: false },
     ]);
-    expect(new Store(newBotDefault).bot(bot.id)).toMatchObject({ modelSelection: replacement, computer: "cloud" });
+    expect(new Store(newBotDefault).bot(bot.id)).toMatchObject({ modelSelection: replacement });
   });
 });
 

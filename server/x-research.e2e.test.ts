@@ -22,7 +22,6 @@ const PEOPLE_ROW = { id: "apollo.people.search", name: "Find people", method: "G
 /** The relay's answer to a search that names no job, which is how the server asks whether research is on: a 400 when
  * it is, a 503 `service_unavailable` when research is off there. */
 const PROBE = `${RELAY_PATH}/research/search`;
-const isProbe = (seen: Seen) => seen.method === "GET" && seen.path === PROBE;
 
 /** treg at the root (own key, X-Treg-Token) and the relay under RELAY_PATH (plan token, bearer). Anything else is a 404. */
 async function serveStub(seen: Seen[], options: { researchOff?: boolean } = {}): Promise<{ server: Server; url: string }> {
@@ -140,57 +139,3 @@ it("with the person's own treg key, every bot has the tools by default and calls
   expect(calls[2].idempotencyKey).toMatch(/^[0-9a-f-]{36}$/);
   expect(f.seen.some((seen: Seen) => seen.path.startsWith(RELAY_PATH))).toBe(false);
 }, { plan: false, ownKey: true }), 90_000);
-
-it("with only a Cloud plan, calls go through the relay with the plan's token, and a bot switched off has no tools", async () => withFixture(async (f) => {
-  expect((await f.api("/api/config", undefined, "GET")).xResearch).toEqual({ included: true });
-  const on = await f.newBot("Plan on");
-  const off = await f.newBot("Plan off");
-  await f.api("/api/bots/" + off.id, { xResearch: false }, "PATCH");
-  await expect(f.api("/api/bots/" + off.id, { xResearch: "yes" }, "PATCH")).rejects.toThrow(/xResearch must be true or false/);
-  expect((await f.turn(off, [])).tools).not.toContain("x_search");
-  const { tools, results } = await f.turn(on, [SEARCH, PEOPLE]);
-  expect(tools).toEqual(expect.arrayContaining(RESEARCH_TOOLS));
-  expect(results[0].newestId).toBe("2107987482155561188");
-  expect(results[1]).toEqual({ result: { people: [{ name: "Maus" }] }, cost: "$0.0020" });
-  // The server asked once, at start, whether research is on, with a request that spends nothing.
-  expect(f.seen.filter(isProbe).map((seen: Seen) => seen.authorization)).toEqual([`Bearer ${PLAN_TOKEN}`]);
-  const calls = f.seen.filter((seen: Seen) => !isProbe(seen));
-  expect(calls.map((seen: Seen) => [seen.method, seen.path, seen.authorization, seen.tregToken])).toEqual([
-    ["POST", `${RELAY_PATH}/call/anyapi.x.search.posts`, `Bearer ${PLAN_TOKEN}`, undefined],
-    ["POST", `${RELAY_PATH}/research/call/apollo.people.search`, `Bearer ${PLAN_TOKEN}`, undefined],
-  ]);
-  expect(calls[1].body).toEqual({ params: { q_organization_domains: "openmausbot.com" } });
-  expect(calls[1].idempotencyKey).toMatch(/^[0-9a-f-]{36}$/);
-  expect(await f.status()).toEqual({ using: "included", ownKey: false, included: true, usage: USAGE });
-  expect(f.seen.at(-1)).toMatchObject({ method: "GET", path: `${RELAY_PATH}/usage`, authorization: `Bearer ${PLAN_TOKEN}`, tregToken: undefined });
-  const usedUp = await f.turn(on, [{ tool: "x_search", arguments: { query: "used up" } }], { failing: true });
-  expect(usedUp.results).toEqual([`${USED_UP} Add your own treg key to keep going.`]);
-}, { plan: true, ownKey: false }), 90_000);
-
-it("with both a treg key and a Cloud plan, the person's own key wins and the card says so; removing it falls back to the plan", async () => withFixture(async (f) => {
-  const bot = await f.newBot("Both");
-  const { tools, evidence } = await f.turn(bot, [SEARCH]);
-  expect(tools).toEqual(expect.arrayContaining(RESEARCH_TOOLS));
-  expect(f.seen.filter((seen: Seen) => !isProbe(seen)).map((seen: Seen) => [seen.path, seen.tregToken, seen.authorization])).toEqual([["/call/anyapi.x.search.posts", OWN_KEY, undefined]]);
-  expect(await f.status()).toEqual({ using: "own", ownKey: true, included: true, usage: USAGE });
-  // Security: neither the person's key nor the plan's token reaches the bot: not its engine's arguments, environment,
-  // prompt or tool servers, and not its tool list or results.
-  for (const secret of [OWN_KEY, PLAN_TOKEN]) {
-    expect(f.engineLaunch()).not.toContain(secret);
-    expect(evidence).not.toContain(secret);
-  }
-  await f.api("/api/config", { treg: { key: "" } }, "PUT");
-  expect(await f.status()).toEqual({ using: "included", ownKey: false, included: true, usage: USAGE });
-  const after = f.seen.length;
-  expect((await f.turn(bot, [SEARCH])).tools).toEqual(expect.arrayContaining(RESEARCH_TOOLS));
-  expect(f.seen.slice(after).filter((seen: Seen) => !isProbe(seen)).map((seen: Seen) => [seen.path, seen.tregToken, seen.authorization])).toEqual([[`${RELAY_PATH}/call/anyapi.x.search.posts`, undefined, `Bearer ${PLAN_TOKEN}`]]);
-}, { plan: true, ownKey: true }), 90_000);
-
-it("with a Cloud plan whose relay has research off, bots get x_search and not the research tools, and X still works", async () => withFixture(async (f) => {
-  await expect.poll(() => f.seen.some(isProbe), { timeout: 15_000 }).toBe(true);
-  const bot = await f.newBot("X only");
-  const { tools, results } = await f.turn(bot, [SEARCH]);
-  expect(tools).toContain("x_search");
-  for (const tool of ["research_search", "research_endpoint", "research_call"]) expect(tools).not.toContain(tool);
-  expect(results[0].newestId).toBe("2107987482155561188");
-}, { plan: true, ownKey: false, researchOff: true }), 90_000);

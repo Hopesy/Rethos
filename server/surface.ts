@@ -205,11 +205,9 @@ const CLOUD_HOME_WORDING: ReadonlyArray<readonly [string, string]> = [
   [" Never silently replace an explicitly requested VM with the host desktop.", ""],
 ];
 
-/** On a Cloud home the person's own computer is never one of the places above: shared_computer reaches it, whatever
- * place the conversation has. Saying it can't be reached there turned a bot away from a PC lent with its screen. */
 function ownComputerSentence(lent: ReadonlyArray<{ name: string; platform: LentPlatform | null }>, place: string | null): string {
   const { theirs } = theirComputer(lent);
-  return ` ${theirs[0]!.toUpperCase()}${theirs.slice(1)} is reached only through shared_computer, never select_computer: when they ask for something on it, check list_shared_computers, then use shared_computer on it (computer_tools, then computer_call, for its apps and screen), whatever this conversation is pinned to. If list_shared_computers says this conversation can't use it, or that it doesn't lend what you need, say so in one sentence${place ? ` and don't do it on ${place} instead unless they ask` : ""}.`;
+  return ` ${theirs[0]!.toUpperCase()}${theirs.slice(1)} is reached through shared_computer. Check list_shared_computers for its computer_id; when the person asks to change this conversation's work location, select that computer_id with select_computer. Use shared_computer on the selected computer (computer_tools, then computer_call, for its apps and screen). If list_shared_computers says this conversation can't use it, or that it doesn't lend what you need, say so in one sentence${place ? ` and don't do it on ${place} instead unless they ask` : ""}.`;
 }
 
 /** Built from what was actually mounted, never from the setting, so the model is only told about tools it can call.

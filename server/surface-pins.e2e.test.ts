@@ -1,6 +1,5 @@
 // A restartable fixture home lets tests seed bots.json between boots: the sourceless pin shapes only exist on disk.
 import { spawn, type ChildProcess } from "node:child_process";
-import { randomUUID } from "node:crypto";
 import { createServer, type Server } from "node:http";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -72,7 +71,10 @@ describe("surface pin provenance against the real server", () => {
       .find((bot: any) => bot.id === botId)?.tasks.find((task: any) => task.threadId === threadId);
   const editSavedBot = (botId: string, edit: (bot: any) => void) => {
     const bots = JSON.parse(readFileSync(join(data, "bots.json"), "utf8")) as any[];
-    edit(bots.find((bot: any) => bot.id === botId));
+    const bot = bots.find((bot: any) => bot.id === botId);
+    delete bot.workTarget;
+    for (const task of bot.tasks ?? []) delete task.workTarget;
+    edit(bot);
     writeFileSync(join(data, "bots.json"), JSON.stringify(bots, null, 2));
   };
 
@@ -384,79 +386,6 @@ describe("surface pin provenance against the real server", () => {
     } finally {
       rmSync(cuaDescriptor, { force: true });
     }
-    await apiOk("DELETE", `/api/bots/${bot.id}`);
-    await stop();
-  });
-
-  it("clears a select_computer pin to a cloud computer that fails, and keeps a person's pin", async () => {
-    await start();
-    const { bot } = await apiOk("POST", "/api/bots", { name: "Failed place bot" });
-    const { task } = await apiOk("POST", `/api/bots/${bot.id}/tasks`, {});
-    await apiOk("PUT", "/api/config", { box: { token: "box_fixture" } });
-    const lastRow = async () => {
-      const { messages } = await apiOk("GET", `/api/threads/${task.threadId}/messages?limit=30`);
-      return String(messages.filter((message: any) => message.kind !== "digest").at(-1)?.tool?.name ?? "");
-    };
-    resetTurn();
-    await apiOk("POST", `/api/bots/${bot.id}/messages`, { text: "Open Chrome on the cloud computer.", threadId: task.threadId });
-    const sent = await dump();
-    const token = sent.mcpConfig.mcpServers.agents.env.OMB_COMMS_TOKEN;
-    const selected = await fetch(base + "/api/internal/computer/select", { method: "POST",
-      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ surface: "cloud" }) });
-    expect(await selected.json()).toMatchObject({ status: "pending", surface: "cloud" });
-    boatDown = true;
-    writeFileSync(finishFile, "finish");
-    await until(() => lastRow(), row => row.startsWith("error:"));
-    await idle(bot.id, task.threadId);
-    expect(await lastRow()).toBe("error: Cloud desktops can't start right now. It isn't anything you did. This conversation is back on Auto. Send your message again.");
-    const cleared = savedTask(bot.id, task.threadId)!;
-    expect(cleared.surface).toBeUndefined();
-    expect(cleared.surfaceSource).toBeUndefined();
-    resetTurn();
-    await apiOk("POST", `/api/bots/${bot.id}/messages`, { text: "Carry on where you can.", threadId: task.threadId });
-    const next = await dump();
-    expect(mountedComputer(next)?.args ?? []).not.toContain("computer");
-    writeFileSync(finishFile, "finish");
-    await idle(bot.id, task.threadId);
-    expect(await lastRow()).not.toMatch(/^error:/);
-
-    await apiOk("PATCH", `/api/bots/${bot.id}/tasks/${task.threadId}`, { surface: "cloud" });
-    resetTurn();
-    await apiOk("POST", `/api/bots/${bot.id}/messages`, { text: "Use the cloud computer.", threadId: task.threadId });
-    await until(() => lastRow(), row => row.startsWith("error:"));
-    await idle(bot.id, task.threadId);
-    expect(await lastRow()).toBe("error: Cloud desktops can't start right now. It isn't anything you did. Clear this conversation's place in the composer to continue.");
-    expect(savedTask(bot.id, task.threadId)).toMatchObject({ surface: "cloud", surfaceSource: "user" });
-    boatDown = false;
-    await apiOk("DELETE", `/api/bots/${bot.id}`);
-    await stop();
-  });
-
-  it("never takes a relayed line's conversation for where the person writes, when select_computer continues its turn", async () => {
-    await start();
-    const { bot } = await apiOk("POST", "/api/bots", { name: "Relayed place bot" });
-    // An Ask thread, as a Slack relay's guarded send expects.
-    const { task } = await apiOk("POST", `/api/bots/${bot.id}/tasks`, { approvalMode: "ask" });
-    await apiOk("PUT", "/api/config", { box: { token: "box_fixture" } });
-    const lastRow = async () => {
-      const { messages } = await apiOk("GET", `/api/threads/${task.threadId}/messages?limit=30`);
-      return String(messages.filter((message: any) => message.kind !== "digest").at(-1)?.tool?.name ?? "");
-    };
-    resetTurn();
-    await apiOk("POST", `/api/bots/${bot.id}/messages/guarded`, {
-      threadId: task.threadId, sendId: randomUUID(), text: "Check the dashboard on the cloud computer.", expectedActiveLeafId: null,
-    });
-    const sent = await dump();
-    const token = sent.mcpConfig.mcpServers.agents.env.OMB_COMMS_TOKEN;
-    const selected = await fetch(base + "/api/internal/computer/select", { method: "POST",
-      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ surface: "cloud" }) });
-    expect(await selected.json()).toMatchObject({ status: "pending", surface: "cloud" });
-    boatDown = true;
-    writeFileSync(finishFile, "finish");
-    await until(() => lastRow(), row => row.startsWith("error:"));
-    await idle(bot.id, task.threadId);
-    expect(savedTask(bot.id, task.threadId)).not.toHaveProperty("askedAt");
-    boatDown = false;
     await apiOk("DELETE", `/api/bots/${bot.id}`);
     await stop();
   });

@@ -19,7 +19,6 @@ describe("workspace credential migration", () => {
   it("moves every plaintext secret into the store and deletes the field", () => {
     const config = {
       xai: { key: "xai-secret", url: "https://api.example.test/v1" },
-      box: { token: "boat-secret" },
       tts: { key: "tts-secret", fishKey: "fish-secret", voice: "narrator" },
       imageGen: { key: "image-secret" },
       opencodeGo: { apiKey: "ocg-secret" },
@@ -30,7 +29,6 @@ describe("workspace credential migration", () => {
     expect(result.credentialsChanged).toBe(true);
     expect(result.credentials).toEqual({
       xaiApiKey: "xai-secret",
-      boxToken: "boat-secret",
       ttsKey: "tts-secret",
       fishAudioKey: "fish-secret",
       opencodeGoApiKey: "ocg-secret",
@@ -38,7 +36,6 @@ describe("workspace credential migration", () => {
     });
     expect(result.config).toEqual({
       xai: { url: "https://api.example.test/v1" },
-      box: {},
       tts: { voice: "narrator" },
       imageGen: {},
       opencodeGo: {},
@@ -75,11 +72,11 @@ describe("workspace credential migration", () => {
 
   it("treats a saved non-empty value as newest intent and overwrites the store", () => {
     const result = migrateWorkspaceCredentials(
-      { box: { token: "box-NEW" } },
-      { boxToken: "box-OLD", xaiApiKey: "xai-keep" },
+      { tts: { key: "tts-NEW" } },
+      { ttsKey: "tts-OLD", xaiApiKey: "xai-keep" },
     );
-    expect(result.credentials).toEqual({ boxToken: "box-NEW", xaiApiKey: "xai-keep" });
-    expect(result.config.box).toEqual({});
+    expect(result.credentials).toEqual({ ttsKey: "tts-NEW", xaiApiKey: "xai-keep" });
+    expect(result.config.tts).toEqual({});
   });
 
   it("treats an empty saved value as no information and keeps the stored secret", () => {
@@ -127,7 +124,6 @@ describe("workspace credential env", () => {
     expect(
       workspaceCredentialEnv({
         xaiApiKey: "xai-secret",
-        boxToken: "boat-secret",
         ttsKey: "tts-secret",
         fishAudioKey: "fish-secret",
         opencodeGoApiKey: "ocg-secret",
@@ -136,7 +132,6 @@ describe("workspace credential env", () => {
       }),
     ).toEqual({
       XAI_API_KEY: "xai-secret",
-      BOX_TOKEN: "boat-secret",
       OMB_TTS_KEY: "tts-secret",
       OMB_FISH_AUDIO_API_KEY: "fish-secret",
       OPENCODE_API_KEY: "ocg-secret",

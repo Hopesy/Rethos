@@ -329,7 +329,7 @@ describe("surfacePrompt", () => {
       expect(text, where).not.toContain("cannot be reached from here");
       expect(text, where).not.toContain("Everything you do on screen happens");
       expect(text, where).not.toContain("You cannot open apps, click, or inspect a screen");
-      expect(text, where).toContain("Their PC (OFFICE-PC) is reached only through shared_computer, never select_computer: when they ask for something on it, check list_shared_computers, then use shared_computer on it (computer_tools, then computer_call, for its apps and screen), whatever this conversation is pinned to.");
+      expect(text, where).toContain("Their PC (OFFICE-PC) is reached through shared_computer. Check list_shared_computers for its computer_id; when the person asks to change this conversation's work location, select that computer_id with select_computer. Use shared_computer on the selected computer (computer_tools, then computer_call, for its apps and screen).");
       expect(text, where).toContain("If list_shared_computers says this conversation can't use it, or that it doesn't lend what you need, say so in one sentence");
       if (mounted.computer || mounted.browser) expect(text, where).toContain("and their PC (OFFICE-PC) is not one of these places");
     }
@@ -338,7 +338,7 @@ describe("surfacePrompt", () => {
     expect(pinned).toContain("say so in one sentence and don't do it on the cloud computer instead unless they ask.");
     expect(surfacePrompt({ computer: null, browser: true }, { cloudHome: true, ownComputer: lent })).toContain("no managed desktop computer is mounted this turn");
     // Never lent yet: still their own computer, reached the same way once it is.
-    expect(surfacePrompt({ computer: "cloud", browser: false }, { cloudHome: true, ownComputer: [] })).toContain("Their own computer is reached only through shared_computer");
+    expect(surfacePrompt({ computer: "cloud", browser: false }, { cloudHome: true, ownComputer: [] })).toContain("Their own computer is reached through shared_computer");
   });
 
   it("scopes a Cloud home's missing host access to managed surfaces", () => {

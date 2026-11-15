@@ -1,4 +1,5 @@
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -57,24 +58,6 @@ describe("a Cloud home's routines wait while the owner has left", () => {
     expect(w.state()).toMatchObject({ enabled: true });
     expect(w.state().heldFor).toBeUndefined();
     expect(w.lines).toHaveLength(1);
-  });
-
-  it("pauses while the plan is cancelled and keeps that across a restart, before the engines are read again", () => {
-    const w = world();
-    w.make();
-    w.host.engines(false);
-    w.host.plan(true);
-    expect(w.state()).toMatchObject({ enabled: false, heldFor: "plan_cancelled" });
-    expect(w.lines.map((line) => line.name)).toEqual(["notice: Your routines are paused because the plan was cancelled. To keep one running until the plan ends, turn it back on in Routines."]);
-    expect(JSON.parse(readFileSync(join(w.dir, "routine-holds.json"), "utf8"))).toEqual({ planCancelled: true });
-
-    const again = world(w.dir);
-    again.make();
-    again.host.review();
-    expect(again.host.causes()).toEqual(["plan_cancelled"]);
-    expect(again.lines).toEqual([]);
-    again.host.plan(false);
-    expect(again.routines.listRoutines().every((routine) => routine.enabled)).toBe(true);
   });
 
   it("remembers what it read before the routines exist and applies it once they do", () => {
