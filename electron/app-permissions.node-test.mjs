@@ -113,195 +113,22 @@ test("fails closed on unparsable or opaque origins", () => {
   assert.equal(appPermissionAllowed("notifications", "javascript:alert(1)", LOCAL_ORIGIN), false);
 });
 
-const CLOUD = "https://omb-u-0123456789ab.fly.dev";
-function cloudFixture({ home = CLOUD } = {}) {
-  const main = { getURL: () => `${CLOUD}/chat?botId=bot-1` };
-  const state = { home, main, remote: false };
-  const handlers = appPermissionHandlers({
-    rendererOrigin: () => LOCAL_ORIGIN,
-    mainContents: () => state.main,
-    cloudHomeOrigin: () => state.home,
-  });
-  const ask = (permission, details, contents = state.main) => {
-    let granted;
-    handlers.request(contents, permission, (value) => { granted = value; }, details);
-    return granted;
-  };
-  const check = (permission, requestingOrigin, details, contents = state.main) => handlers.check(contents, permission, requestingOrigin, details);
-  return { state, ask, check };
-}
-const onCloud = (fields = {}) => ({ requestingUrl: `${CLOUD}/chat?botId=bot-1`, isMainFrame: true, ...fields });
-
-test("the verified Cloud open in this window may use the microphone", () => {
-  const { ask, check } = cloudFixture();
-  assert.equal(ask("media", onCloud({ mediaTypes: ["audio"] })), true);
-  assert.equal(check("media", CLOUD, { requestingUrl: `${CLOUD}/`, isMainFrame: true, mediaType: "audio" }), true);
-});
-
-test("the Cloud never gets the camera, screen capture or any other capability but clipboard writes", () => {
-  const { ask, check } = cloudFixture();
-  for (const mediaTypes of [["video"], ["audio", "video"], [], ["unknown"]]) {
-    assert.equal(ask("media", onCloud({ mediaTypes })), false, JSON.stringify(mediaTypes));
-  }
-  assert.equal(ask("media", onCloud()), false, "media with no type");
-  assert.equal(check("media", CLOUD, { isMainFrame: true, mediaType: "video" }), false);
-  assert.equal(check("media", CLOUD, { isMainFrame: true, mediaType: "unknown" }), false);
-  for (const permission of ["notifications", "clipboard-read", "fullscreen", "geolocation", "display-capture", "camera"]) {
-    assert.equal(ask(permission, onCloud()), false, permission);
-    assert.equal(check(permission, CLOUD, { isMainFrame: true }), false, permission);
-    assert.equal(ask(permission, onCloud({ mediaTypes: ["audio"] })), false, `${permission} with audio details`);
-    assert.equal(check(permission, CLOUD, { isMainFrame: true, mediaType: "audio" }), false, `${permission} with audio details`);
-  }
-});
-
-test("the Cloud's microphone is decided by this computer's media rule, never a copy of it", () => {
-  const { ask } = cloudFixture();
-  const shapes = [
-    {}, { mediaType: "audio" }, { mediaType: "video" }, { mediaTypes: ["audio"] }, { mediaTypes: ["audio", "audio"] },
-    { mediaTypes: ["video"] }, { mediaTypes: ["audio", "video"] }, { mediaTypes: ["audio"], mediaType: "video" },
-    { mediaTypes: null }, { mediaTypes: "audio" }, { mediaTypes: [""] },
-  ];
-  for (const shape of shapes) {
-    assert.equal(ask("media", onCloud(shape)), appPermissionAllowed("media", CLOUD, CLOUD, shape), JSON.stringify(shape));
-  }
-});
-
-test("a server that is not the verified Cloud never hears the microphone", () => {
-  const { state, ask, check } = cloudFixture();
-  const mic = { isMainFrame: true, mediaTypes: ["audio"] };
-  for (const other of ["https://my-vps.example.com", "http://omb-u-0123456789ab.fly.dev", "https://omb-u-0123456789ab.fly.dev:8443", "https://evil.fly.dev"]) {
-    assert.equal(ask("media", { ...mic, requestingUrl: `${other}/chat` }), false, other);
-    assert.equal(check("media", other, { isMainFrame: true, mediaType: "audio" }), false, other);
-  }
-  assert.equal(ask("media", onCloud({ mediaTypes: ["audio"], isMainFrame: false })), false, "a subframe");
-  assert.equal(ask("media", onCloud({ mediaTypes: ["audio"] }), { getURL: () => `${CLOUD}/` }), false, "another window");
-  assert.equal(check("media", CLOUD, { isMainFrame: true, mediaType: "audio" }, null), false, "no window");
-  state.main = null;
-  assert.equal(ask("media", onCloud({ mediaTypes: ["audio"] })), false, "the main window is gone");
-});
-
-test("signed out of Cloud, or the Cloud not running, its page loses the microphone at once", () => {
-  const { state, ask } = cloudFixture();
-  assert.equal(ask("media", onCloud({ mediaTypes: ["audio"] })), true);
-  state.home = null;
-  assert.equal(ask("media", onCloud({ mediaTypes: ["audio"] })), false);
-  state.home = "not a url";
-  assert.equal(ask("media", onCloud({ mediaTypes: ["audio"] })), false);
-});
-
-test("the verified Cloud open in this window may write the clipboard, by the remote server's rule", () => {
-  const write = "clipboard-sanitized-write";
-  const { state, ask, check } = cloudFixture();
-  assert.equal(ask(write, onCloud()), true);
-  assert.equal(check(write, CLOUD, { requestingUrl: `${CLOUD}/`, isMainFrame: true }), true);
-  assert.equal(ask("clipboard-read", onCloud()), false);
-  assert.equal(check("clipboard-read", CLOUD, { isMainFrame: true }), false);
-  assert.equal(ask(write, onCloud({ isMainFrame: false })), false, "a subframe");
-  assert.equal(check(write, CLOUD, { isMainFrame: false }), false, "a subframe");
-  assert.equal(check(write, CLOUD, {}), false, "no frame information");
-  for (const other of ["https://my-vps.example.com", "http://omb-u-0123456789ab.fly.dev", "https://omb-u-0123456789ab.fly.dev:8443", "https://evil.fly.dev"]) {
-    assert.equal(ask(write, { requestingUrl: `${other}/chat`, isMainFrame: true }), false, other);
-    assert.equal(check(write, other, { isMainFrame: true }), false, other);
-  }
-  assert.equal(ask(write, onCloud(), { getURL: () => `${CLOUD}/` }), false, "another window");
-  assert.equal(check(write, CLOUD, { isMainFrame: true }, null), false, "no window");
-  for (const home of [null, "not a url", "about:blank"]) {
-    state.home = home;
-    assert.equal(ask(write, onCloud()), false, String(home));
-    assert.equal(check(write, CLOUD, { isMainFrame: true }), false, String(home));
-  }
-  state.home = CLOUD;
-  state.main = null;
-  assert.equal(ask(write, onCloud(), { getURL: () => `${CLOUD}/` }), false, "the main window is gone");
-});
-
-test("once My Cloud is home its page may show notifications and go fullscreen, in the main window's main frame only; any other page still may not", () => {
-  const state = { home: null, main: { getURL: () => `${CLOUD}/chat` } };
-  const handlers = appPermissionHandlers({ rendererOrigin: () => LOCAL_ORIGIN, mainContents: () => state.main, cloudHomeOrigin: () => CLOUD, homeOrigin: () => state.home });
-  const ask = (details, contents = state.main) => { let granted; handlers.request(contents, "notifications", (value) => { granted = value; }, details); return granted; };
-  const check = (origin, details, contents = state.main) => handlers.check(contents, "notifications", origin, details);
-  assert.equal(ask(onCloud()), false, "a Cloud the move hasn't reached is not home");
-  state.home = CLOUD;
-  assert.equal(ask(onCloud()), true);
-  assert.equal(check(CLOUD, { isMainFrame: true }), true);
-  assert.equal(ask(onCloud({ isMainFrame: false })), false, "a frame inside it");
-  assert.equal(check(CLOUD, {}), false, "a frame it cannot vouch for");
-  assert.equal(ask(onCloud(), { getURL: () => `${CLOUD}/` }), false, "another window");
-  assert.equal(ask({ requestingUrl: "https://bots.example.test/", isMainFrame: true }), false, "another server");
-  let fullscreen; handlers.request(state.main, "fullscreen", (value) => { fullscreen = value; }, onCloud());
-  assert.equal(fullscreen, true, "a chat video's fullscreen button");
-  for (const permission of ["geolocation", "camera", "clipboard-read"]) {
-    let granted; handlers.request(state.main, permission, (value) => { granted = value; }, onCloud());
-    assert.equal(granted, false, permission);
-  }
-  state.home = null;
-  assert.equal(ask(onCloud()), false, "signed out or ended: at once");
-  for (const requesting of ["about:blank", "data:text/html,x", ""]) assert.equal(ask({ requestingUrl: requesting, isMainFrame: true }), false, `${requesting || "(empty)"}: no home is never a match for an opaque origin`);
-});
-
-test("this computer's own page keeps its permissions through the same handlers", () => {
-  const { ask, check } = cloudFixture({ home: null });
-  const local = { getURL: () => LOCAL_PAGE };
-  assert.equal(ask("media", { requestingUrl: LOCAL_PAGE, isMainFrame: true, mediaTypes: ["audio"] }, local), true);
-  assert.equal(ask("media", { requestingUrl: LOCAL_PAGE, isMainFrame: true, mediaTypes: [] }, local), true, "guarded display capture");
-  assert.equal(ask("media", { requestingUrl: LOCAL_PAGE, isMainFrame: true, mediaTypes: ["video"] }, local), false);
-  assert.equal(ask("notifications", { requestingUrl: LOCAL_PAGE, isMainFrame: true }, local), true);
-  assert.equal(ask("notifications", {}, local), true);
-  assert.equal(check("clipboard-read", "", { isMainFrame: true }, local), true);
-  assert.equal(check("clipboard-read", "https://other.example", { isMainFrame: true }, local), false);
-});
-
-const ipcFrom = (contents, frameUrl, { mainFrame = true } = {}) => {
-  const frame = { url: frameUrl };
-  if (mainFrame) contents.mainFrame = frame;
-  else contents.mainFrame ??= { url: contents.getURL() };
-  return { sender: contents, senderFrame: frame };
-};
-const pageMicFixture = () => {
-  const state = { home: CLOUD, main: { getURL: () => `${CLOUD}/chat?botId=bot-1` } };
-  const handlers = appPermissionHandlers({ rendererOrigin: () => LOCAL_ORIGIN, mainContents: () => state.main, cloudHomeOrigin: () => state.home });
-  return { state, handlers };
-};
-
-test("a page asking about its microphone hears whether this app lets it use it", () => {
-  const { state, handlers } = pageMicFixture();
-  assert.equal(handlers.pageMicrophone(ipcFrom(state.main, `${CLOUD}/chat?botId=bot-1`)), "allowed", "the verified Cloud");
-  const local = { getURL: () => LOCAL_PAGE };
-  assert.equal(handlers.pageMicrophone(ipcFrom(local, LOCAL_PAGE)), "allowed", "this computer's own page");
-  state.main = { getURL: () => "https://my-vps.example.com/chat" };
-  assert.equal(handlers.pageMicrophone(ipcFrom(state.main, "https://my-vps.example.com/chat")), "refused", "another server");
-});
-
-test("the Cloud's page is refused where its microphone request would be", () => {
-  const { state, handlers } = pageMicFixture();
-  assert.equal(handlers.pageMicrophone(ipcFrom(state.main, `${CLOUD}/frame`, { mainFrame: false })), "refused", "a subframe");
-  const other = { getURL: () => `${CLOUD}/` };
-  assert.equal(handlers.pageMicrophone(ipcFrom(other, `${CLOUD}/`)), "refused", "another window");
-  assert.equal(handlers.pageMicrophone({ sender: state.main, senderFrame: null }), "refused", "a frame that is gone");
-  assert.equal(handlers.pageMicrophone(undefined), "refused", "no sender");
-  state.home = null;
-  assert.equal(handlers.pageMicrophone(ipcFrom(state.main, `${CLOUD}/chat`)), "refused", "signed out of Cloud");
-});
-
-// Electron's callback lets the request decide later, so the test waits for its answer.
-test("the page's answer is the request handler's answer for its microphone", async () => {
-  const { state, handlers } = pageMicFixture();
-  const local = { getURL: () => LOCAL_PAGE };
-  const other = { getURL: () => `${CLOUD}/` };
-  for (const home of [CLOUD, null, "https://evil.fly.dev"]) {
-    state.home = home;
-    for (const contents of [state.main, local, other]) {
-      for (const url of [`${CLOUD}/chat`, LOCAL_PAGE, "https://my-vps.example.com/", "http://omb-u-0123456789ab.fly.dev/"]) {
-        for (const mainFrame of [true, false]) {
-          const granted = await new Promise((resolve) => {
-            handlers.request(contents, "media", resolve, { requestingUrl: url, isMainFrame: mainFrame, mediaTypes: ["audio"] });
-          });
-          const label = JSON.stringify({ home, page: contents.getURL(), url, mainFrame });
-          assert.equal(await handlers.pageMicrophone(ipcFrom(contents, url, { mainFrame })), granted ? "allowed" : "refused", label);
-        }
-      }
+test("local startup handlers decide unsupported permissions without remote configuration", async () => {
+  const main = { getURL: () => LOCAL_PAGE };
+  const handlers = appPermissionHandlers({ rendererOrigin: () => LOCAL_ORIGIN, mainContents: () => main });
+  for (const permission of ["notifications", "clipboard-read", "clipboard-sanitized-write", "fullscreen", "media", "geolocation", "camera", "unknown"]) {
+    for (const origin of [LOCAL_ORIGIN, "https://other.example", "about:blank", ""]) {
+      const details = { requestingUrl: origin, isMainFrame: true, mediaTypes: ["audio"] };
+      const expected = appPermissionAllowed(permission, origin || LOCAL_PAGE, LOCAL_ORIGIN, details);
+      assert.equal(handlers.check(main, permission, origin, details), expected);
+      const asked = await new Promise(resolve => handlers.request(main, permission, resolve, details));
+      assert.equal(asked, appPermissionAllowed(permission, origin, LOCAL_ORIGIN, details));
     }
   }
+  const frame = { url: LOCAL_PAGE };
+  main.mainFrame = frame;
+  assert.equal(handlers.pageMicrophone({ sender: main, senderFrame: frame }), "allowed");
+  assert.equal(handlers.pageMicrophone(undefined), "refused");
 });
 
 const REMOTE = "https://viernes.tail1.ts.net:9444";
@@ -335,7 +162,7 @@ test("the base policy itself still grants a remote origin nothing", () => {
 
 test("the active remote server's page may show notifications and go fullscreen, in the main window's main frame only", () => {
   const state = { remote: REMOTE, main: { getURL: () => `${REMOTE}/chat` } };
-  const handlers = appPermissionHandlers({ rendererOrigin: () => LOCAL_ORIGIN, mainContents: () => state.main, cloudHomeOrigin: () => null,
+  const handlers = appPermissionHandlers({ rendererOrigin: () => LOCAL_ORIGIN, mainContents: () => state.main,
     activeRemoteOrigin: () => state.remote });
   const onRemote = (extra = {}) => ({ requestingUrl: `${REMOTE}/settings`, isMainFrame: true, ...extra });
   const ask = (details, contents = state.main, permission = "notifications") => {
