@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
@@ -13,6 +13,7 @@ async function fixture(t, { screen = () => false } = {}) {
   const env = { id: "cloud-a", origin: "https://a.fixture.test", name: "A's Cloud", cloud: { id: "c" } };
   const f = { env, account: "acct-a", status: "connected", origin: env.origin, places: [env], polls: [], asks: [], routes: [], live: () => [...f.polls, ...f.asks].filter((signal) => !signal.aborted).length };
   const identity = { sessionId: randomUUID(), environmentId: randomUUID() };
+  f.record = async () => JSON.parse(await readFile(path.join(dir, "sharing.json"), "utf8")).records[env.id];
   const hold = (signal, list) => new Promise((resolve, reject) => { list.push(signal); signal.throwIfAborted(); signal.addEventListener("abort", () => reject(signal.reason), { once: true }); });
   f.sharing = createComputerSharing({
     file: path.join(dir, "sharing.json"), environments: () => f.places, enabled: async () => false, home: path.join(dir, "home"),
@@ -74,6 +75,32 @@ test("leaving another account, or none, stops nothing", async (t) => {
   f.sharing.leaveAccount("acct-z");
   f.sharing.leaveAccount(null);
   assert.equal(f.sharing.lendingToCloud(), true);
+});
+
+test("automatic capability refresh retains identity and respects this server's pause and revoke", async t => {
+  let screen = false;
+  const f = await fixture(t, { screen: () => screen });
+  await settled(f);
+  const original = await f.record();
+  screen = true;
+  await f.sharing.screenChanged();
+  const refreshed = await f.record();
+  assert.equal(refreshed.id, original.id);
+  assert.equal(refreshed.secret, original.secret);
+  assert.equal(refreshed.grantRevision, original.grantRevision);
+  assert.equal(refreshed.computer, true);
+  await f.sharing.pauseServer(f.env);
+  screen = false;
+  await f.sharing.screenChanged();
+  assert.equal((await f.record()).paused, true);
+  assert.equal(f.sharing.lendingToCloud(), false);
+  await f.sharing.resumeServer(f.env);
+  await until(() => f.sharing.lendingToCloud(), "resumed server");
+  f.sharing.revoke(f.env);
+  screen = true;
+  await f.sharing.screenChanged();
+  assert.equal((await f.record()).enabled, false);
+  assert.equal(f.sharing.lendingToCloud(), false);
 });
 
 test("a lending pass already under way when the account is left lends nothing more, and tells that Cloud nothing", async (t) => {

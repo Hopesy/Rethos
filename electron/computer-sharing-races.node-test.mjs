@@ -113,11 +113,13 @@ test("declining access invalidates a pending grant", async t => {
   assert.deepEqual(f.connects, []);
 });
 
-test("permission saves retain the computer identity and replace its grant revision", async t => {
+for (const mode of ["automatic server", "computer access"]) test(`${mode} permission saves retain the computer identity and replace its grant revision`, async t => {
   const f = await fixture(t);
-  await f.sharing.save(f.env, { folders: [], computer: true, terminal: false }, f.info);
+  const save = terminal => mode === "automatic server" ? f.sharing.saveCloud(f.env, { folders: [], screen: true, terminal })
+    : f.sharing.save(f.env, { folders: [], computer: true, terminal }, f.info);
+  await save(false);
   const before = (await f.records())[f.env.id];
-  await f.sharing.save(f.env, { folders: [], computer: true, terminal: true }, f.info);
+  await save(true);
   const after = (await f.records())[f.env.id];
   assert.equal(after.id, before.id);
   assert.equal(after.secret, before.secret);

@@ -450,9 +450,9 @@ export function createComputerSharing({ file, fetch: fetchImpl, environments, lo
     }
   };
   const matches = (grant, info) => grant?.sessionId === info.sessionId && grant?.environmentId === info.environmentId;
-  const deviceCredentials = (env, info) => {
+  const deviceCredentials = (env, info, sameOwner = true) => {
     const previous = records[env.id];
-    const same = previous?.environmentId === info.environmentId && uuid(previous.id) && /^[a-f0-9]{64}$/.test(previous.secret);
+    const same = sameOwner && previous?.environmentId === info.environmentId && uuid(previous.id) && /^[a-f0-9]{64}$/.test(previous.secret);
     return { id: same ? previous.id : randomUUID(), secret: same ? previous.secret : randomBytes(32).toString("hex"), grantRevision: randomUUID() };
   };
   const replaceGrant = (env, grant) => {
@@ -669,8 +669,14 @@ export function createComputerSharing({ file, fetch: fetchImpl, environments, lo
     (grant.cloud
       ? typeof grant.cloud.accountId === "string" && typeof grant.cloud.origin === "string" && (grant.environmentId === null || uuid(grant.environmentId))
       : uuid(grant.sessionId) && uuid(grant.environmentId));
-  const cloudGrant = (env, current, info, { folders = [], screen, internet, terminal, chrome }) => ({ ...info, id: randomUUID(), secret: randomBytes(32).toString("hex"), enabled: true, folders,
-    terminal: terminal === true, computer: screen === true, internet: internet === true, chrome: chrome === true, cloud: { accountId: current.accountId, origin: env.origin } });
+  const cloudGrant = (env, current, info, { folders = [], screen, internet, terminal, chrome }) => {
+    const kept = records[env.id];
+    const bound = kept?.cloud?.accountId === current.accountId && kept.cloud.origin === env.origin;
+    const identity = bound && info.environmentId === null ? { sessionId: kept.sessionId, environmentId: kept.environmentId } : info;
+    const credentials = deviceCredentials(env, identity, bound);
+    return { ...identity, ...credentials, enabled: true, folders,
+      terminal: terminal === true, computer: screen === true, internet: internet === true, chrome: chrome === true, cloud: { accountId: current.accountId, origin: env.origin } };
+  };
   const verifiedCloud = env => {
     const current = cloud(env);
     return current?.status === "connected" && current.accountId && current.origin === env.origin ? current : null;
@@ -689,8 +695,7 @@ export function createComputerSharing({ file, fetch: fetchImpl, environments, lo
     try { info = await cloudIdentity(env); } catch (error) { if (error.problem !== "connect-first") throw error; }
     if (grantVersions.get(env.id) !== version) return cloudState(env);
     const grant = cloudGrant(env, current, info, { ...input, folders });
-    disconnect(env, records[env.id]);
-    store({ ...records, [env.id]: grant }); run(env, grant); changed();
+    replaceGrant(env, grant);
     return cloudState(env);
   };
   const lendable = folders => Promise.all(folders.map(folder => validateSharedFolders([folder], { homeEdits: true }).then(([checked]) => checked ?? null, () => null)))
@@ -701,7 +706,8 @@ export function createComputerSharing({ file, fetch: fetchImpl, environments, lo
     changeGrant(env.id);
     const bound = kept?.enabled === true && kept.cloud?.accountId === current.accountId && kept.cloud.origin === env.origin;
     const grant = cloudGrant(env, current, bound ? { sessionId: kept.sessionId ?? null, environmentId: kept.environmentId ?? null } : { sessionId: null, environmentId: null }, wanted);
-    if (sleepsHere(env) && sleepGate(env).asleep()) stop(env.id); else disconnect(env, kept);
+    if (bound) grant.grantRevision = kept.grantRevision;
+    if (grant.id === kept?.id || (sleepsHere(env) && sleepGate(env).asleep())) stop(env.id); else disconnect(env, kept);
     try { store({ ...records, [env.id]: grant }); } catch { return; }
     run(env, grant);
     changed();
@@ -719,6 +725,7 @@ export function createComputerSharing({ file, fetch: fetchImpl, environments, lo
     for (const env of ownClouds()) {
       const kept = records[env.id], current = verifiedCloud(env);
       if (closed || paused || turn !== accountTurn || !current) continue;
+      if (kept?.paused || kept?.serverAccess === "paused" || kept?.serverAccess === "revoked" || (kept?.enabled === false && ["you", "server"].includes(kept.stopped?.reason))) continue;
       const keptFolders = kept?.cloud?.accountId === current.accountId && Array.isArray(kept.folders) ? await lendable(kept.folders) : [];
       const wanted = automaticGrant({ kept: keptFolders, home: homeFolder, screen: screenLent, projects: env.id === (target ?? myCloud())?.id ? projectFolders : [],
         terminal: terminalAccount === current.accountId });
@@ -921,7 +928,7 @@ export function createComputerSharing({ file, fetch: fetchImpl, environments, lo
       if (paused) throw new Error("Resume all computer connections from the tray first.");
       if (grant.serverAccess === "revoked") throw new Error("Save this computer's access again to renew its authorization.");
       const version = changeGrant(env.id);
-      const info = await (grant.own ? ownIdentity(env) : identity(env));
+      const info = await (grant.cloud ? cloudIdentity(env) : grant.own ? ownIdentity(env) : identity(env));
       if (info.environmentId !== grant.environmentId) throw new Error("This server's identity changed. Save computer access again.");
       if (closed || grantVersions.get(env.id) !== version) return;
       if (supportsAccessControl.has(env.id)) await request(env, `/api/shared-computers/${grant.id}/access`, { mode: "enabled" }, undefined, grant.secret, "PATCH");
