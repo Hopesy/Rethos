@@ -10,12 +10,12 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { DecisionRow } from "./decision-log.ts";
 import { SessionRegistry } from "./sessions.ts";
 import { removeTempDir, waitForExit } from "./testing/cleanup.ts";
-import { workerPort } from "./testing/worker-port.ts";
+import { freePortBlock } from "./testing/ports.ts";
 
 const SERVER_DIR = dirname(fileURLToPath(import.meta.url));
 const FAKE_CLI = join(SERVER_DIR, "testing", "fake-acp-cli.ts");
-const PORT = workerPort(28800, 10_000);
-const BASE = `http://127.0.0.1:${PORT}`;
+let PORT = 0;
+let BASE = "";
 const posixOnly = describe.skipIf(process.platform === "win32");
 const BOSS = "boss@example.test";
 const ADA = "ada@example.test";
@@ -108,6 +108,8 @@ const refusal = /Only the person who started this conversation or sent this requ
 
 posixOnly("who may answer a card on a shared workspace", () => {
   beforeAll(async () => {
+    PORT = await freePortBlock([0, 1]);
+    BASE = `http://127.0.0.1:${PORT}`;
     chmodSync(FAKE_CLI, 0o755);
     home = mkdtempSync(join(tmpdir(), "omb-card-answerers-"));
     const data = join(home, ".openmausbot");

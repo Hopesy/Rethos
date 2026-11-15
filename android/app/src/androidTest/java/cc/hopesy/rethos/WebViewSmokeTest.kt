@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.MotionEvent
 import android.webkit.CookieManager
+import android.webkit.WebView
 import android.widget.Button
 import android.widget.TextView
 import androidx.core.content.FileProvider
@@ -62,8 +63,15 @@ class WebViewSmokeTest {
         if (view is ViewGroup) for (index in 0 until view.childCount) yieldAll(views(view.getChildAt(index)))
     }
     private fun tap(scenario: ActivityScenario<MainActivity>, id: String) {
-        waitForNative(scenario) { it.browser.progress == 100 }
+        waitForNative(scenario) { it.browser.progress == 100 && it.window.decorView.hasWindowFocus() && it.browser.width > 0 && it.browser.height > 0 }
         js(scenario, "document.getElementById('$id').scrollIntoView({block:'center'})")
+        val drawn = CountDownLatch(1)
+        scenario.onActivity { activity ->
+            activity.browser.postVisualStateCallback(0L, object : WebView.VisualStateCallback() {
+                override fun onComplete(requestId: Long) { drawn.countDown() }
+            })
+        }
+        assertTrue("WebView visual state ready for touch", drawn.await(10, TimeUnit.SECONDS))
         val bounds = JSONArray(js(scenario, "(()=>{const r=document.getElementById('$id').getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2,innerWidth]})()"))
         var x = 0f
         var y = 0f
