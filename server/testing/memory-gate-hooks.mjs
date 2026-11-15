@@ -5,7 +5,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { registerHooks } from 'node:module';
 import { join } from 'node:path';
 const dataDir = process.env.OMB_DATA_DIR;
-if (!dataDir || dataDir !== process.env.HOME || process.env.OMB_TEST_MEMORY_GATE !== '1') {
+const home = process.env.HOME;
+if (!dataDir || !home || (dataDir !== home && dataDir !== join(home, '.openmausbot')) || process.env.OMB_TEST_MEMORY_GATE !== '1') {
   throw new Error('The memory gate seam requires an explicitly isolated fixture');
 }
 const file = join(dataDir, 'host-memory.json');
