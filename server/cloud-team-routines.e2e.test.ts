@@ -21,7 +21,7 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
 const LATER = { type: "interval", everyMinutes: 1440, anchorAt: Date.now() + 86_400_000 };
 type Routine = { id: string; name: string; enabled: boolean };
 type Run = { id: string; routineId: string; status: string; threadId?: string; resultsThreadId?: string };
-type Bot = { id: string; name: string; threadId: string; mainThreadId: string };
+type Bot = { id: string; name: string; threadId: string; mainThreadId: string; defaultBot?: { person?: string } };
 
 let fx: CloudSendFixture, team: CloudTeamFixture;
 let owner = "", admin = "", bob = "", ben = "";
@@ -224,7 +224,7 @@ it("a member's routine for the shared chat lands where everyone reads it, run by
     expect((await team.as(token, "GET", `/api/threads/${ran.threadId}/messages`)).status).toBe(404);
   }
   // A teammate's own MausBot takes no routine from anyone else, and one Bob sets up for his is his alone.
-  const bobsMausBot = (await botsOf(bob)).find((bot) => bot.name === "MausBot")!;
+  const bobsMausBot = (await botsOf(bob)).find((bot) => bot.defaultBot?.person === BOB.email)!;
   expect((await team.as(owner, "POST", "/api/routines", { name: "Peek", prompt: "x", botId: bobsMausBot.id, schedule: LATER })).status).toBe(404);
   const own = await team.as(bob, "POST", "/api/routines", { name: "Bee check", prompt: "Check the bees", botId: bobsMausBot.id, schedule: LATER });
   expect(own.status, JSON.stringify(own.body)).toBe(201);

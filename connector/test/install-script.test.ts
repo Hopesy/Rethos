@@ -141,7 +141,7 @@ describe("install.sh", () => {
     expect(odd.calls).toEqual([]);
   });
 
-  it("starts a customer-run connector with its mode and the updater's folder, and only where MausBot is already installed", () => {
+  it("starts a customer-run connector with its mode and the updater's folder, and only where Rethos is already installed", () => {
     expect(script).toContain('set -- "$@" -e MAUSBOT_MODE=customer-run -v "$UPDATE_DIR:/var/lib/mausbot/update"');
     expect(PATHS.update).toBe("/var/lib/mausbot/update");
     expect(script).toContain('INSTALL_DIR="${MAUSBOT_INSTALL_DIR:-/opt/openmausbot}"');
@@ -149,14 +149,14 @@ describe("install.sh", () => {
     expect(script).toContain("ExecStart=$SBIN_DIR/$UPDATE_RUNNER");
   });
 
-  it.skipIf(!posix)("refuses --customer-run where MausBot is not installed, before touching a thing", () => {
+  it.skipIf(!posix)("refuses --customer-run where Rethos is not installed, before touching a thing", () => {
     const refused = run(["--customer-run", "MB-1A2B-3C4D"]);
     expect(refused.status).toBe(1);
-    expect(refused.stderr).toContain(`MausBot isn't installed in ${refused.install} yet. Install it first with the server's install command, then run this again to connect it.`);
+    expect(refused.stderr).toContain(`Rethos isn't installed in ${refused.install} yet. Install it first with the server's install command, then run this again to connect it.`);
     expect(refused.calls).toEqual([]);
   });
 
-  it.skipIf(!posix)("disconnecting a server its owner installed removes the connector and the updater, and leaves that MausBot and its data alone", () => {
+  it.skipIf(!posix)("disconnecting a server its owner installed removes the connector and the updater, and leaves that Rethos and its data alone", () => {
     const result = run(["uninstall", "--delete-data"], { ownServer: true });
     expect(result.status, result.stderr).toBe(0);
     expect(result.calls).toContain(`docker rm -f ${NAMES.connector} ${NAMES.connectorNext}`);
@@ -164,7 +164,7 @@ describe("install.sh", () => {
     expect(readFileSync(join(result.install, "data", "chats.json"), "utf8")).toBe("theirs");
     expect(existsSync(join(result.install, "compose.yaml"))).toBe(true);
     for (const gone of [result.update, join(result.sbin, "mausbot-update-runner"), join(result.systemd, "mausbot-update.path"), join(result.systemd, "mausbot-update.service")]) expect(existsSync(gone), gone).toBe(false);
-    expect(result.stdout).toContain(`Your MausBot in ${result.install} and its data were not touched, and it keeps running.`);
+    expect(result.stdout).toContain(`Your Rethos in ${result.install} and its data were not touched, and it keeps running.`);
     expect(existsSync(join(result.apparmor, APPARMOR_PROFILE))).toBe(true);
   });
 });
