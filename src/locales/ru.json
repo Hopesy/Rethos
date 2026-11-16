@@ -7345,5 +7345,12 @@
   "settings.section.import": "Импорт",
   "sidebar.menu.getPhoneApp": "Скачать приложение для телефона",
   "settings.section.usage": "Использование",
-  "sidebar.menu.support": "Помощь и поддержка"
+  "sidebar.menu.support": "Помощь и поддержка",
+  "settings.simple.deviceNotifications": "Только пока приложение открыто. Вопросы, запросы подтверждения и предупреждения показываются всегда.",
+  "settings.sendKey.summary": "Выберите сочетание клавиш для отправки сообщения.",
+  "settings.followUp.summary": "Направьте текущую работу или поставьте следующее сообщение в очередь.",
+  "settings.universalPins.summary": "Держать закреплённых ботов вверху боковой панели.",
+  "settings.analytics.summary": "Делиться анонимной статистикой использования.",
+  "settings.talk.summary": "Удерживайте {key}, чтобы говорить, и отпустите, чтобы отправить.",
+  "sidebar.menu.weeklyUsage": "Использование за неделю"
 }

@@ -7292,5 +7292,12 @@
   "settings.section.import": "Import",
   "sidebar.menu.getPhoneApp": "Pobierz aplikację na telefon",
   "settings.section.usage": "Wykorzystanie",
-  "sidebar.menu.support": "Pomoc i wsparcie"
+  "sidebar.menu.support": "Pomoc i wsparcie",
+  "settings.simple.deviceNotifications": "Tylko gdy aplikacja jest otwarta. Pytania, prośby o zgodę i ostrzeżenia są zawsze widoczne.",
+  "settings.sendKey.summary": "Wybierz skrót do wysyłania wiadomości.",
+  "settings.followUp.summary": "Pokieruj bieżącą pracą lub dodaj kolejną wiadomość do kolejki.",
+  "settings.universalPins.summary": "Zachowaj przypięte boty na górze paska bocznego.",
+  "settings.analytics.summary": "Udostępniaj anonimowe statystyki użycia.",
+  "settings.talk.summary": "Przytrzymaj {key}, aby mówić, i puść, aby wysłać.",
+  "sidebar.menu.weeklyUsage": "Użycie tygodniowe"
 }

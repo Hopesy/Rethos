@@ -4098,5 +4098,15 @@
   "phone.code.e2e.getAppDetail": "Відскануйте камерою телефона.",
   "settings.section.backups": "Резервні копії",
   "sidebar.menu.getPhoneApp": "Отримати застосунок для телефона",
-  "settings.section.usage": "Використання"
+  "settings.section.usage": "Використання",
+  "settings.deviceNotifications.subtitle": "Показувати тут сповіщення, коли бот завершить роботу, доки застосунок відкритий. Запити на схвалення, запитання й попередження показуються завжди.",
+  "settings.deviceNotifications.blocked": "Сповіщення для цього сайту заблоковано. Дозвольте їх у налаштуваннях сайту в браузері.",
+  "settings.simple.deviceNotifications": "Лише доки застосунок відкритий. Запитання, запити на схвалення й попередження показуються завжди.",
+  "settings.sendKey.summary": "Виберіть сполучення клавіш для надсилання повідомлення.",
+  "settings.followUp.summary": "Скеруйте поточну роботу або поставте наступне повідомлення в чергу.",
+  "settings.universalPins.summary": "Тримати закріплених ботів угорі бічної панелі.",
+  "settings.analytics.summary": "Ділитися анонімною статистикою використання.",
+  "settings.talk.summary": "Утримуйте {key}, щоб говорити, і відпустіть, щоб надіслати.",
+  "sidebar.menu.weeklyUsage": "Використання за тиждень",
+  "sidebar.menu.support": "Допомога та підтримка"
 }

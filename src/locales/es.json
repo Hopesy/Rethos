@@ -6526,5 +6526,12 @@
   "settings.section.backups": "Copias de seguridad",
   "sidebar.menu.getPhoneApp": "Obtener la app para el teléfono",
   "settings.section.usage": "Uso",
-  "sidebar.menu.support": "Ayuda y soporte"
+  "sidebar.menu.support": "Ayuda y soporte",
+  "settings.simple.deviceNotifications": "Solo mientras la aplicación esté abierta. Las preguntas, aprobaciones y advertencias siempre se muestran.",
+  "settings.sendKey.summary": "Elige el atajo para enviar mensajes.",
+  "settings.followUp.summary": "Orienta el trabajo actual o pon tu próximo mensaje en la cola.",
+  "settings.universalPins.summary": "Mantén los bots fijados arriba en la barra lateral.",
+  "settings.analytics.summary": "Comparte estadísticas de uso anónimas.",
+  "settings.talk.summary": "Mantén pulsada {key} para hablar y suéltala para enviar.",
+  "sidebar.menu.weeklyUsage": "Uso semanal"
 }

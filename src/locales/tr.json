@@ -6026,5 +6026,12 @@
   "settings.section.backups": "Yedekler",
   "sidebar.menu.getPhoneApp": "Telefon uygulamasını edinin",
   "settings.section.usage": "Kullanım",
-  "sidebar.menu.support": "Yardım ve destek"
+  "sidebar.menu.support": "Yardım ve destek",
+  "settings.simple.deviceNotifications": "Yalnızca uygulama açıkken. Sorular, onaylar ve uyarılar her zaman gösterilir.",
+  "settings.sendKey.summary": "Mesaj göndermek için kullanılacak kısayolu seçin.",
+  "settings.followUp.summary": "Devam eden işi yönlendirin veya sonraki mesajınızı sıraya alın.",
+  "settings.universalPins.summary": "Sabitlenen botları kenar çubuğunun üstünde tutun.",
+  "settings.analytics.summary": "Anonim kullanım istatistiklerini paylaşın.",
+  "settings.talk.summary": "Konuşmak için {key} tuşunu basılı tutun, göndermek için bırakın.",
+  "sidebar.menu.weeklyUsage": "Haftalık kullanım"
 }

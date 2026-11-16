@@ -9528,7 +9528,6 @@
   "native.places.hereWith": "这些机器人在这台电脑上：{names}。{cloud} 有自己的机器人。",
   "native.places.hereNone": "这台电脑还没有自己的机器人。{cloud} 有自己的机器人。",
   "native.cloud.keepUnderWay": "这台电脑的机器人正在移回来。等它们回来后再试一次。",
-  "native.cloud.keepNoCloud": "这台电脑没有可以取回机器人的我的云端。",
   "native.common.close": "关闭",
   "native.tray.open": "打开 Rethos",
   "native.tray.quit": "结束 Rethos",

@@ -8123,5 +8123,10 @@
   "sidebar.menu.getPhoneApp": "スマートフォンアプリを入手",
   "sidebar.menu.weeklyUsage": "週の使用量",
   "settings.section.usage": "使用状況",
-  "sidebar.menu.support": "ヘルプとサポート"
+  "sidebar.menu.support": "ヘルプとサポート",
+  "settings.sendKey.summary": "メッセージを送信するショートカットを選択します。",
+  "settings.followUp.summary": "現在の作業に指示を追加するか、次のメッセージを待機列に入れます。",
+  "settings.universalPins.summary": "固定した Bot をサイドバーの上部に表示します。",
+  "settings.analytics.summary": "匿名の利用統計を共有します。",
+  "settings.talk.summary": "{key} を押しながら話し、離すと送信します。"
 }

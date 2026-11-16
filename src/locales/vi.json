@@ -6026,5 +6026,12 @@
   "settings.section.backups": "Sao lưu",
   "sidebar.menu.getPhoneApp": "Tải ứng dụng điện thoại",
   "settings.section.usage": "Mức sử dụng",
-  "sidebar.menu.support": "Trợ giúp và hỗ trợ"
+  "sidebar.menu.support": "Trợ giúp và hỗ trợ",
+  "settings.simple.deviceNotifications": "Chỉ khi ứng dụng đang mở. Câu hỏi, yêu cầu phê duyệt và cảnh báo luôn được hiển thị.",
+  "settings.sendKey.summary": "Chọn phím tắt để gửi tin nhắn.",
+  "settings.followUp.summary": "Điều chỉnh công việc hiện tại hoặc đưa tin nhắn tiếp theo vào hàng đợi.",
+  "settings.universalPins.summary": "Giữ các bot đã ghim ở đầu thanh bên.",
+  "settings.analytics.summary": "Chia sẻ số liệu sử dụng ẩn danh.",
+  "settings.talk.summary": "Giữ {key} để nói, rồi thả ra để gửi.",
+  "sidebar.menu.weeklyUsage": "Mức sử dụng hằng tuần"
 }

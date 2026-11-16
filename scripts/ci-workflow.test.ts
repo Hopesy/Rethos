@@ -9,6 +9,17 @@ import { interpolate } from "./testing/github-expression.ts";
 const workflow = parse(readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8"));
 const requiredRuntimeJobs = ["build", "vitest", "behavior-evals", "packaged-server", "windows-cua", "electron-smokes"];
 
+it("loads every workflow and resolves its explicitly named test files", () => {
+  const directory = new URL("../.github/workflows/", import.meta.url);
+  for (const file of readdirSync(directory).filter((name) => /\.ya?ml$/.test(name))) {
+    const source = readFileSync(new URL(file, directory), "utf8");
+    expect(() => parse(source), file).not.toThrow();
+    for (const match of source.matchAll(/\b((?:server|src|scripts|electron|shared)\/[\w./-]+\.(?:test\.ts|test\.mjs|node-test\.mjs))\b/g)) {
+      expect(existsSync(new URL(`../${match[1]}`, import.meta.url)), `${file}: ${match[1]}`).toBe(true);
+    }
+  }
+});
+
 function runGate(needs: Record<string, unknown>) {
   // Execute the actual gate, not a duplicate of its success/failure logic.
   const command = workflow.jobs.gate.steps[0].run as string;

@@ -280,13 +280,6 @@
   "server.mcp.card.cleared": "Limpa estes dados salvos: {items}.",
   "server.mcp.card.usedBy": "Usado por {names}.",
   "server.mcp.card.usedByNone": "Nenhum outro bot usa este servidor.",
-  "server.cloudReset.resetting": "Redefinindo o desktop na nuvem de {name}: {why}",
-  "server.cloudReset.waiting": "Esperando {name} terminar o trabalho antes de redefinir.",
-  "server.cloudReset.done": "Redefinido: um novo desktop na nuvem começa com a próxima mensagem de {name}.",
-  "server.cloudReset.pending": "Redefinição iniciada. O desktop na nuvem antigo ainda está sendo excluído; um novo começa com a próxima mensagem de {name} quando ele sumir.",
-  "server.cloudReset.missing": "Nada para redefinir: {name} não tem desktop na nuvem agora. Um começa com a próxima mensagem.",
-  "server.cloudReset.failed": "Não redefinido: {reason}",
-  "server.cloudReset.gone": "Não redefinido: {name} ou o bot que pediu não existe mais.",
   "server.mcp.card.newClientSecret": "novo segredo do cliente OAuth",
   "server.mcp.card.keyExpired": "A chave expirou antes da resposta.",
   "server.mcp.card.gone": "{name} não existe mais.",
@@ -9515,7 +9508,6 @@
   "native.places.hereWith": "Estes bots ficam neste computador: {names}. {cloud} tem bots próprios.",
   "native.places.hereNone": "Este computador ainda não tem bots próprios, mas {cloud} tem.",
   "native.cloud.keepUnderWay": "Os bots deste computador estão voltando. Tente novamente quando eles chegarem.",
-  "native.cloud.keepNoCloud": "Este computador não tem um Cloud para receber seus bots.",
   "native.common.close": "Fechar",
   "native.tray.open": "Abrir o Rethos",
   "native.tray.quit": "Sair do Rethos",
@@ -11024,5 +11016,10 @@
   "sidebar.newBotOn.noAi": "Nenhuma IA está conectada lá ainda.",
   "sidebar.newBotOn.onlyThere": "Conectada só lá: {ais}.",
   "sidebar.newBotOn.onlyHere": "Conectada só aqui: {ais}.",
-  "sidebar.newBotOn.needsUpdate": "O My Cloud precisa da próxima atualização para isso."
+  "sidebar.newBotOn.needsUpdate": "O My Cloud precisa da próxima atualização para isso.",
+  "settings.sendKey.summary": "Escolha o atalho para enviar mensagens.",
+  "settings.followUp.summary": "Oriente o trabalho atual ou coloque sua próxima mensagem na fila.",
+  "settings.universalPins.summary": "Mantenha os bots fixados no topo da barra lateral.",
+  "settings.analytics.summary": "Compartilhe estatísticas anônimas de uso.",
+  "settings.talk.summary": "Segure {key} para falar e solte para enviar."
 }

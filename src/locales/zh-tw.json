@@ -8963,7 +8963,6 @@
   "native.places.hereWith": "這些機器人在這台電腦上：{names}。{cloud} 有自己的機器人。",
   "native.places.hereNone": "這台電腦還沒有自己的機器人。{cloud} 有自己的機器人。",
   "native.cloud.keepUnderWay": "這台電腦的機器人正在移回來。等它們回來後再試一次。",
-  "native.cloud.keepNoCloud": "這台電腦沒有可以取回機器人的我的 Cloud。",
   "native.common.close": "關閉",
   "native.tray.open": "開啟 Rethos",
   "native.tray.quit": "結束 Rethos",

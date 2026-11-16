@@ -3822,5 +3822,15 @@
   "phone.code.e2e.getApp": "Pas encore l’app ? L’obtenir",
   "phone.code.e2e.getAppDetail": "Scannez avec l’appareil photo du téléphone.",
   "sidebar.menu.getPhoneApp": "Obtenir l’app mobile",
-  "settings.section.usage": "Utilisation"
+  "settings.section.usage": "Utilisation",
+  "settings.deviceNotifications.subtitle": "Affiche une notification ici quand un bot termine, tant que l’application est ouverte. Les approbations, questions et avertissements sont toujours affichés.",
+  "settings.deviceNotifications.blocked": "Les notifications sont bloquées pour ce site. Autorisez-les dans les paramètres du site de votre navigateur.",
+  "settings.simple.deviceNotifications": "Uniquement lorsque l’application est ouverte. Les questions, approbations et avertissements sont toujours affichés.",
+  "settings.sendKey.summary": "Choisissez le raccourci pour envoyer un message.",
+  "settings.followUp.summary": "Orientez le travail en cours ou mettez votre prochain message en attente.",
+  "settings.universalPins.summary": "Gardez les bots épinglés en haut de la barre latérale.",
+  "settings.analytics.summary": "Partagez des statistiques d’utilisation anonymes.",
+  "settings.talk.summary": "Maintenez {key} pour parler, puis relâchez pour envoyer.",
+  "sidebar.menu.weeklyUsage": "Utilisation hebdomadaire",
+  "sidebar.menu.support": "Aide et assistance"
 }

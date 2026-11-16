@@ -7150,5 +7150,12 @@
   "settings.section.import": "Importazione",
   "sidebar.menu.getPhoneApp": "Ottieni l'app per il telefono",
   "settings.section.usage": "Utilizzo",
-  "sidebar.menu.support": "Aiuto e supporto"
+  "sidebar.menu.support": "Aiuto e supporto",
+  "settings.simple.deviceNotifications": "Solo mentre l’app è aperta. Domande, approvazioni e avvisi vengono sempre mostrati.",
+  "settings.sendKey.summary": "Scegli la scorciatoia per inviare un messaggio.",
+  "settings.followUp.summary": "Guida il lavoro in corso o metti in coda il prossimo messaggio.",
+  "settings.universalPins.summary": "Mantieni i bot fissati in cima alla barra laterale.",
+  "settings.analytics.summary": "Condividi statistiche di utilizzo anonime.",
+  "settings.talk.summary": "Tieni premuto {key} per parlare, poi rilascia per inviare.",
+  "sidebar.menu.weeklyUsage": "Utilizzo settimanale"
 }

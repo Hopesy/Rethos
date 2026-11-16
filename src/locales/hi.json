@@ -3676,5 +3676,15 @@
   "phone.code.e2e.getApp": "अभी ऐप नहीं है? पाएँ",
   "phone.code.e2e.getAppDetail": "अपने फ़ोन के कैमरे से स्कैन करें।",
   "sidebar.menu.getPhoneApp": "फ़ोन ऐप पाएँ",
-  "settings.section.usage": "उपयोग"
+  "settings.section.usage": "उपयोग",
+  "settings.deviceNotifications.subtitle": "ऐप खुला रहने पर बॉट का काम पूरा होते ही यहाँ सूचना दिखाएँ। अनुमोदन, सवाल और चेतावनियाँ हमेशा दिखती हैं।",
+  "settings.deviceNotifications.blocked": "इस साइट की सूचनाएँ ब्लॉक हैं। ब्राउज़र की साइट सेटिंग में उन्हें अनुमति दें।",
+  "settings.simple.deviceNotifications": "केवल ऐप खुला रहने पर। सवाल, अनुमोदन और चेतावनियाँ हमेशा दिखती हैं।",
+  "settings.sendKey.summary": "संदेश भेजने का शॉर्टकट चुनें।",
+  "settings.followUp.summary": "चल रहे काम को दिशा दें या अपना अगला संदेश कतार में रखें।",
+  "settings.universalPins.summary": "पिन किए गए बॉट साइडबार में ऊपर रखें।",
+  "settings.analytics.summary": "अनाम उपयोग आँकड़े साझा करें।",
+  "settings.talk.summary": "बोलने के लिए {key} दबाए रखें और भेजने के लिए छोड़ दें।",
+  "sidebar.menu.weeklyUsage": "साप्ताहिक उपयोग",
+  "sidebar.menu.support": "सहायता और समर्थन"
 }
