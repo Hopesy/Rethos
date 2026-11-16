@@ -32,7 +32,7 @@ Windows 继续验证浏览器、独立服务端、NSIS 安装后桌面启动和�
 
 ## 更新版本
 
-1. 修改 `package.json` 版本并新增 `docs/releases/v<版本>.md`，提交代码。
+1. 修改 `package.json` 版本并新增 `docs/releases/v<版本>.md`。运行 `node scripts/record-data-format.mjs` 同步数据格式兼容记录，并用 `pnpm exec vitest run server/data-format.test.ts` 检查后提交代码。
 2. Android Gradle 自动读取此版本，versionCode 为 major × 1000000 + minor × 1000 + patch。minor 与 patch 范围为 0–999，major 范围为 0–2000。
 3. 运行联合发布流程，核对两端版本、安装包和 SHA256。
 4. 更新 VPS 镜像并检查在线网页。网页下载按钮与二维码共用 Android Latest 固定链接。
