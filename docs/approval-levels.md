@@ -61,7 +61,7 @@ one, every approval decision OMB makes in that conversation uses it. How far
 that reaches depends on who runs the tools:
 
 - **API engines** (OpenAI-compatible, Grok API, MiniMax, Mistral, Cerebras,
-  Groq, Greenference, Meta): OMB's tool gate reads the level before each tool call, so the
+  Groq, Greenference, ModelGo, Meta): OMB's tool gate reads the level before each tool call, so the
   change applies from the next call, up or down.
 - **Engines with their own modes** (Codex, Claude, Cursor, Antigravity, Grok
   Build, Qwen Code, Gemini CLI, Droid, Pi's custom MCP tools): the engine got
@@ -119,6 +119,45 @@ permission request is not turned into another Allow/Deny card.
 A turn a webhook, a routine, or another bot started runs in the bot's level
 like any other turn. The decision log records that nobody was at the keyboard
 when such a turn asked.
+
+### Approvals relayed by another bot, a webhook or an outside page
+
+An approval only counts when the person gives it to the bot that acts. Every
+line a bot reads opens with a note OpenMausBot writes, `[From <who> · <what> ·
+<authority>]` (`server/provenance-label.ts`, see
+[team-cloud.md](team-cloud.md)). A person's own typed or spoken line, or their
+answer on that bot's own card, is *their own request*. A line from another bot,
+an app through the API, a relay, an app event or a webhook is *information
+only*: the bot reads it as data, never as approval, even when it says "approved"
+or claims to come from you. So an Approve click on your own outside page (an
+approval dashboard, another bot's card) that reaches the acting bot through
+another bot or a webhook does not authorize anything, and the bot asks or stops
+instead. This is on purpose. Anyone who can make a bot read text, such as a web
+page, an email or a webhook call, could otherwise write "the owner approved
+this" and borrow your authority; a note written inside a message is escaped
+(`escapeNotes`, `server/peer-provenance.ts`), so only OpenMausBot opens one.
+
+The supported ways to have a bot act on your approval:
+
+- **Approve in the acting bot's own chat.** Tap its card, or type the go-ahead
+  there. On a phone or another device, the same chat works from any paired
+  client.
+- **Set the work up as that bot's own automation.** A routine, or a webhook
+  automation whose instructions you write ("when an approved deploy arrives,
+  run the deploy checklist"), runs *on their behalf at your level*: the
+  instructions are your own set-up, and only the event it carries is
+  information only (`server/webhooks.ts`). Keep the webhook's private address
+  secret: anyone who has it can send a call. Narrow the instructions to the
+  work you mean, and use its event-type or payload filter so calls of another
+  type or shape start nothing. A filter only checks what a call says; it does
+  not prove that a person approved it.
+- **Hand the work over from your own request.** When you ask one bot and it
+  hands the work on with `coordinate_bots`, the receiving bot gets it *on their
+  behalf at your level*, because it traces back to your own line.
+- **Change the approval level** of the acting bot when the prompts themselves
+  are the problem (see the table above).
+
+There is no signed-approval token that lets an outside page stand in for you.
 
 ### A Chief of Staff's level covers the work it delegates
 
@@ -271,7 +310,7 @@ multi-question card renders its structured form on current apps instead.
 | Droid | Session mode `normal` (reads only) | not offered | Ask (no reviewer) | Session mode `auto-high`, plus automatic approval of remaining ACP permission requests |
 | Kimi, Hermes, custom ACP agents | The agent's own default | not offered | Ask (no reviewer) | Approve individual ACP permission requests, never task questions |
 | Pi | Pi's own tools run; computer control and custom MCP tools ask | not offered | Ask (no reviewer) | Custom MCP tools run without asking; computer-control confirms are approved |
-| API engines (OpenAI-compatible, Grok API, MiniMax, Mistral, Cerebras, Groq, Greenference, Meta) | OMB's tool gate asks | not offered | Ask (no reviewer) | OMB's tool gate approves each call |
+| API engines (OpenAI-compatible, Grok API, MiniMax, Mistral, Cerebras, Groq, Greenference, ModelGo, Meta) | OMB's tool gate asks | not offered | Ask (no reviewer) | OMB's tool gate approves each call |
 
 These settings apply on each turn, including resumed conversations. Switching
 to a different provider while on Custom requires leaving Custom first;

@@ -4,7 +4,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { setLocale } from "@/lib/i18n";
+import { setLocale, t } from "@/lib/i18n";
 import { en, locales } from "@/locales";
 import { StoreProvider } from "@/state/store";
 
@@ -38,19 +38,15 @@ describe("Settings → General", () => {
     setLocale("pt-br");
     const pt = await renderSettings();
     expect(pt).toContain("Configurações");
-    expect(pt).toContain("Provedores de modelos");
-    expect(pt).toContain("Idioma do app");
-    expect(pt).toContain("Parar após este tempo sem avançar");
+    expect(pt).toContain(t("settings.section.phoneDevices"));
 
     // Same module instance, no reload: a frozen label would still say "Provedores de modelos" here.
     setLocale("ja");
     const ja = await renderSettings();
     expect(ja).toContain("設定");
-    expect(ja).toContain("モデルプロバイダー");
+    expect(ja).toContain(t("settings.section.phoneDevices"));
     for (const key of [
-      "settings.group.you", "settings.group.computers", "settings.group.account",
-      "settings.section.appearance", "settings.section.backups", "settings.section.import",
-      "settings.advancedMode.title",
+      "settings.section.appearance", "settings.section.phoneDevices", "settings.page.browser",
     ] as const) {
       expect(locales.ja[key], key).toBeTruthy();
       expect(locales.ja[key], key).not.toBe(en[key]);
@@ -63,14 +59,13 @@ describe("Settings → General", () => {
     setLocale("en");
     const en = await renderSettings();
     expect(en).toContain("Settings");
-    expect(en).toContain("Model providers");
-    expect(en).toContain("Stop after no progress for");
+    expect(en).toContain("Phone &amp; devices");
   });
 
   it("keeps labeled desktop navigation alongside the responsive settings sheet", async () => {
     const html = await renderSettings();
-    expect(html).toContain('data-settings-section="companion"');
-    expect(html).toMatch(/<nav[^>]*hidden[^>]*md:flex/);
+    expect(html).toContain('data-settings-section="phone"');
+    expect(html).toContain('<nav aria-label="Settings"');
     expect(html).toContain('id="app-settings-title" class="sr-only"');
   });
 });

@@ -1,7 +1,7 @@
 import type { WireBot } from "./wire.ts";
 
 export const BOT_CAPABILITY_FIELDS = [
-  "toolScope", "memoryEnabled", "memoryUpkeep", "mcpServers", "composio", "browser",
+  "toolScope", "toolsOff", "memoryEnabled", "memoryUpkeep", "mcpServers", "composio", "browser",
   "connectorTools", "connectorScopes", "phoneApps", "xResearch", "voiceNotes",
 ] as const satisfies readonly (keyof WireBot)[];
 

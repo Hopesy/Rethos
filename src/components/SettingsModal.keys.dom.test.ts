@@ -54,8 +54,9 @@ vi.mock("./PeopleSection", () => ({ PeopleSection: marker("people") }));
 vi.mock("./ActivitySection", () => ({ ActivitySection: marker("activity") }));
 vi.mock("./UsageSection", () => ({ UsageSection: marker("usage") }));
 vi.mock("./ImportSettings", () => ({ ImportSettings: marker("import") }));
-vi.mock("./LoginsSettings", () => ({ LoginsSettings: marker("logins") }));
-vi.mock("./BrowserSettingsRows", () => ({ BuiltInBrowserRow: marker("browser"), ServerSitesRow: () => null }));
+vi.mock("./VaultSettings", () => ({ VaultSettings: marker("logins") }));
+vi.mock("./BrowserSettingsRows", () => ({ BuiltInBrowserRow: marker("browser"), ServerSitesRow: () => null, BrowserProxyRow: () => null }));
+vi.mock("./WindowPlaceTitle", () => ({ useWindowPlace: () => null, windowPlaceName: () => "This computer" }));
 
 const { SettingsModal } = await import("./SettingsModal");
 
@@ -66,9 +67,9 @@ function publish() {
   for (const listener of Array.from(fx.listeners)) listener();
 }
 
-const search = () => host.querySelector<HTMLInputElement>("[data-settings-search]")!;
-const result = (id: string) => host.querySelector<HTMLButtonElement>(`[data-settings-key-result="${id}"]`);
-const row = (id: string) => host.querySelector<HTMLElement>(`[data-key-row="${id}"]`)!;
+const search = () => document.querySelector<HTMLInputElement>("[data-settings-search]")!;
+const result = (id: string) => document.querySelector<HTMLButtonElement>(`[data-settings-key-result="${id}"]`);
+const row = (id: string) => document.querySelector<HTMLElement>(`[data-key-row="${id}"]`)!;
 
 function type(value: string) {
   flushSync(() => {
@@ -104,24 +105,24 @@ describe("searching Settings for a key", () => {
   it.each([false, true])("navigates the phone index, details and searchable API keys (Advanced: %s)", async (advanced) => {
     fx.phone = true;
     fx.advanced = advanced;
-    fx.section = "general";
+    fx.section = "overview";
     flushSync(() => root.render(createElement(SettingsModal)));
-    expect(host.querySelector("[data-phone-settings-index]")).not.toBeNull();
-    expect(document.activeElement).not.toBe(search());
-    const section = host.querySelector<HTMLButtonElement>('[data-phone-settings-section="engines"]')!;
+    expect(document.querySelector('nav[aria-label=Settings]')).not.toBeNull();
+    expect(document.activeElement).toBe(search());
+    const section = document.querySelector<HTMLButtonElement>('[data-settings-page="ai"]')!;
     expect(section).not.toBeNull();
     flushSync(() => section.click());
-    expect(host.querySelector("[data-phone-settings-index]")).toBeNull();
-    expect(fx.section).toBe("engines");
-    flushSync(() => host.querySelector<HTMLButtonElement>("[data-phone-settings-back]")!.click());
-    expect(host.querySelector("[data-phone-settings-index]")).not.toBeNull();
+    expect(document.querySelector('nav[aria-label=Settings]')).toBeNull();
+    expect(fx.section).toBe("ai");
+    flushSync(() => document.querySelector<HTMLButtonElement>("[data-settings-back]")!.click());
+    expect(document.querySelector('nav[aria-label=Settings]')).not.toBeNull();
     type("fish");
     flushSync(() => result("fishAudio")!.click());
     expect(fx.section).toBe("connections");
-    expect(host.querySelector("[data-phone-settings-index]")).toBeNull();
+    expect(document.querySelector('nav[aria-label=Settings]')).toBeNull();
     await vi.waitFor(() => expect(document.activeElement).toBe(row("fishAudio").querySelector("[data-key-input]")));
-    flushSync(() => host.querySelector<HTMLButtonElement>("[data-phone-settings-back]")!.click());
-    expect(host.querySelector("[data-phone-settings-index]")).not.toBeNull();
+    flushSync(() => document.querySelector<HTMLButtonElement>("[data-settings-back]")!.click());
+    expect(document.querySelector('nav[aria-label=Settings]')).not.toBeNull();
     expect(search().value).toBe("");
   });
 
@@ -130,7 +131,8 @@ describe("searching Settings for a key", () => {
     flushSync(() => root.render(createElement(SettingsModal)));
     type("fish");
     const found = result("fishAudio")!;
-    expect(found.textContent).toBe("Fish Audio API key · Voice and calls");
+    expect(found.textContent).toContain("Fish Audio API key");
+    expect(found.textContent).toContain("AI › Voice and calls");
     flushSync(() => found.click());
     expect(search().value).toBe("");
     expect(fx.section).toBe("connections");
@@ -143,14 +145,14 @@ describe("searching Settings for a key", () => {
   it("names the OpenAI key twice: once for models, once for live calls", () => {
     flushSync(() => root.render(createElement(SettingsModal)));
     type("openai");
-    expect(result("openai")!.textContent).toBe("OpenAI API key · AI providers");
-    expect(result("liveCalls")!.textContent).toBe("OpenAI key · Voice and calls");
+    expect(result("openai")!.textContent).toMatch(/^OpenAI API key.*AI › AI providers$/);
+    expect(result("liveCalls")!.textContent).toMatch(/^OpenAI key.*AI › Voice and calls$/);
   });
 
   it("says plainly when nothing matches", () => {
     flushSync(() => root.render(createElement(SettingsModal)));
     type("zzzz");
-    expect(host.textContent).toContain("Nothing matches “zzzz”");
-    expect(host.querySelector("[data-settings-key-result]")).toBeNull();
+    expect(document.body.textContent).toContain("Nothing matches “zzzz”");
+    expect(document.querySelector("[data-settings-key-result]")).toBeNull();
   });
 });

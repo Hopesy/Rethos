@@ -1,17 +1,17 @@
 import assert from "node:assert/strict";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, sep } from "node:path";
 import test from "node:test";
 
 import { cleanWorkspaceConfig, cleanWorkspaceDir, createCleanWorkspace, DEFAULT_PROFILE, profileDir, profilesDir } from "./clean-workspace.mjs";
 import { cloudLendingVerdict } from "./computer-sharing.mjs";
 import { createLendingTarget } from "./lending-target.mjs";
-import { installOneHome } from "./one-home-main.mjs";
 import { WELCOME_VERSION } from "./onboarding-record.mjs";
 
-const CLOUD = "https://omb-t-1.fly.dev";
+const owner = { id: "acct-1", email: "a@omb-test.example" };
 const json = (value, status = 200) => new Response(JSON.stringify(value), { status });
+const CLOUD = "https://omb-t-1.fly.dev";
 
 /** A computer's data folder on disk, frozen for My Cloud, with the one server the app runs at a time: `running`, and each
  * request as [the folder it reached, method, route]. */
@@ -99,6 +99,16 @@ test("one swap at a time: open, leave and open again at once end where the last 
   assert.equal(w.clean.active(), true);
 });
 
+test("settled() waits for the swaps asked for so far, and is already done with none", async (t) => {
+  const w = computer(t);
+  await w.clean.settled();
+  assert.deepEqual(w.swaps, []);
+  const entering = w.clean.enter();
+  await w.clean.settled();
+  assert.deepEqual(w.swaps, [w.cleanDir], "after the swap under way");
+  await entering;
+});
+
 test("the marker is the frozen copy's own, read from its folder whichever server runs", async (t) => {
   const w = computer(t, { frozen: { v: 1, at: 1, cloud: CLOUD, place: "Garage" } });
   await w.clean.enter();
@@ -141,122 +151,6 @@ test("what must reach the frozen copy brings its server back first, and nothing 
   assert.equal(await w.clean.enter(), true, "afterwards it opens again if it's still wanted");
   w.swapFails = true;
   await assert.rejects(w.clean.holding(async () => assert.fail("never on the clean workspace")), /could not go back/u);
-});
-
-/** One home on the real journal and the real clean workspace: every request that reaches this computer's server is recorded,
- * with the folder it reached. `state`: the sign-in. */
-function moved(t, { state, journal = null, marker, gone = null, version = "0.1.141" } = {}) {
-  const w = computer(t, marker === undefined ? {} : { frozen: marker });
-  w.journal = journal;
-  w.state = state;
-  w.lent = [];
-  w.fetches = [];
-  w.main = installOneHome({
-    ipcMain: { handle: () => {} }, cloudPage: () => "local", server: () => null, clean: w.clean,
-    home: () => ({ origin: CLOUD, grant: async () => ({ origin: CLOUD, code: "AAAA", expiresAt: Date.now() + 60_000 }) }),
-    cookieFetch: async (url) => { w.fetches.push(String(url)); return json({ v: 1, items: [], bots: [] }); },
-    reconnect: async () => false, power: { asleep: () => false }, file: () => join(w.dataDir, "..", "cloud-send.json"), window: () => null, localOrigin: () => "http://127.0.0.1:4100",
-    fetch: async (url) => { w.fetches.push(String(url)); return json({ error: "no" }, 500); }, localRequest: w.request,
-    account: () => ({ state: () => w.state, pairHome: async () => ({ origin: CLOUD, code: "AAAA" }), movedTo: async () => gone }),
-    journalFile: () => join(w.dataDir, "..", "one-home.json"), tempRoot: () => join(w.dataDir, "..", "temp"), journal: { read: () => w.journal, write: (value) => { w.journal = value; } },
-    keep: { read: () => null, write: () => {} }, lend: async (projects) => { w.lent.push(projects); }, phone: { paired: () => false, stop: async () => {}, start: async () => {} },
-    version, log: () => {},
-  });
-  t.after(() => w.main.close());
-  return w;
-}
-const owner = { id: "acct-1", email: "a@omb-test.example" };
-const ready = (extra = {}) => ({ status: "connected", account: owner, deviceId: "d1", entitlement: { plan: "pro", status: "active" }, machine: { status: "ready", origin: CLOUD, moves: true }, ...extra });
-const done = (extra = {}) => ({ v: 1, phase: "done", cloud: { origin: CLOUD, account: owner.id, machine: CLOUD }, startedAt: 1, doneAt: 2, frozenAt: 2, version: "0.1.140", reported: "d1", lent: true, phoneStopped: true, ...extra });
-const onClean = (w) => w.requests.filter(([folder]) => folder === w.cleanDir);
-
-test("a top-up can't read the clean workspace: it waits, with no hour's penalty, and goes once this computer's own copy answers", async (t) => {
-  const w = moved(t, { state: ready(), journal: done({ doneAt: Date.now() }) });
-  await w.clean.enter();
-  await w.main.kick();
-  assert.deepEqual(onClean(w), []);
-  assert.equal(w.journal.version, "0.1.140", "the top-up didn't count as made");
-  assert.equal(w.journal.retryAt, undefined, "and isn't put off");
-  await w.clean.leave();
-  w.requests.length = 0;
-  await w.main.kick();
-  assert.deepEqual(w.requests[0], [w.dataDir, "GET", "/api/cloud-send?move=1"], "its own copy running, the same top-up does read this computer's server");
-});
-
-test("while the server is on its way between the two, nothing reaches it, and a top-up waits for it", async (t) => {
-  const w = moved(t, { state: ready(), journal: done() });
-  let finish;
-  const started = new Promise((resolve) => { finish = resolve; });
-  const clean = createCleanWorkspace({ dataDir: () => w.dataDir, running: () => w.running, swap: async (dir) => { await started; w.running = dir; return { ok: true }; } });
-  const entering = clean.enter();
-  await new Promise((resolve) => setImmediate(resolve));
-  assert.equal(clean.ownCopy(), false, "its server is stopped, or starting");
-  await assert.rejects(clean.realCopy(w.request)("/api/bots?messages=0"), { code: "clean-workspace" });
-  assert.deepEqual(w.requests, []);
-  finish();
-  await entering;
-  assert.equal(clean.ownCopy(), false, "the clean workspace runs");
-  await clean.leave();
-  assert.equal(clean.ownCopy(), true);
-});
-
-test("settling can't record this computer as lent from the clean workspace's empty bot list", async (t) => {
-  const w = moved(t, { state: { status: "signed-out" }, journal: done({ lent: undefined }) });
-  await w.clean.enter();
-  await w.main.kick();
-  assert.deepEqual(onClean(w), []);
-  assert.deepEqual(w.lent, []);
-  assert.equal(w.journal.lent, undefined);
-  await w.clean.leave();
-  await w.main.kick();
-  assert.deepEqual(w.lent, [[]], "its own copy running, it lends what's there");
-  assert.equal(w.journal.lent, true);
-});
-
-test("a send can't read the clean workspace", async (t) => {
-  const w = moved(t, { state: ready(), journal: done() });
-  await w.clean.enter();
-  await assert.rejects(w.main.move({ final: true }));
-  assert.deepEqual(onClean(w), []);
-});
-
-test("no first move and no freeze from the clean workspace: the frozen copy's own marker still says frozen", async (t) => {
-  const w = moved(t, { state: ready(), journal: null });
-  await w.clean.enter();
-  await w.main.kick();
-  assert.equal(w.journal, null, "no move started");
-  assert.deepEqual(onClean(w), []);
-  assert.deepEqual(w.main.oneHome.facts().noted, "frozen_without_move");
-});
-
-test("another account leaves the journal alone, and nothing reaches the clean workspace", async (t) => {
-  const w = moved(t, { state: ready({ account: { id: "acct-2", email: "b@omb-test.example" } }), journal: done() });
-  await w.clean.enter();
-  const before = structuredClone(w.journal);
-  await w.main.kick();
-  assert.deepEqual(w.journal, before);
-  assert.deepEqual(onClean(w), []);
-});
-
-test("a Cloud that's gone still brings this computer home from the clean workspace: the lift reaches the frozen copy, not the clean one", async (t) => {
-  const elsewhere = "https://omb-other-2.fly.dev";
-  const w = moved(t, { state: ready({ machine: { status: "ready", origin: elsewhere, moves: true } }), journal: null, gone: "deleted" });
-  await w.clean.enter();
-  await w.main.kick();
-  assert.deepEqual(onClean(w), []);
-  assert.deepEqual(w.requests.filter(([, method]) => method === "DELETE"), [[w.dataDir, "DELETE", "/api/move/freeze"]]);
-  assert.equal(w.running, w.dataDir);
-  assert.equal(w.journal.phase, "back");
-});
-
-test("forgetting the copy reaches the frozen copy only, and never empties the clean workspace", async (t) => {
-  const w = moved(t, { state: ready(), journal: done({ doneAt: 2, version: "0.1.141" }) });
-  await w.clean.enter();
-  writeFileSync(join(w.cleanDir, "made-here.txt"), "mine");
-  await w.main.kick();
-  assert.deepEqual(w.requests.filter(([, , route]) => route === "/api/move/forget"), [[w.dataDir, "POST", "/api/move/forget"]]);
-  assert.deepEqual(onClean(w), []);
-  assert.equal(readFileSync(join(w.cleanDir, "made-here.txt"), "utf8"), "mine");
 });
 
 test("a clean workspace's first config carries the language and that the setup was seen, nothing else", () => {
@@ -340,4 +234,34 @@ test("lending goes on from a profile: the sign-in alone decides, and only the wo
   assert.deepEqual(cloudLendingVerdict(grant, target.cloud(env), env), { allow: true });
   state = { status: "signed-out", account: null, machine: null };
   assert.notDeepEqual(cloudLendingVerdict(grant, target.cloud(env), env), { allow: true }, "signed out: nothing is lent, profile or not");
+});
+
+/** A named local environment's folder: anywhere the person chose, neither the clean workspace nor under the profiles' folder. */
+const workFolder = (w) => join(dirname(w.dataDir), "work-environment");
+
+test("a named local environment is not this computer's own copy: the move gets the copy's own marker and identity, nothing else", async (t) => {
+  const w = computer(t);
+  const request = w.clean.realCopy(w.request);
+  w.running = workFolder(w);
+  assert.deepEqual([w.clean.active(), w.clean.profile(), w.clean.ownCopy()], [false, null, false]);
+  assert.deepEqual(await (await request("/api/move/freeze")).json(), { frozen: true, cloud: CLOUD });
+  assert.deepEqual(await (await request("/.well-known/openmausbot/environment")).json(), { environmentId: "own-copy-id" }, "the Admin never hears the environment's identity as this computer's");
+  for (const [route, init] of [["/api/bots?messages=0"], ["/api/cloud-send?move=1"], ["/api/move/freeze", { method: "POST" }], ["/api/move/freeze", { method: "DELETE" }], ["/api/move/forget", { method: "POST" }]]) {
+    await assert.rejects(request(route, init), { code: "clean-workspace" }, `${init?.method ?? "GET"} ${route}`);
+  }
+  await assert.rejects(w.clean.holding(() => request("/api/move/forget", { method: "POST" })), { code: "clean-workspace" });
+  assert.deepEqual(w.swaps, [], "the environment the person chose stays open");
+  assert.deepEqual(w.requests, [], "nothing reached its server");
+});
+
+test("only the data folder itself is this computer's own copy: however it is spelled, and never with no server at all", (t) => {
+  const w = computer(t);
+  w.running = `${w.dataDir}${sep}`;
+  assert.equal(w.clean.ownCopy(), true, "a trailing separator is the same folder");
+  w.running = join(w.dataDir, "..", ".openmausbot");
+  assert.equal(w.clean.ownCopy(), true);
+  w.running = null;
+  assert.equal(w.clean.ownCopy(), false);
+  w.running = `${w.dataDir}-work`;
+  assert.equal(w.clean.ownCopy(), false, "a folder beside it is another folder");
 });

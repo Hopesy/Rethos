@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import ts from "typescript";
+import ts from "@typescript/typescript6";
 import { describe, expect, it } from "vitest";
 
 import en from "./en.json";
@@ -49,7 +49,7 @@ const EN_ALLOWED: Record<string, string> = {
 };
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
-const SCANNED = ["src", "server", "electron", "shared"];
+const SCANNED = ["src", "server", "electron", "shared", "packages/phone-protocol/src"];
 // Test fixtures and generated output are not copy anyone reads.
 const SKIPPED_DIRS = new Set(["node_modules", "resources", "testing", "dist"]);
 const isSource = (name: string) => /\.(?:ts|tsx|mjs|cjs|js)$/.test(name) && !/\.test\.|\.node-test\.|\.d\.ts$/.test(name);
@@ -163,7 +163,7 @@ describe("one name per thing", () => {
       ["native.boot.folderMissing.body", [label("native.menu.server")]],
       ["native.boot.unhealthy.body", [label("native.menu.server")]],
       ["native.dialog.connectFailed.detail", [withoutEllipsis("native.menu.connect")]],
-      ["native.dialog.share.detail", [settings("settings.section.desktopWorkspaces")]],
+      ["native.dialog.share.detail", [settings("settings.app.computers")]],
     ];
     const staleIn = (text: Text, prefix: string) => pointers.flatMap(([key, labels]) => labels.map((of) => of(text))
       .filter((shown) => !text(key).includes(shown)).map((shown) => `${prefix}${key} → ${shown}`));

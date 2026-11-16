@@ -20,11 +20,17 @@ it("names the shared chat beside the bot, so the person knows where they are", (
 
 it("says nothing extra off a team, and a private chat keeps its own name", () => {
   expect(pill(bot("main"), null)).not.toContain("Shared chat");
-  expect(pill(bot("own"), { kind: "private" })).toContain("New conversation");
+  expect(pill(bot("own"), { kind: "private" })).toContain("Untitled chat");
   expect(pill(bot("own", "Quarter numbers"), { kind: "private" })).toContain("Quarter numbers");
 });
 
 it("names it too from another conversation's list, in the person's language", () => {
   const away = { ...bot("main"), mainThreadId: "elsewhere", tasks: [...bot("main").tasks!, { threadId: "elsewhere", title: "Other", createdAt: 3 }] } as Bot;
   expect(pill(away, { kind: "shared", team: "Acme" })).toContain("Shared chat");
+});
+
+it("keeps the chevron hidden until the pill is hovered or focused", () => {
+  const chevron = pill(bot("main"), null).match(/<span[^>]*data-chathead-chevron[^>]*>/)![0];
+  const classes = chevron.match(/class="([^"]*)"/)![1]!.split(" ");
+  expect(classes).toEqual(expect.arrayContaining(["w-0", "opacity-0", "group-hover:opacity-100", "group-focus-visible:opacity-100"]));
 });

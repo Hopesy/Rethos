@@ -110,6 +110,8 @@ export interface DevsReportsDeps {
   /** The language a line for this person is written in; absent, the one set on this server. */
   lineLanguage?: LineLanguage;
   recentLog: RecentLog;
+  /** Timing lines for these conversations and bots: numbers, fixed codes and opaque ids only. */
+  performance?(filter: { threadIds: readonly string[]; botIds: readonly string[] }): string[];
   send(payload: DevsReportPayload): Promise<SendOutcome>;
   /** Asks the MausBot team about reports this app sent (devs-report-send.ts `askReportStatus`); null: no answer this time. */
   askStatus(question: ReportStatusQuestion): Promise<ReportStatusAnswer | null>;
@@ -167,6 +169,10 @@ function withoutPastes(message: string): string {
 const TURN_NOTE = "\n\n[From Rethos, not the person: this message tags @devs, so it is a bug report for the MausBot team, Rethos's developers. Call report_bug once, first: what the person says went wrong; what you saw yourself in this conversation (errors, failed tools, stuck steps), or that you saw nothing unusual; and steps to reproduce. Leave out passwords, keys, tokens and file contents; Rethos adds the app's own diagnostics. Then tell the person, word for word, the line report_bug returns, and help with the problem if you can.]";
 
 const iso = (at: number) => new Date(at).toISOString();
+/** The report goes out even when the timings fail: their lines, or one saying they are missing. */
+function performanceLines(read: NonNullable<DevsReportsDeps["performance"]>, threadId: string, botIds: string[]): string[] {
+  try { return read({ threadIds: [threadId], botIds }); } catch { return ["## Performance", "(timings unavailable)"]; }
+}
 const firstLine = (text: string | undefined) => (text ?? "").split("\n").map((line) => line.trim()).find(Boolean) ?? "";
 
 /** What went wrong in this conversation lately, as rows the server wrote: failed turns, failed tools, stops, notices. */
@@ -347,6 +353,7 @@ export function createDevsReports(deps: DevsReportsDeps) {
       bots: bots.map((bot) => reported(bot, entry.threadId)),
       ...("bot" in author ? { summary: { by: author.bot.name, text: author.summary } } : { noSummary: author.why }),
       problems: conversationProblems(store.activePath(entry.threadId)), log: deps.recentLog(), contactEmail: contact,
+      ...(deps.performance ? { performance: performanceLines(deps.performance, entry.threadId, bots.map((bot) => bot.id)) } : {}),
     }, secrets());
     return { payload, ...(contact ? { contact } : {}) };
   }

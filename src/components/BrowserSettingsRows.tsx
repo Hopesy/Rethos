@@ -2,13 +2,13 @@ import { useState } from "react";
 
 import { browserAvailable, browserUnavailableReason, builtInBrowserEnabled } from "@/lib/feature-flags";
 import { t } from "@/lib/i18n";
-import { SettingsHelp } from "./SettingsHelp";
+
 import { useOwnerOrAdmin } from "@/lib/use-owner-or-admin";
 import { api, useStore, type ConfigStatus } from "@/state/store";
-import { SettingRow, Switch } from "./SettingsPrimitives";
+import { MoreText, SettingRow, Switch } from "./SettingsPrimitives";
 
 /** Saves one config change through PATCH /api/config, one at a time, and shows the server's answer or its error. */
-function useConfigSave() {
+export function useConfigSave() {
   const { dispatch } = useStore();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -41,13 +41,15 @@ export function BuiltInBrowserRow() {
 
   return (
     <SettingRow
-    title={t("settings.experimental.browserAria")}
-    help={desktopBrowser
+    title={t("settings.browser.rowTitle")}
+    // While it's on, the line says how it stands (Ready, or that it installs on first use), not what the switch does.
+    subtitle={desktopBrowser
         ? browser
-        ? t("settings.experimental.browserOn")
-        : t("settings.experimental.browserOff")
+        ? t("settings.ai.ready")
+        : t("settings.browser.offShort")
         : browserBlockedOnWindows
         ? t("settings.experimental.browserWindows")
+        : browserInstallable ? (browser ? t("settings.browser.installsFirst") : t("settings.browser.notInstalledShort"))
         : browserUnavailableReason(state.config)}
     message={error ? <p role="alert" className="text-danger">{error}</p> : null}
     >
@@ -73,8 +75,8 @@ export function ServerSitesRow() {
 
   return (
     <SettingRow
-      title={t("settings.browser.serverSites")}
-      help={t("settings.browser.serverSitesDetail")}
+      title={t("settings.browser.localSites")}
+      subtitle={t("settings.browser.localSitesPlain")}
       message={error ? <p role="alert" className="text-danger">{error}</p> : null}
     >
       <Switch
@@ -88,6 +90,42 @@ export function ServerSitesRow() {
   );
 }
 
+/** Owner-only unauthenticated SOCKS5 upstream for public destinations. The endpoint is write-only in the UI. */
+export function BrowserProxyRow() {
+  const { state } = useStore();
+  const owner = useOwnerOrAdmin();
+  const canEditProxy = state.config?.team ? state.config.browserEngine?.proxyEditable === true : owner === true;
+  const configured = state.config?.browserEngine?.proxyConfigured === true;
+  const saved = state.config?.browserEngine?.proxySaved === true || configured;
+  const [endpoint, setEndpoint] = useState("");
+  const { saving, error, save } = useConfigSave();
+  if (!canEditProxy || (!builtInBrowserEnabled(state.config) && !saved)) return null;
+
+  return (
+    <SettingRow
+      title={t("settings.browser.proxy")}
+      subtitle={configured ? t("settings.browser.proxyConfigured") : saved ? t("settings.browser.proxyInactive") : t("settings.browser.proxyDetail")}
+      message={error ? <p role="alert" className="text-danger">{error}</p> : null}
+    >
+      <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+        <input
+          aria-label={t("settings.browser.proxy")}
+          autoComplete="off"
+          spellCheck={false}
+          placeholder="socks5://127.0.0.1:1080"
+          value={endpoint}
+          onChange={(event) => setEndpoint(event.target.value)}
+          className="min-w-0 flex-1 rounded-lg border border-control bg-app px-3 py-2 text-[13px] text-ink sm:w-64 sm:flex-none"
+        />
+        <button type="button" disabled={saving || !endpoint.trim()} onClick={() => void save({ browserEngine: { egress: { proxy: endpoint.trim() } } })} className="rounded-lg bg-control px-3 py-2 text-[13px] text-ink disabled:opacity-50">
+          {t("settings.browser.proxySave")}
+        </button>
+        {saved ? <button type="button" disabled={saving} onClick={() => void save({ browserEngine: { egress: { proxy: "" } } })} className="rounded-lg bg-control px-3 py-2 text-[13px] text-ink disabled:opacity-50">{t("settings.browser.proxyClear")}</button> : null}
+      </div>
+    </SettingRow>
+  );
+}
+
 /** browserEngine.engine: the bots' browsers run on OpenMausBot's own Chrome driver instead of agent-browser. */
 export function NewBrowserSettings() {
   const { state } = useStore();
@@ -95,14 +133,9 @@ export function NewBrowserSettings() {
   const { saving, error, save } = useConfigSave();
 
   return (
-    <div className="mt-4 border-t border-hairline/30 pt-4" data-testid="new-browser-settings">
-      <div className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <div className="flex items-center gap-1 text-[14px] font-medium text-ink">{t("settings.experimental.newBrowser")}
-            <SettingsHelp label={t("settings.experimental.newBrowser")}>{t("settings.experimental.newBrowserDetail")}</SettingsHelp>
-          </div>
-          <div className="mt-0.5 text-[12px] text-ink-secondary">{t("settings.experimental.newBrowserSummary")}</div>
-        </div>
+    <div data-testid="new-browser-settings" className="contents">
+      <SettingRow title={t("settings.experimental.newBrowser")} tag={t("settings.early.tag")} subtitle={<MoreText short={t("settings.experimental.newBrowserShort")} long={t("settings.experimental.newBrowserDetail")} />}
+        message={error ? <span role="alert" className="text-danger">{error}</span> : undefined}>
         <Switch
           checked={on}
           aria-label={t("settings.experimental.newBrowserAria")}
@@ -110,8 +143,7 @@ export function NewBrowserSettings() {
           onClick={() => void save({ browserEngine: { engine: on ? "agent-browser" : "chrome" } })}
           className="disabled:cursor-wait disabled:opacity-50"
         />
-      </div>
-      {error ? <p role="alert" className="mt-2 text-[12px] text-danger">{error}</p> : null}
+      </SettingRow>
     </div>
   );
 }

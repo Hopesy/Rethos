@@ -79,7 +79,8 @@ export function createDesktopPrefs({ read, write }) {
     seen: () => [...current().seen],
     markSeen(id) {
       const saved = current();
-      if (DESKTOP_NOTICES.includes(id) && !saved.seen.includes(id)) save({ ...saved, seen: [...saved.seen, id] });
+      if (saved.seen.includes(id)) return;
+      if (DESKTOP_NOTICES.includes(id)) save({ ...saved, seen: [...saved.seen, id] });
     },
     /** null until a choice is saved. */
     analytics: () => current().analytics ?? null,

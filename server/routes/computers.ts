@@ -1,6 +1,6 @@
 import { z, type ZodString } from "zod";
 import type { ComputerControl } from "../computer-control.ts";
-import { isValidSshAlias, localVmMaxInstances, localVmMode, type AppConfig } from "../config.ts";
+import { isValidSshAlias, localVmMaxInstances, localVmMode, localVmResources, type AppConfig } from "../config.ts";
 import {
   containerComputerAction,
   containerComputerExists,
@@ -35,7 +35,7 @@ export interface ComputerRouteDeps {
   store: Pick<Store, "bot" | "bots" | "sections">;
   cfg: AppConfig;
   sessions: Pick<SessionRegistry, "isLive">;
-  computerControl: Pick<ComputerControl, "snapshot" | "take" | "release" | "acquireLease" | "releaseLease" | "ownsLease">;
+  computerControl: Pick<ComputerControl, "snapshot" | "take" | "release" | "acquireLease" | "releaseLease" | "ownsLease" | "beat">;
   routines(): Pick<RoutineManager, "activeRunForBot"> | null;
   controlLeaseIdSchema: ZodString;
   remoteComputerLifecycleBusyBots: Pick<Set<string>, "has">;
@@ -58,8 +58,9 @@ export interface ComputerRouteDeps {
   managedComputerOwners(): vps.ManagedVpsOwner[];
   providerTransitionMessage(provider: RemoteComputerProvider): string;
   botHasActiveTurn(botId: string): boolean;
-  botComputerControlKey(bot: BotRecord): string;
-  botComputerControlSnapshot(botId: string): { held: boolean };
+  /** The control key whose lease opens this conversation's Local VM to a phone. */
+  localVmLeaseKey(bot: BotRecord, threadId?: string): string;
+  botComputerControlSnapshot(botId: string): ReturnType<ComputerControl["snapshot"]>;
   computerPreviewBot(botId: string, url: URL): BotRecord | null;
   computerPreviewSurface(bot: BotRecord, threadId?: string): Promise<string | undefined>;
   /** `allowPreview`: a desktop link only reads the screen, so a panel's preview in flight does not refuse it. */
@@ -73,9 +74,8 @@ export function createComputerRoutes(deps: ComputerRouteDeps): RouteHandler {
     computerProviderConfigTransitions, localVmActiveThreads, localVmLifecycleBusy, localVmSeen, localVmImageBusy,
     localVmProvisionBusy, localVmModeChangeBusy, localVmOwnerBusy, localVmIdleMs, localVmLeaseFor, localVmIdleFor,
     localVmTargetForBot, localVmTargetForStatus, localVmPayload, localVmInventoryPayload, existingPerBotLocalVmCount,
-      managedComputerOwners, providerTransitionMessage,
-    botComputerControlKey, computerPreviewBot, computerPreviewSurface,
-
+    managedComputerOwners, providerTransitionMessage,
+    localVmLeaseKey, computerPreviewBot, computerPreviewSurface,
     claimManagedVpsMutation,
   } = deps;
   return async (context) => {
@@ -160,7 +160,7 @@ export function createComputerRoutes(deps: ComputerRouteDeps): RouteHandler {
       else localVmLifecycleBusy.add(SHARED_LOCAL_VM_TARGET.key);
       try {
         if (action === "remove") await keepSignInsBeforeRemove(SHARED_LOCAL_VM_TARGET);
-        const status = await containerComputerAction(action, undefined, undefined, SHARED_LOCAL_VM_TARGET);
+        const status = await containerComputerAction(action, undefined, undefined, SHARED_LOCAL_VM_TARGET, localVmResources(cfg));
         if (action === "run" || action === "start") {
           localVmSeen.add(SHARED_LOCAL_VM_TARGET.key);
           localVmIdleFor(SHARED_LOCAL_VM_TARGET).touch();
@@ -235,7 +235,7 @@ export function createComputerRoutes(deps: ComputerRouteDeps): RouteHandler {
           }
         }
         if (action === "remove") await keepSignInsBeforeRemove(target);
-        const status = await containerComputerAction(action, undefined, undefined, target);
+        const status = await containerComputerAction(action, undefined, undefined, target, localVmResources(cfg));
         if (action === "run" || action === "start") {
           localVmSeen.add(target.key);
           localVmIdleFor(target).touch();
@@ -280,13 +280,12 @@ export function createComputerRoutes(deps: ComputerRouteDeps): RouteHandler {
       if (threadId && await computerPreviewSurface(bot, threadId) !== "vm") {
         return json(res, 409, { error: "This conversation is not using the Local VM" });
       }
-      if (localVmMode(cfg) !== "per-bot") {
-        return json(res, 409, { error: "Phone control requires a per-bot Local VM. Select per-bot mode in Settings → Computers." });
+      if (localVmMode(cfg) === "pool") {
+        return json(res, 409, { error: "Phone control is not available in pool mode. Select shared or per-bot mode in Settings → Computers." });
       }
       const lease = controlLeaseIdSchema.safeParse(url.searchParams.get("controlLeaseId") ?? undefined);
       if (!lease.success) return json(res, 400, { error: "controlLeaseId is required" });
-      const controlBot = store.bot(bot.id);
-      if (!controlBot || !computerControl.ownsLease(botComputerControlKey(controlBot), lease.data)) {
+      if (!store.bot(bot.id) || !computerControl.beat(localVmLeaseKey(bot, threadId), lease.data)) {
         return json(res, 409, { error: "Take control of this computer first" });
       }
       const target = localVmTargetForStatus(bot.id, threadId);

@@ -95,7 +95,7 @@ stay visible beside their controls. Keep the cost notice, screenshot retention,
 and sharing of personal facts visible in the short summaries.
 
 ```sh
-pnpm exec vitest run src/components/SettingsHelp.test.ts src/components/SettingsModal.appearance.test.ts src/components/AutomaticRecoverySettings.test.ts src/components/DiagnosticsRow.test.ts src/components/bot-settings/AccessSection.test.ts src/components/bot-settings/ProposalStatus.test.ts
+pnpm exec vitest run src/components/SettingsHelp.test.ts src/components/settings/SettingsWindow.test.ts src/components/AutomaticRecoverySettings.test.ts src/components/DiagnosticsRow.test.ts src/components/bot-settings/AccessSection.test.ts src/components/bot-settings/ProposalStatus.test.ts
 ```
 
 The [hosted Slack management fixture](hosted-slack-management.md) separately

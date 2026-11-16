@@ -2,6 +2,14 @@
 
 ## User path
 
+Settings → Import & export → **Export full backup** → password and confirmation →
+encrypted `.ombbackup` download. Import uses a native file input, password,
+validated preview and an explicit **REPLACE** confirmation. It is replacement,
+not an additive team import. Click **Restart and restore** on the local desktop
+to quit and reopen it; closing only its window does not restart the server.
+A hosted server must restart before its browser's **Retry** can finish recovery.
+No restore writes into a running Store.
+
 The previous workspace is retained under `.backups/safety-<restore-id>/data`.
 Keep this copy until the restored workspace is checked. Do not publish it.
 The downloaded archive is encrypted; private staging and safety directories

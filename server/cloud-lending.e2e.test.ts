@@ -138,6 +138,10 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
     grok: { driver: "grokAgent", environment: { FAKE_ACP_MODE: "lend-question" }, config: { cli: join(SERVER_DIR, "testing", "fake-acp-cli.ts"), fullAuto: false } },
   } }));
   chmodSync(join(SERVER_DIR, "testing", "fake-acp-cli.ts"), 0o755);
+  // A Cloud home starts a new engine only while the machine has room for it, holding each new turn's share for 90 s, and
+  // most turns here keep running: by the asking bot's turn they hold about 11 GB. Read from the test machine, room is
+  // whatever the test files running beside this one leave, so that turn could wait for memory past every wait below.
+  writeFileSync(join(dataDir, "host-memory.json"), JSON.stringify({ totalBytes: 64 * 1024 ** 3, availableBytes: 60 * 1024 ** 3, swapFreeBytes: 0, oomKills: 0, fullStall10: 0 }));
   port = await freePortBlock([0, 1]);
   base = `http://127.0.0.1:${port}`;
   await boot();

@@ -19,7 +19,7 @@ function world({ cloud = {}, switches = { "routine:r1": true, "routine:r2": fals
   const w = {
     cloud: { origin: CLOUD, account: "acct-1", machine: CLOUD, ready: true, moves: true, ended: false, paid: false, ...cloud },
     server: { frozen: false, freezes: 0, unfreezes: 0, forgot: 0 },
-    passes: [], checked: 0, cloudCalls: [], localCalls: [], lent: [], phone: { paired: true, stopped: 0, started: 0 }, opened: [], restarted: 0, brought: [],
+    passes: [], moveAsks: [], checked: 0, cloudCalls: [], localCalls: [], lent: [], phone: { paired: true, stopped: 0, started: 0 }, opened: [], restarted: 0, brought: [],
     again: null, version: "0.1.121",
     get journal() { return journal; },
     set journal(value) { journal = value; },
@@ -37,8 +37,8 @@ function world({ cloud = {}, switches = { "routine:r1": true, "routine:r2": fals
         cloud: () => (w.cloud ? { ...w.cloud } : null),
         send: {
           async move(options) {
-            const kind = options?.final ? "final" : "copy";
-            w.passes.push(kind);
+            w.passes.push(options?.final ? "final" : "copy");
+            w.moveAsks.push(options ?? {});
             const failure = moves.shift();
             if (failure) throw failure;
           },
@@ -89,6 +89,7 @@ function world({ cloud = {}, switches = { "routine:r1": true, "routine:r2": fals
         timers: { set: (work, ms) => { const timer = { work, ms }; timers.push(timer); return timer; }, clear: (timer) => { const at = timers.indexOf(timer); if (at >= 0) timers.splice(at, 1); } },
       });
     },
+    failNext(error) { moves.push(error); },
     relaunch() { w.home?.close(); timers.splice(0); w.home = w.make(); return w.home; },
     switchedOn: () => w.cloudCalls.filter(([method]) => method === "PATCH").map(([, route]) => route),
   };

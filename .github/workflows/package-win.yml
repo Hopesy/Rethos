@@ -25,6 +25,10 @@ concurrency:
   group: rethos-windows-release
   cancel-in-progress: false
 
+# least privilege: the build only reads the checkout, it never writes back
+permissions:
+  contents: read
+
 jobs:
   package:
     name: Build and verify Windows x64

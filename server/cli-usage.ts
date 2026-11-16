@@ -32,12 +32,12 @@ export const USAGE = `rethos — your team of AI bots, ready in a few steps
   rethos setup [--data-dir DIR]
   rethos start [the same options as serve]
   rethos serve [--port 8799] [--data-dir DIR] [--label NAME]
-                    [--public-url https://host | --domain HOST | --tunnel | --tailscale] [--lan]
+                    [--public-url https://host | --domain HOST | --tunnel | --tailscale] [--lan] [--relay]
   rethos pair  [--label NAME] [--phone [ios|android]] [--ttl 24h] [--public-url https://host]
   rethos devices [revoke ID]
   rethos status
   rethos --version
-  rethos login [--email you@example.com]
+  rethos login [--email you@example.com] [--relay]
   rethos logout
   rethos access list | add EMAIL [--chat-only] | remove EMAIL
   rethos service install [the same way-in options as serve] [--port N] [--data-dir DIR] | uninstall
@@ -62,7 +62,8 @@ devices lists paired devices; "devices revoke ID" signs one out
 status  the running server, the address others reach it at, and whether
         that address answers as this server
 login   signs this machine in to an OpenMausBot account (an emailed code)
-        and reserves its public address for --tunnel
+        and reserves its public address for --tunnel; with --relay it
+        reserves none, for serve --relay
 logout  releases that address and signs out
 access  who may sign in with an emailed code at /pair: an address or
         @domain; --chat-only gives chat and approvals without settings.
@@ -102,6 +103,12 @@ Ways in (pick one; --lan can join any):
              downloaded once and run alongside the server, and gets the
              certificate itself. Point the domain's DNS at this machine and
              open ports 80 and 443.
+
+--relay      phones only, and it can join any of the above except --tunnel:
+             the MausBot phone app pairs by QR through MausBot Relay,
+             end-to-end encrypted, with no address, open port or VPN. Run
+             \`rethos login --relay\` once on this machine first. Not on a
+             machine with a tunnel address: the relay stays off there.
 
 --no-open   do not open a browser window
 --no-pair   do not print a pairing code

@@ -105,7 +105,7 @@ describe("the header's right side", () => {
       expect(markup).toContain('data-tour="computer"');
       expect(markup).toContain('data-testid="chat-more"');
       const more = fixture.menus.find((menu) => menu.ariaLabel === "More")!;
-      expect(more.items.map((item) => item.key)).toEqual(["find", "new-thread", "copy", "download"]);
+      expect(more.items.map((item) => item.key)).toEqual(["find", "new-thread", "start-fresh", "copy", "download"]);
     } finally {
       delete window.ogb;
       fixture.advanced = true;
@@ -140,7 +140,7 @@ describe("the header's right side", () => {
     expect(markup).toContain('data-tour="computer"');
     expect(markup).toContain('data-testid="chat-more"');
     const more = fixture.menus.find((menu) => menu.ariaLabel === "More")!;
-    expect(more.items.map((item) => item.key)).toEqual(["find", "copy", "download", "activity", "inspector"]);
+    expect(more.items.map((item) => item.key)).toEqual(["find", "start-fresh", "copy", "download", "activity", "inspector"]);
     const inspector = more.items.find((item) => item.key === "inspector")!;
     expect(inspector.disabled).toBeFalsy();
     expect(inspector.heading).toBeUndefined();
@@ -439,6 +439,43 @@ describe("thread control placement", () => {
     expect(markup).toContain(`href="${CODEX_USAGE_URL}"`);
     expect(markup).toContain("Manage usage");
     expect(markup).not.toContain("<button");
+  });
+  it("turns an expired usage-limit error into history without hiding a new refusal", () => {
+    const codex = { instanceId: "codex", driverKind: "codex", displayName: "Codex",
+      snapshot: { state: "available", authenticated: true } } as unknown as InstanceInfo;
+    const reset = Date.now() - 60_000;
+    const limit = failedTurnTool(CODEX_USAGE_LIMIT_REACHED, { limitResetsAt: reset });
+    const historical = renderToStaticMarkup(createElement(FailedTurnRow, {
+      tool: limit, engine: codex, messageAt: reset - 10_000,
+    }));
+    expect(historical).toContain("Past usage-limit notice");
+    expect(historical).toContain(CODEX_USAGE_LIMIT_REACHED.replaceAll("'", "&#x27;"));
+    expect(historical).not.toContain("Manage usage");
+
+    const recent = renderToStaticMarkup(createElement(FailedTurnRow, {
+      tool: limit, engine: codex, messageAt: reset + 1_000,
+    }));
+    expect(recent).not.toContain("Past usage-limit notice");
+    expect(recent).toContain("Manage usage");
+
+    const pending = renderToStaticMarkup(createElement(FailedTurnRow, {
+      tool: failedTurnTool(CODEX_USAGE_LIMIT_REACHED, { limitResetsAt: Date.now() + 60_000 }),
+      engine: codex, messageAt: Date.now() - 1_000,
+    }));
+    expect(pending).not.toContain("Past usage-limit notice");
+    expect(pending).toContain("Manage usage");
+
+    const unknown = renderToStaticMarkup(createElement(FailedTurnRow, {
+      tool: failedTurnTool(CODEX_USAGE_LIMIT_REACHED), engine: codex, messageAt: reset - 10_000,
+    }));
+    expect(unknown).toContain("Manage usage");
+
+    const auth = renderToStaticMarkup(createElement(FailedTurnRow, {
+      tool: failedTurnTool("Not logged in - please sign in", { setup: true, limitResetsAt: reset }),
+      engine: codex, messageAt: reset - 10_000,
+    }));
+    expect(auth).not.toContain("Past usage-limit notice");
+    expect(auth).toContain("Not logged in");
   });
   it("opens a signed-out engine's failed turn with one sentence and the sign-in, the CLI's words under Details", () => {
     const claude = {

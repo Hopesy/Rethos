@@ -1,7 +1,7 @@
 // Packages are untrusted: import only adds new records, sets every privilege-bearing field itself, and rolls back on any failure.
 import { createHash, randomUUID } from "node:crypto";
 
-import { mcpServerNameError, MAX_MCP_SERVERS, parseStoredMcpServer } from "./mcp-registry.ts";
+import { mcpServerNameError, mcpSharedServerRoom, parseStoredMcpServer } from "./mcp-registry.ts";
 import {
   AGENT_PARTS, agentReleaseValues, connectionLocalValue, connectionReleaseValue, pair, pairs, playbookValues,
   ROOM_PARTS, roomReleaseValues, ROUTINE_PARTS, routineReleaseValues, scheduleValue, sha256Hex, TEAM_PARTS,
@@ -12,7 +12,6 @@ import type { Routine, RoutineInput, RoutineManager } from "./routines.ts";
 import type { SkillListing, SkillPackageStamp } from "./skills.ts";
 import type { BotRecord, GroupRecord, InstalledPackageMetadata, Store } from "./store.ts";
 import { importedMemberProfile, type ParsedTeamManifest, type TeamManifestMember } from "./team-manifest.ts";
-import { BOT_LIMIT_CODE } from "../shared/bot-limit.ts";
 import { takeImportName } from "../shared/import-name.ts";
 import { decodeBase64, type PackageAgent, type PackageDocument, type PackageTrust } from "../shared/package-format.ts";
 import type { BotVisibility, ModelSelection } from "../shared/wire.ts";
@@ -20,7 +19,7 @@ import type { BotVisibility, ModelSelection } from "../shared/wire.ts";
 export const NO_BOTS_MESSAGE = "This package has no bots. Add it from your organization's shelf, or update Rethos.";
 export const NO_PRESETS_MESSAGE = "This file has no bots or preset bots to add. Its skills can be added from your organization's shelf.";
 
-export type PackageImportErrorCode = "no_bots" | "invalid_package" | typeof BOT_LIMIT_CODE;
+export type PackageImportErrorCode = "no_bots" | "invalid_package" | "too_many_bots";
 
 export class PackageImportError extends Error {
   readonly status: number;
@@ -65,6 +64,8 @@ export interface PackageImportDeps {
   broadcast?: (event: { kind: "bot"; bot: BotRecord } | { kind: "group"; group: GroupRecord }) => void;
   defaultSelection: () => ModelSelection;
   presets?: PresetRegistry;
+  /** A Team Cloud: the member adding the package, who looks after its bots. */
+  createdBy?: string;
 }
 
 export interface OrgImportContext {
@@ -255,7 +256,7 @@ function runImport(source: ImportSource, options: PackageImportOptions, deps: Pa
       const next: Record<string, unknown> = { ...deps.mcp.servers() };
       for (const connection of pkg.connections) {
         const part = `connections[${connection.key}]`;
-        if (Object.keys(next).length >= MAX_MCP_SERVERS) {
+        if (mcpSharedServerRoom(next) === 0) {
           skipped.push({ part, reason: "too_many_connections" });
           continue;
         }
@@ -295,6 +296,7 @@ function runImport(source: ImportSource, options: PackageImportOptions, deps: Pa
           modelSelection: selection,
           section,
           ...(options.visibility ? { visibility: options.visibility } : {}),
+          ...(deps.createdBy ? { createdBy: deps.createdBy } : {}),
         },
         { seedMessages: false },
       );

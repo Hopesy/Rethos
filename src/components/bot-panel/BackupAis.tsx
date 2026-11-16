@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { ChevronDown, LifeBuoy, Plus } from "lucide-react";
 
 import { cn } from "@/lib/cn";
-import { configuredModelInstances } from "@/lib/engine-rail";
+import { backupNote, configuredModelInstances } from "@/lib/engine-rail";
 import { t } from "@/lib/i18n";
 import type { Typeahead } from "@/lib/menu-keys";
 import { pickerPlacement, type PickerPlacement } from "@/lib/picker-placement";
@@ -118,8 +118,11 @@ function BackupChooser({ bot, current, exclude, onPick, label, title, buttonRef,
       instances: state.instances, listed, selection: current ?? NO_SELECTION,
       bot: { name: bot.name, selection: bot.modelSelection }, query, expanded, probing: NOTHING_PROBED, loading, refreshing,
     });
-    const groups = built.groups.map((group) => group.instance.instanceId === bot.modelSelection.instanceId
-      ? { ...group, note: t("botPanel.backups.sameAccount") } : group);
+    const main = state.instances.find((instance) => instance.instanceId === bot.modelSelection.instanceId);
+    const groups = built.groups.map((group) => {
+      const note = backupNote(main, group.instance);
+      return note ? { ...group, note } : group;
+    });
     return { ...built, groups, ...(current ? {} : { current: null }) };
   };
 
@@ -248,7 +251,7 @@ export function BackupAis({ bot, onChange }: { bot: Bot; onChange: (fallback: Ba
                     label={t("botPanel.backups.row", { position: index + 1, model: name })}
                     title={instance ? `${instance.displayName} · ${name}` : name}
                     data-panel-action="backup-change"
-                    className="group flex h-8 min-w-0 flex-1 items-center gap-2 rounded-[9px] bg-ink/[0.04] pl-2.5 pr-2 text-left text-[13px] text-ink hover:bg-ink/[0.07] aria-expanded:bg-ink/[0.08]"
+                    className="group flex h-8 min-w-0 flex-1 items-center gap-2 rounded-[8px] bg-ink/[0.04] pl-2.5 pr-2 text-left text-[13px] text-ink hover:bg-ink/[0.07] aria-expanded:bg-ink/[0.08]"
                   >
                     {instance
                       ? <InstanceProviderMark instance={instance} size={14} subtle />

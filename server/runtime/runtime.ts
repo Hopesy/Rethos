@@ -1,10 +1,11 @@
 // The store is the only state: tick() is the only place work is admitted or dispatched, and no timer lives here.
 import { randomUUID } from "node:crypto";
+import { redactSecretsInText } from "../../shared/redact.ts";
 
 import { composeEnvelope } from "./envelope.ts";
 import { assignmentLevel } from "./level.ts";
 import type { RuntimeStore } from "./store.ts";
-import { answersSender, asking, awaited, childrenSince, settledSince, clip, continuations, CUT_TWICE, duration, isTerminal, loopStop, nextGuard, outwardDetail, ownsConversation, path, restartNote, wakeOwner } from "./tree.ts";
+import { answersSender, asking, awaited, childrenSince, settledSince, clip, continuations, CUT_TWICE, duration, isTerminal, loopStop, nextGuard, outwardDetail, ownsConversation, ownThread, path, restartNote, wakeOwner } from "./tree.ts";
 import { DEFAULT_LIMITS, type Answerer, type Assignment, type Assignee, type Clock, type EndResult, type EnqueueRequest, type EnqueueResult, type EnvelopeNames,
   type EventKind, type InboxItem, type InboxKind, type Level, type Limits, type LiveEdge, type Origin, type Outcome, type Owner,
   type Reply, type Requester, type RunInput, type RunResult, type StatusView, type TurnRunner } from "./types.ts";
@@ -38,6 +39,8 @@ const BRIEF_MAX = 12_000;
 const RESULT_MAX = 12_000;
 const STOPPED_WITH_REQUEST = "Stopped with the request it was for";
 const DETAIL_MAX = 400;
+/** progress() runs once per runtime event; lastActivityAt catches up at this cadence, not per event. */
+export const PROGRESS_WRITE_MS = 10_000;
 
 const defaultClock: Clock = { now: () => Date.now(), monotonic: () => performance.now() };
 
@@ -192,16 +195,20 @@ export class Runtime {
     const lineage = parent ? path(this.store, parent) : [];
     const root = lineage[0];
     const target = req.assignee;
-    if (!answersSender(parent, mode, { botId: target.botId, ...target.destination }) && lineage.some(a => a.assignee.botId === target.botId &&
+    let sameCall = false;
+    const ancestors = ownThread(lineage, target, req.ownThread) ? lineage.slice(0, -1) : lineage;
+    if (!answersSender(parent, mode, { botId: target.botId, ...target.destination }) && ancestors.some(a => a.assignee.botId === target.botId &&
       (!a.assignee.destination.groupId || !target.destination.groupId || a.assignee.destination.groupId === target.destination.groupId))) {
       return refuse("Cannot assign work back to an ancestor; results return automatically");
     }
     if (parent) {
-      const existing = this.store.children(parent.id).findLast(c => c.brief === brief && c.mode === mode && c.assignee.botId === target.botId &&
+      const siblings = this.store.children(parent.id);
+      const existing = siblings.findLast(c => c.brief === brief && c.mode === mode && c.assignee.botId === target.botId &&
         c.assignee.destination.threadId === target.destination.threadId && c.assignee.destination.groupId === target.destination.groupId);
       if (existing && !(req.rework && isTerminal(existing))) return { ok: true, assignment: existing, duplicate: true };
       if (parent.depth + 1 > this.limits.depth) return refuse(`Assignment depth limit reached (${this.limits.depth})`);
-      if (root?.budgets && root.budgets.requests + 1 > this.limits.requests) {
+      sameCall = req.fanOut !== undefined && siblings.some(c => c.fanOut === req.fanOut);
+      if (!sameCall && root?.budgets && root.budgets.requests + 1 > this.limits.requests) {
         this.store.update(root, { kind: "budget", at: now, detail: `requests: ${root.budgets.requests} since last progress` });
         return refuse(`Request budget exhausted: ${this.limits.requests} requests without progress`, "budget");
       }
@@ -215,7 +222,7 @@ export class Runtime {
       reply: req.reply ?? (mode === "notify" ? "none" : "resume"), brief, ...(req.doneWhen ? { doneWhen: req.doneWhen } : {}),
       status: "queued", level, levelSource: source, executions: 0, restarts: 0, createdAt: now, lastActivityAt: now, result: "",
       rework: Boolean(req.rework), ...(req.approved !== undefined ? { approved: req.approved } : {}),
-      ...(req.batchKey !== undefined ? { batchKey: req.batchKey } : {}), version: 1,
+      ...(req.batchKey !== undefined ? { batchKey: req.batchKey } : {}), ...(req.fanOut !== undefined ? { fanOut: req.fanOut } : {}), version: 1,
     };
     if (!parent) { node.rootId = node.id; node.budgets = { since: now, requests: 0, executions: 0, wakes: 0 }; }
     const problem = this.safe("validate", () => this.runner.validate(node, parent));
@@ -223,7 +230,7 @@ export class Runtime {
     if (problem) return refuse(problem);
     this.store.transaction(() => {
       this.store.insert(node, { kind: "enqueued", at: now, detail: "queued" });
-      if (root?.budgets) { root.budgets.requests += 1; this.store.update(root); }
+      if (root?.budgets && !sameCall) { root.budgets.requests += 1; this.store.update(root); }
     });
     this.touch(node, ...root ? [root] : []);
     return { ok: true, assignment: node, duplicate: false };
@@ -261,8 +268,8 @@ export class Runtime {
       if (!n || isTerminal(n)) continue;
       if (n.status === "queued" && !n.continuation && now - this.since(n.lastActivityAt) > this.limits.queueMs) {
         this.cancelTree(n, n.executions > 0 ? "not resumed" : "never started", "failed", "expired");
-      } else if (n.status === "needs_input" && this.inputExpires(n) && now - this.since(n.lastActivityAt) > this.limits.inputWaitMs) {
-        this.cancelTree(n, "the person did not answer", "failed", "expired");
+      } else if (n.status === "needs_input" && this.inputExpires(n)) {
+        this.chaseParked(n, now);
       } else if (n.status === "running") {
         const turn = this.turns.get(n.id);
         if (turn && mono - turn.activeAt > this.limits.turnStallMs) {
@@ -481,7 +488,7 @@ export class Runtime {
     }
     delete n.guard;
     if (result.kind === "needs_input") {
-      n.status = "needs_input"; n.question = clip(result.question, BRIEF_MAX); n.lastActivityAt = now;
+      n.status = "needs_input"; n.question = clip(result.question, BRIEF_MAX); n.lastActivityAt = now; delete n.remindedAt;
       if (result.cards?.length) n.cards = result.cards; else delete n.cards;
       const choice = result.decide?.default?.trim();
       if (result.decide && n.parentId && !n.cards) n.decide = choice ? { default: clip(choice, BRIEF_MAX) } : {}; else delete n.decide;
@@ -528,16 +535,32 @@ export class Runtime {
     this.store.update(n, { kind: "held", at: this.clock.now(), detail: clip(why, DETAIL_MAX) });
   }
 
-  /** The host saw activity on this running turn: its stall window restarts. */
+  /** The host saw activity on this running turn: its stall window restarts, and lastActivityAt
+   * catches up on the PROGRESS_WRITE_MS cadence so the stored row reads as live, not frozen at dispatch. */
   progress(id: string): void {
+    const now = this.clock.now();
     const turn = this.turns.get(id);
     if (turn) {
       turn.activeAt = this.clock.monotonic();
-      this.rootActivity.set(turn.rootId, this.clock.now());
-      return;
+      this.rootActivity.set(turn.rootId, now);
     }
-    const n = this.store.get(id);
-    if (n?.status === "running") this.rootActivity.set(n.rootId, this.clock.now());
+    try {
+      const n = this.store.get(id);
+      if (!turn && n?.status === "running") this.rootActivity.set(n.rootId, now);
+      if (!n || n.status !== "running" || now - n.lastActivityAt < PROGRESS_WRITE_MS) return;
+      n.lastActivityAt = now;
+      const root = n.rootId === n.id ? undefined : this.store.get(n.rootId);
+      this.store.transaction(() => {
+        this.store.update(n);
+        if (root && !isTerminal(root) && now - root.lastActivityAt >= PROGRESS_WRITE_MS) {
+          root.lastActivityAt = now;
+          this.store.update(root);
+        }
+      });
+    } catch (error) {
+      // Bookkeeping only: a failed read or stamp never ends the turn or the caller that reported progress.
+      this.log(`progress(${id}) failed: ${String(error)}`);
+    }
   }
 
   /** A parked question is answered, by the person unless `by` says otherwise; the next turn carries it. */
@@ -545,7 +568,8 @@ export class Runtime {
     const n = this.store.get(id);
     if (!n || n.status !== "needs_input") return false;
     const now = this.clock.now();
-    n.answer = clip(text, BRIEF_MAX); delete n.question; delete n.decide; n.status = "queued"; n.lastActivityAt = now;
+    // Mask secrets before an over-long answer is clipped, so the cut can never leave part of one that redaction no longer matches.
+    n.answer = clip(text.length > BRIEF_MAX ? redactSecretsInText(text) : text, BRIEF_MAX); delete n.question; delete n.decide; n.status = "queued"; n.lastActivityAt = now;
     if (by) n.answeredBy = by; else delete n.answeredBy;
     const root = n.parentId ? this.store.get(n.rootId) : undefined;
     this.store.transaction(() => {
@@ -646,7 +670,7 @@ export class Runtime {
     for (const child of this.store.children(n.id)) {
       if (isTerminal(child)) continue;
       const fresh = this.store.get(child.id);
-      if (fresh && !isTerminal(fresh)) this.cancelTree(fresh, reason, status, outcome);
+      if (fresh && !isTerminal(fresh)) this.cancelTree(fresh, STOPPED_WITH_REQUEST, status, outcome);
     }
     const fresh = this.store.get(n.id);
     if (fresh && !isTerminal(fresh)) this.settle(fresh, status, outcome, reason);
@@ -744,7 +768,24 @@ export class Runtime {
   }
 
   private inputExpires(n: Assignment): boolean {
-    return Number.isFinite(this.limits.inputWaitMs) && !(n.cards && n.cards.length > 0);
+    return Number.isFinite(this.limits.inputWaitMs) && n.parentId !== undefined;
+  }
+
+  /** One reminder, then expiry. Not on this.since(): a window every boot reopened would never close on a host that restarts. A
+   * question its requester decides asks the person nothing, so it gets no reminder. */
+  private chaseParked(n: Assignment, now: number): void {
+    const { inputWaitMs, inputRemindMs } = this.limits;
+    const closesAt = n.lastActivityAt + inputWaitMs;
+    if (n.remindedAt === undefined && Number.isFinite(inputRemindMs) && !n.decide) {
+      if (now - n.lastActivityAt <= inputRemindMs) return;
+      n.remindedAt = now;
+      this.store.update(n, { kind: "reminded", at: now, detail: "waiting on the person" });
+      this.touch(n);
+      this.safe("remind", () => this.runner.remind?.(n, Math.max(closesAt, now + inputWaitMs - inputRemindMs)));
+      return;
+    }
+    const notBefore = n.remindedAt === undefined ? closesAt : Math.max(closesAt, n.remindedAt + inputWaitMs - inputRemindMs);
+    if (now > notBefore) this.cancelTree(n, "the person did not answer", "failed", "expired");
   }
 
   /** Whether its requester takes a turn for its question: a one-way notice's never does, nor a `poll` root. */

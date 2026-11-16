@@ -40,13 +40,13 @@ describe.each(["Simple", "Advanced"] as const)("%s Settings → OMB Cloud on a s
     fixture.config = { cloudHome: true };
     const html = render();
     expect(html).not.toContain("CLOUD_PLAN_MARKER"); expect(html).not.toContain(reachable());
-    expect(html).toContain(fixture.advanced ? 'data-settings-section="general" aria-current="page"' : 'data-settings-page="general"');
+    expect(html).toContain('data-settings-page-open="app"');
   });
-  it("opens General for a retired Cloud account deep link on the desktop", () => {
+  it("opens This app for a retired Cloud account deep link on the desktop", () => {
     vi.stubGlobal("window", { ogb: { cloudAccount: {}, cloudPlan: plan } });
     const html = render();
     expect(html).not.toContain("CLOUD_PLAN_MARKER");
     expect(html).not.toContain(reachable());
-    expect(html).toContain(fixture.advanced ? 'data-settings-section="general" aria-current="page"' : 'data-settings-page="general"');
+    expect(html).toContain('data-settings-page-open="app"');
   });
 });

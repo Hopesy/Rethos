@@ -17,6 +17,8 @@ export interface SidebarSectionRouteDeps {
   store: Store;
   maxBots: number;
   wireBot(bot: BotRecord): WireBot;
+  /** A department was renamed (`to`) or deleted (null): what is kept about it by name follows. */
+  renamed?(from: string, to: string | null): void;
 }
 
 export function createSidebarSectionRoutes(deps: SidebarSectionRouteDeps): RouteHandler {
@@ -42,6 +44,7 @@ export function createSidebarSectionRoutes(deps: SidebarSectionRouteDeps): Route
       }
       const error = nextName === null ? store.deleteSection(section) : store.renameSection(section, nextName);
       if (error) return json(res, error === "No such department" ? 404 : 409, storeRefusal(error));
+      deps.renamed?.(section, nextName);
       return json(res, 200, { sections: store.sections });
     }
     if (method === "PUT" && path === "/api/sidebar-sections") {

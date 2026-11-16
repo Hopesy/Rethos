@@ -29,7 +29,10 @@ const STALL_PERCENT = 20;
 const MINUTE_MS = 60_000, DAY_MINUTES = 24 * 60;
 /** Engines that run each thread's turns in processes of their own. */
 export const ENGINE_PROCESS_KINDS: ReadonlySet<string> = new Set(["claudeAgent", "codex", "opencodeGo", "grokAgent", "geminiAgent", "kimiAgent",
-  "droidAgent", "cursorAgent", "qwenAgent", "hermesAgent", "clineAgent", "copilotAgent", "commandCodeAgent", "customAcp", "piAgent", "antigravityAgent"]);
+  "droidAgent", "cursorAgent", "qwenAgent", "hermesAgent", "clineAgent", "copilotAgent", "commandCodeAgent", "kiroAgent", "devinAgent", "customAcp", "piAgent", "ompAgent", "mistralVibeAgent", "antigravityAgent"]);
+
+/** Chat-runtime engines (openai-chat.ts) have no process of their own, but each turn starts its MCP servers, each a Node process. */
+export const CHAT_RUNTIME_KINDS: ReadonlySet<string> = new Set(["openai-compat", "cerebras", "greenference", "grok", "groq", "meta", "minimax", "mistral", "modelgo"]);
 
 export interface HostMemory { totalBytes: number; availableBytes: number; swapFreeBytes: number; oomKills: number | null; fullStall10: number | null }
 
@@ -147,6 +150,8 @@ export interface EngineCap {
   most(): number | undefined;
   /** Whether this thread's running turn waits on work it handed out: it holds no place, so the work it waits on can run. */
   waitsOnOthers(threadId: string): boolean;
+  /** Whether a lane of its own runs this thread (a burst's): it neither takes a place under this limit nor waits for one. */
+  laneOwned?(threadId: string): boolean;
 }
 
 /** An engine process and the threads whose sessions it runs: one, or several when the driver shares processes. */
@@ -189,6 +194,8 @@ export class EngineMemory {
   private timer: ReturnType<typeof setInterval> | null = null;
   private browsers: EngineBrowsers | null = null;
   private personsOwn: (threadId: string) => boolean = () => false;
+  private generation = 0;
+  private ordered: { at: number; generation: number; list: Waiter[] } | null = null;
   private waits: EngineWaits | null = null;
   private cap: EngineCap | null = null;
 
@@ -217,13 +224,27 @@ export class EngineMemory {
   /** The plan's limit when it is what this thread's turn must wait for now; undefined when there is a place. */
   private capped(threadId: string): number | undefined {
     const most = this.cap?.most();
-    if (most === undefined) return undefined;
+    if (most === undefined || this.cap!.laneOwned?.(threadId)) return undefined;
     let running = 0;
     for (const other of new Set([...this.active, ...this.reserved.keys()])) {
-      if (other === threadId || this.cap!.waitsOnOthers(other)) continue;
+      if (other === threadId || this.cap!.waitsOnOthers(other) || this.cap!.laneOwned?.(other)) continue;
       if (++running >= most) return most;
     }
     return undefined;
+  }
+
+  /** Whether a lane may start one more turn: nobody's own work is waiting, and under a plan's limit the whole machine, the
+   * lane's own turns counted, has a place. Linear in the turns running and the ones waiting. */
+  laneHasRoom(): boolean {
+    if (!this.enabled) return true;
+    if (this.queue.some((waiter) => this.personsOwn(waiter.threadId))) return false;
+    const most = this.cap?.most();
+    if (most === undefined) return true;
+    let running = 0;
+    for (const other of new Set([...this.active, ...this.reserved.keys()])) {
+      if (!this.cap!.waitsOnOthers(other) && ++running >= most) return false;
+    }
+    return true;
   }
 
   /** Whether a task is waiting for memory now. */
@@ -244,6 +265,9 @@ export class EngineMemory {
     child.once("exit", (_code, signal) => this.exited(pid, engine, signal));
     this.arm();
   }
+
+  /** The engine processes tracked now, with the threads each runs: for the performance sampler's buckets. */
+  enginePids(): Array<{ pid: number; threads: string[] }> { return [...this.engines].map(([pid, engine]) => ({ pid, threads: [...engine.threads] })); }
 
   /** A thread's session now runs in this already tracked engine process. */
   attach(child: ChildProcess, threadId: string): void {
@@ -300,6 +324,7 @@ export class EngineMemory {
     if (joining !== undefined) this.engines.get(joining)?.threads.add(threadId);
     const waiter: Waiter = { wake: () => {}, threadId, since: this.now() };
     this.queue.push(waiter);
+    this.generation++;
     let announced: number | null = null;
     try {
       for (;;) {
@@ -337,6 +362,7 @@ export class EngineMemory {
       }
     } finally {
       this.queue.splice(this.queue.indexOf(waiter), 1);
+      this.generation++;
       const since = this.waitingSince.get(waiter);
       if (since !== undefined) {
         this.waitingSince.delete(waiter);
@@ -487,14 +513,20 @@ export class EngineMemory {
     }
   }
 
+  /** Every waiter orders the queue each time it wakes, so the order is worked out once per wake and moment. */
   private order(): Waiter[] {
     const at = this.now();
+    if (this.ordered?.at === at && this.ordered.generation === this.generation) return this.ordered.list;
     const first: Waiter[] = [], rest: Waiter[] = [];
     for (const waiter of this.queue) (this.personsOwn(waiter.threadId) || at - waiter.since >= BOT_TURN_GIVES_WAY_MS ? first : rest).push(waiter);
-    return [...first, ...rest];
+    this.ordered = { at, generation: this.generation, list: [...first, ...rest] };
+    return this.ordered.list;
   }
 
-  private wake(): void { for (const waiter of this.queue) waiter.wake(); }
+  private wake(): void {
+    this.generation++;
+    for (const waiter of this.queue) waiter.wake();
+  }
 
   private arm(): void {
     if (this.timer || !this.enabled) return;
@@ -511,7 +543,7 @@ export const engineMemory = new EngineMemory({ enabled: (process.env.OMB_CLOUD_R
  * for memory fails with that reason. The instance is changed in place: its `models` may be a getter a copy would freeze.
  */
 export function withEngineMemory(instance: ProviderInstance, memory: EngineMemory = engineMemory): ProviderInstance {
-  if (!memory.enabled || !ENGINE_PROCESS_KINDS.has(instance.driverKind)) return instance;
+  if (!memory.enabled || !(ENGINE_PROCESS_KINDS.has(instance.driverKind) || CHAT_RUNTIME_KINDS.has(instance.driverKind))) return instance;
   const adapter = instance.adapter;
   const listeners = new Set<RuntimeEventListener>();
   const waiting = new Map<string, AbortController>();

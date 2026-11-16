@@ -11,10 +11,10 @@ const LOCAL = "http://127.0.0.1:8799";
 const CLOUD = "https://home-7f3k2.fly.dev";
 const OTHER = "https://bots.example.test";
 
-const fixture = vi.hoisted(() => ({ autoUpdater: null, handlers: new Map() }));
+const fixture = vi.hoisted(() => ({ autoUpdater: null, handlers: new Map(), home: "" }));
 
 vi.mock("electron", () => ({
-  app: { isPackaged: true, getPath: () => "/unused-updater-test-log", getVersion: () => "1.0.0", hide: vi.fn() },
+  app: { isPackaged: true, getPath: () => fixture.home, getVersion: () => "1.0.0", hide: vi.fn() },
   clipboard: { writeText: vi.fn() },
   ipcMain: { handle: (name, handler) => fixture.handlers.set(name, handler) },
 }));
@@ -43,7 +43,7 @@ function mainRule() {
   return { context, window, show, offered, pageAllowed: vm.runInContext("updaterPageAllowed", context) };
 }
 
-async function load(pageAllowed) {
+async function load(pageAllowed, serverPage = undefined, confirmRestart = undefined) {
   vi.resetModules();
   fixture.handlers.clear();
   const autoUpdater = new EventEmitter();
@@ -60,7 +60,7 @@ async function load(pageAllowed) {
   autoUpdater.quitAndInstall = vi.fn();
   fixture.autoUpdater = autoUpdater;
   const updater = await import("./updater.mjs");
-  updater.registerUpdaterIpc({ pageAllowed });
+  updater.registerUpdaterIpc({ pageAllowed, ...(serverPage ? { serverPage, confirmRestart } : {}) });
   return { updater, autoUpdater, handlers: fixture.handlers };
 }
 
@@ -69,12 +69,14 @@ const settle = async () => {
 };
 
 beforeEach(() => {
+  fixture.home = mkdtempSync(join(tmpdir(), "omb-updater-home-"));
   localOriginModule.setLocalOrigin(LOCAL);
   vi.useFakeTimers();
 });
 afterEach(() => {
   vi.clearAllTimers();
   vi.useRealTimers();
+  rmSync(fixture.home, { recursive: true, force: true });
 });
 
 function bridgeFor(origin, { clicked = false, rule = null } = {}) {
@@ -264,4 +266,37 @@ it("sends updater progress to a reopened window without restarting the updater",
     .toEqual(["checking", "downloading", "downloading", ...(process.platform === "darwin" ? ["preparing"] : []), "downloaded"]);
   expect(autoUpdater.eventNames().reduce((count, name) => count + autoUpdater.listenerCount(name), 0)).toBe(listenerCount);
   expect(vi.getTimerCount()).toBe(timerCount);
+});
+
+it("a server's page the window shows may ask for the app's own update: it learns only what was done, and nothing restarts unless the person says so", async () => {
+  const rule = mainRule();
+  const other = page(OTHER);
+  rule.show(other, "vps");
+  expect(rule.serverPage(other.event)).toBe(OTHER);
+  expect(rule.serverPage({ sender: other.webContents, senderFrame: { url: `${CLOUD}/` } })).toBeNull();
+  expect(rule.serverPage({ sender: page(OTHER).webContents, senderFrame: { url: `${OTHER}/` } })).toBeNull();
+  const answers = [];
+  const confirmRestart = vi.fn(async (version) => { answers.push(version); return answers.length > 1; });
+  const { updater, autoUpdater, handlers } = await load(rule.pageAllowed, rule.serverPage, confirmRestart);
+  const ask = handlers.get("update:for-server-page");
+  await expect(Promise.resolve().then(() => ask({ sender: page(OTHER).webContents, senderFrame: { url: `${OTHER}/` } }))).rejects.toThrow(/only available/);
+  expect(await ask(other.event)).toBe("unavailable");
+  updater.attachUpdaterWindow(rule.window);
+  updater.startUpdater();
+  // Checked and downloaded at the page's request; the person said Not now. Five asks at once open one dialog, which
+  // names the asking server.
+  vi.advanceTimersByTime(updater.SERVER_PAGE_ASK_COOLDOWN_MS);
+  expect(await Promise.all([1, 2, 3, 4, 5].map(() => ask(other.event)))).toEqual(["later", "later", "later", "later", "later"]);
+  expect(confirmRestart).toHaveBeenCalledTimes(1);
+  expect(confirmRestart).toHaveBeenCalledWith("2.0.0", OTHER);
+  expect(await ask(other.event)).toBe("later");
+  expect(confirmRestart).toHaveBeenCalledTimes(1);
+  vi.advanceTimersByTime(updater.SERVER_PAGE_ASK_COOLDOWN_MS);
+  expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+  await settle();
+  // Not the updater's state: the page never hears it, only what its own request did.
+  expect(other.webContents.send).not.toHaveBeenCalled();
+  expect(await ask(other.event)).toBe("installing");
+  expect(confirmRestart).toHaveBeenLastCalledWith("2.0.0", OTHER);
+  expect(autoUpdater.quitAndInstall).toHaveBeenCalledTimes(1);
 });

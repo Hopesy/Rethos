@@ -64,7 +64,7 @@ export const SidebarBotTile = memo(function SidebarBotTile({ primary = false, dr
       tabIndex={renaming ? undefined : 0}
       data-sidebar-bot-row={bot.id}
       data-sidebar-tile={primary ? "primary" : "pinned"}
-      draggable={Boolean(drag) && !renaming}
+      draggable={Boolean(drag) && !renaming} data-look="sidebar-bot"
       aria-label={renaming ? undefined : label}
       aria-current={selected && !renaming ? "page" : undefined}
       aria-busy={deleting || undefined}
@@ -75,7 +75,7 @@ export const SidebarBotTile = memo(function SidebarBotTile({ primary = false, dr
       onKeyDown={onKeyDown}
       onContextMenu={(event) => openBotContextMenu(onMenu, bot.id, event)}
       className={cn(
-        "flex h-[92px] w-[78px] shrink-0 cursor-pointer flex-col items-center rounded-[10px] bg-[var(--tile)] px-1 pt-2 transition-colors duration-150", SIMPLE_ROW_FOCUS,
+        "flex h-[92px] w-[78px] shrink-0 cursor-pointer flex-col items-center rounded-[8px] bg-[var(--tile)] px-1 pt-2 transition-colors duration-150", SIMPLE_ROW_FOCUS,
         selected ? "[--tile:var(--color-raised)]" : "[--tile:var(--color-panel)] hover:[--tile:color-mix(in_srgb,var(--color-raised)_50%,var(--color-panel))]",
         pinnedCircleDragClass({ drag, dragging, drop }),
       )}

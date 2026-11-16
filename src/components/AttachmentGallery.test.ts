@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { FILE_MAX_BYTES } from "@/lib/composer-attachments";
+import { PREVIEW_MAX_BYTES } from "@/lib/composer-attachments";
 import { AttachmentGallery, collectMessageFiles, isAudioAttachment, isVideoAttachment, loadMessageAudio, loadMessageVideo, MessageAttachmentGallery, splitMessageAttachments } from "./AttachmentGallery";
 
 const message = { threadId: "thread/one", messageId: "message two" };
@@ -88,10 +88,10 @@ describe("audio attachments", () => {
 
   it("enforces the size limit with and without Content-Length", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("audio", {
-      headers: { "content-type": "audio/mpeg", "content-length": String(FILE_MAX_BYTES + 1) },
+      headers: { "content-type": "audio/mpeg", "content-length": String(PREVIEW_MAX_BYTES + 1) },
     })));
     await expect(loadMessageAudio(clip, message, new AbortController().signal)).rejects.toThrow("25 MB");
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(new Uint8Array(FILE_MAX_BYTES + 1), { headers: { "content-type": "audio/mpeg" } })));
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(new Uint8Array(PREVIEW_MAX_BYTES + 1), { headers: { "content-type": "audio/mpeg" } })));
     await expect(loadMessageAudio(clip, message, new AbortController().signal)).rejects.toThrow("25 MB");
   });
 });
@@ -183,14 +183,46 @@ describe("message gallery", () => {
 });
 
 describe("explicit local video preview", () => {
-  it("posts to the same-origin message route and uses only the authorized response bytes", async () => {
+  const route = "/api/threads/thread%2Fone/messages/message%20two/file";
+  const linkResponse = (body: unknown) => new Response(JSON.stringify(body), {
+    headers: { "content-type": "application/json", "x-openmausbot-media": "1" },
+  });
+
+  it("asks the message route for a streaming link and plays that link without downloading the file", async () => {
+    const url = `${route}?media=${"a".repeat(43)}`;
+    const fetcher = vi.fn(async () => linkResponse({ url, mime: "video/mp4", bytes: 24_000_000 }));
+    vi.stubGlobal("fetch", fetcher);
+    expect(await loadMessageVideo(file, message, new AbortController().signal)).toBe(url);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(fetcher).toHaveBeenCalledWith(route, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ path: file.path, media: true }), signal: expect.any(AbortSignal),
+    });
+  });
+
+  it("streams a video over the in-memory preview limit, since the player reads it in ranges", async () => {
+    const url = `${route}?media=b`;
+    vi.stubGlobal("fetch", vi.fn(async () => linkResponse({ url, mime: "video/webm", bytes: PREVIEW_MAX_BYTES * 4 })));
+    expect(await loadMessageVideo(file, message, new AbortController().signal)).toBe(url);
+  });
+
+  it("refuses a link that points anywhere but this message's file route, or at something not a video", async () => {
+    for (const body of [
+      { url: "https://example.com/clip.mp4", mime: "video/mp4" },
+      { url: "/api/threads/thread%2Fone/messages/other/file?media=abc", mime: "video/mp4" },
+      { url: `${route}?media=abc&path=/etc/passwd`, mime: "video/mp4" },
+      { url: `${route}?media=abc`, mime: "text/html" },
+      null,
+    ]) {
+      vi.stubGlobal("fetch", vi.fn(async () => linkResponse(body)));
+      await expect(loadMessageVideo(file, message, new AbortController().signal)).rejects.toThrow("cannot be played");
+    }
+  });
+
+  it("falls back to the authorized response bytes from a server without streaming links", async () => {
     const fetcher = vi.fn(async () => new Response("video bytes", { headers: { "content-type": "video/mp4" } }));
     vi.stubGlobal("fetch", fetcher);
-    const signal = new AbortController().signal;
-    const blob = await loadMessageVideo(file, message, signal);
-    expect(fetcher).toHaveBeenCalledWith("/api/threads/thread%2Fone/messages/message%20two/file", {
-      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ path: file.path }), signal: expect.any(AbortSignal),
-    });
+    const blob = await loadMessageVideo(file, message, new AbortController().signal) as Blob;
+    expect(fetcher).toHaveBeenCalledTimes(1);
     expect(blob.type).toBe("video/mp4");
     expect(await blob.text()).toBe("video bytes");
   });
@@ -211,13 +243,13 @@ describe("explicit local video preview", () => {
 
   it("enforces the video size limit with and without Content-Length", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("video", {
-      headers: { "content-type": "video/mp4", "content-length": String(FILE_MAX_BYTES + 1) },
+      headers: { "content-type": "video/mp4", "content-length": String(PREVIEW_MAX_BYTES + 1) },
     })));
     await expect(loadMessageVideo(file, message, new AbortController().signal)).rejects.toMatchObject({
       code: "file_too_large",
       message: "This file is 25.1 MB, over the 25 MB preview limit. You can still download it below.",
     });
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(new Uint8Array(FILE_MAX_BYTES + 1), { headers: { "content-type": "video/mp4" } })));
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(new Uint8Array(PREVIEW_MAX_BYTES + 1), { headers: { "content-type": "video/mp4" } })));
     await expect(loadMessageVideo(file, message, new AbortController().signal)).rejects.toMatchObject({
       code: "file_too_large",
       message: "Preview is limited to 25 MB.",
@@ -254,7 +286,7 @@ describe("explicit local video preview", () => {
       vi.stubGlobal("fetch", fetcher);
       const pending = loadMessageVideo(file, message, new AbortController().signal);
       await vi.advanceTimersByTimeAsync(15_000);
-      expect(await (await pending).text()).toBe("video bytes");
+      expect(await (await pending as Blob).text()).toBe("video bytes");
       expect(fetcher).toHaveBeenCalledTimes(2);
     } finally {
       vi.useRealTimers();

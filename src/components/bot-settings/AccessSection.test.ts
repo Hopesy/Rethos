@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { StoreProvider, type Bot, type ConfigStatus } from "@/state/store";
+
 import { t } from "@/lib/i18n";
 import type { useBotSettingsDerived } from "./useBotSettingsDerived";
 
@@ -12,11 +13,13 @@ const fixture = vi.hoisted(() => ({
   mcpError: false,
   servers: null as null | Array<{ name: string; enabled: boolean }>,
   config: null as unknown,
+  instances: [] as unknown[],
+  capabilities: { host: { homeDir: undefined } as { homeDir: undefined; platform?: string }, localComputer: { available: false, reasonCode: "unsupported" } },
   apps: { phase: "loading", apps: [], connectedSlugs: [] } as import("./useBotApps").BotApps,
 }));
 vi.mock("@/state/store", async (importOriginal) => {
   const original = await importOriginal<typeof import("@/state/store")>();
-  return { ...original, useStore: () => ({ state: { ...original.initialState, config: fixture.config ?? original.initialState.config }, dispatch: fixture.dispatch }) };
+  return { ...original, useStore: () => ({ state: { ...original.initialState, config: fixture.config ?? original.initialState.config, instances: fixture.instances as typeof original.initialState.instances }, dispatch: fixture.dispatch }) };
 });
 // The connected-apps list (Composio accounts plus the native Email connection) is seeded per test.
 vi.mock("./useBotApps", async (importOriginal) => ({
@@ -30,7 +33,7 @@ vi.mock("@/lib/mcp-servers", async (importOriginal) => ({
 
 // DesktopCapabilities reads window.ogb at module scope, and this suite runs in the node environment.
 vi.mock("../DesktopCapabilities", () => ({
-  useDesktopCapabilities: () => ({ capabilities: { host: { homeDir: undefined }, localComputer: {} } }),
+  useDesktopCapabilities: () => ({ capabilities: fixture.capabilities }),
 }));
 
 const { AccessSection } = await import("./AccessSection");
@@ -42,6 +45,9 @@ beforeEach(() => {
   fixture.mcpError = false;
   fixture.servers = null;
   fixture.config = null;
+  fixture.instances = [];
+  fixture.capabilities.host = { homeDir: undefined };
+  fixture.capabilities.localComputer = { available: false, reasonCode: "unsupported" };
   fixture.apps = { phase: "loading", apps: [], connectedSlugs: [] };
 });
 afterEach(() => vi.unstubAllGlobals());
@@ -266,7 +272,7 @@ describe("Research (treg) card", () => {
     expect(html).toMatch(new RegExp(`${SWITCH}[^>]*aria-checked="true"`));
     expect(html).not.toMatch(new RegExp(`${SWITCH}[^>]* disabled=""`));
     expect(html).toContain("through your treg key. Calls are billed to your treg balance.");
-    expect(html).not.toContain("Open API keys");
+    expect(html).not.toContain("Open AI › Other services");
   });
 
   it("is not offered while a new bot or the New bot defaults are being drafted", async () => {

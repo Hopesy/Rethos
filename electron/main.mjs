@@ -13,7 +13,7 @@ import { createAndroidDeviceController } from "./android-device.mjs";
 import { finishSpeech, speechBusy, startSpeech, stopSpeech } from "./speech.mjs";
 import { installTalk, isTalkPanel } from "./talk-main.mjs";
 import { openBlankTerminal } from "./terminal-launch.mjs";
-import { linuxDisablesGpu } from "./linux-gpu.mjs";
+import { linuxDisablesGpu, SOFTWARE_RENDERING_ARG } from "./linux-gpu.mjs";
 import { pasteMenuItem } from "./paste-menu-item.mjs";
 import { attachUpdaterWindow, startUpdater, registerUpdaterIpc, reopenedOutOfSight, quietSignals } from "./updater.mjs";
 import {
@@ -24,7 +24,7 @@ import {
   installDesktopCrashListeners,
   readSafeLogTail,
 } from "./diagnostics.mjs";
-import { migrateWorkspaceCredentials, workspaceCredentialEnv } from "./workspace-credentials.mjs";
+import { migrateWorkspaceConfigFile, workspaceCredentialEnv } from "./workspace-credentials.mjs";
 import { evictStartupCacheOnce } from "./startup-cache-eviction.mjs";
 import { activateExistingWindow, releaseSingleInstanceLock } from "./single-instance.mjs";
 import { bootFailureMessage, listeningSignal, pollServerIdentity, SERVER_BOOT_TIMEOUT_MS, SERVER_LISTENING_GRACE_MS } from "./server-boot-probe.mjs";
@@ -43,7 +43,7 @@ import { missingPermissions } from "./lent-screen-failures.mjs";
 import { createScreenControl } from "./screen-control.mjs"; import { createAskPrompt } from "./ask-prompt.mjs";
 let startupScreen = null;
 let desktopTray = null;
-import { collisionFreeDownloadPath, defaultSaveName, openHtmlCopy, openLogsFolder, revealDownloadWhenDone, revealInFolder, withSavableFile } from "./save-file.mjs";
+import { collisionFreeDownloadPath, defaultSaveName, openFolder, openHtmlCopy, openLogsFolder, revealDownloadWhenDone, revealInFolder, withSavableFile } from "./save-file.mjs";
 import { desktopViewerPermissionAllowed } from "./desktop-viewer-permissions.mjs";
 import { appPermissionHandlers, externalLinkUrl } from "./app-permissions.mjs";
 import { appFrameNavigationAllowed } from "./app-frame-guard.mjs";
@@ -53,6 +53,7 @@ import {
   managedComposioAccess,
   managedComposioBrokerUrl,
   managedComposioChildEnvironment,
+  registerManagedComposio,
 } from "./managed-composio.mjs";
 import { createSecureCredentialState } from "./secure-credential-state.mjs";
 import {
@@ -72,16 +73,18 @@ import {
   withoutDesktopCompanionAccess,
 } from "./desktop-companion-client.mjs";
 import { isKnownSkin, skinChrome } from "./skin-overlay.cjs";
-import { readSecureCredentials } from "./secure-credentials.mjs";
+import { installCredentialStoreIpc, readSecureCredentials } from "./secure-credentials.mjs";
 import capabilitiesModule from "./capabilities.cjs";
 import environmentsModule from "./environments.cjs";
-import { pairingPageUrl } from "./server-address.mjs"; import { createServerConnect } from "./server-probe.mjs"; import { checkServer, createServerStatus, installServerStatus } from "./server-status.mjs";
+import { pairingPageUrl, vouchForPlainHttpServers } from "./server-address.mjs"; import { createServerConnect } from "./server-probe.mjs";   import { onTailnet } from "./tailnet.mjs"; import { checkServer, createServerStatus, installServerStatus } from "./server-status.mjs";
 import localOriginModule from "./local-origin.cjs";
 import { buildApplicationMenu } from "./menu.mjs";
 import { createComputerSharing, isHomeFolder, validateSharedFolders } from "./computer-sharing.mjs"; import { installServerLending } from "./server-lending.mjs"; import { ownEnvironmentIds } from "./lent-mcp.mjs";
 import { createHostScreenLease } from "./host-screen-lease.mjs";
 import { acquireDataDirLease } from "./data-dir-lease.mjs";
 import { reviveAfterFailedSwitch, switchLocalEnvironment } from "./environment-switch.mjs";
+import { unreadBadgeIcon } from "./color-dot.mjs";
+import { createPlaceSwitch } from "./place-switch.mjs";
 import { colorDotIcons } from "./place-appearance.mjs";
 import { createDesktopText, DESKTOP_PORTS, jsonFile, registerDesktopPrefs, relabelDesktop } from "./desktop-prefs.mjs";
 import { createLendingTarget } from "./lending-target.mjs"; import { createOpenAtLogin, installOpenAtLogin } from "./open-at-login.mjs";
@@ -122,7 +125,7 @@ let pendingChatLink = chatLinkFromCommandLine(process.argv);
 let mainWindow = null;
 const serverUnavailableWindows = new WeakSet();
 let unreadCount = 0;
-let unreadOverlayIcon = null;
+let unreadOverlayIcon;
 
 const windowStateFile = createWindowStateFile({ file: () => path.join(app.getPath("userData"), "window-state.json"), log: message => slog(message) });
 
@@ -130,9 +133,9 @@ function applyUnreadBadge(win = mainWindow) {
   const count = normalizeUnreadCount(unreadCount);
   if (process.platform === "win32") {
     if (!win || win.isDestroyed()) return;
-    unreadOverlayIcon ??= nativeImage.createFromPath(APP_ICON).resize({ width: 16, height: 16 });
+    if (unreadOverlayIcon === undefined) unreadOverlayIcon = unreadBadgeIcon(nativeImage); // a dot: the overlay sits on the app's own icon
     win.setOverlayIcon(
-      count > 0 && !unreadOverlayIcon.isEmpty() ? unreadOverlayIcon : null,
+      count > 0 ? unreadOverlayIcon : null,
       count > 0 ? nativeT(count === 1 ? "native.badge.one" : "native.badge.many", { count }) : nativeT("native.badge.none"),
     );
     return;
@@ -141,10 +144,10 @@ function applyUnreadBadge(win = mainWindow) {
 }
 
 // GNOME groups the window with its desktop entry only when both identities match; set before ready.
-if (process.platform === "linux") {
-  if (linuxDisablesGpu()) app.disableHardwareAcceleration();
-  app.setDesktopName("com.hopesy.rethos.desktop");
-}
+// A launch with --disable-gpu (a desktop entry or a user workaround) renders on the CPU too.
+const linuxSoftwareRendering = process.platform === "linux" && (linuxDisablesGpu() || app.commandLine.hasSwitch("disable-gpu"));
+if (linuxSoftwareRendering) app.disableHardwareAcceleration();
+if (process.platform === "linux") app.setDesktopName("com.hopesy.rethos.desktop");
 
 if (!app.requestSingleInstanceLock()) {
   console.log("[desktop] Rethos is already running — focusing that window");
@@ -369,21 +372,9 @@ async function secureComposioConfig() {
 }
 
 async function secureWorkspaceConfig() {
-  const dataDir = desktopDataDir();
-  const configPath = path.join(dataDir, "config.json");
-  try {
-    const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-    const migrated = migrateWorkspaceCredentials(config, secureCredentials);
-    // credentials.bin first, so a failed save never loses the only copy of a secret.
-    if (migrated.credentialsChanged) await saveSecureCredentials(migrated.credentials);
-    secureCredentials = migrated.credentials;
-    if (!migrated.configChanged) return;
-    const temporary = `${configPath}.${process.pid}.tmp`;
-    fs.writeFileSync(temporary, JSON.stringify(migrated.config, null, 2), { mode: 0o600 });
-    fs.renameSync(temporary, configPath);
-  } catch (error) {
-    if (error?.code !== "ENOENT") slog(`credential migration failed: ${error?.message ?? error}`);
-  }
+  secureCredentials = await migrateWorkspaceConfigFile({
+    configPath: path.join(desktopDataDir(), "config.json"), credentials: secureCredentials, save: saveSecureCredentials, log: slog,
+  });
 }
 
 function composioBrokerUrl() {
@@ -555,8 +546,8 @@ async function gatherDiagnostics() {
   })
     .then((res) => (res.ok ? res.json() : null))
     .catch(() => null);
-  const logPath = path.join(LOG_DIR, "server.log");
-  const log = readSafeLogTail(logPath);
+  const performance = await fetch(`http://127.0.0.1:${SERVER_PORT}/api/diagnostics/performance`, { signal: AbortSignal.timeout(3_000) }).then((res) => (res.ok ? res.json() : null)).then((body) => (typeof body?.text === "string" ? body.text : "")).catch(() => "");
+  const log = readSafeLogTail(path.join(LOG_DIR, "server.log"));
   const desktopLog = readSafeLogTail(DESKTOP_CRASH_LOG);
   const updaterLog = readSafeLogTail(path.join(LOG_DIR, "updater.log"));
   return buildDiagnosticsReport({
@@ -569,7 +560,7 @@ async function gatherDiagnostics() {
       packaged: app.isPackaged,
       uptimeSeconds: Math.round(process.uptime()),
     },
-    configSummary: serverStatus ?? {},
+    configSummary: serverStatus ?? {}, performance,
     desktopLogTail: desktopLog?.tail ?? "",
     updaterLogTail: updaterLog?.tail ?? "",
     logTail: log?.tail ?? "",
@@ -720,6 +711,11 @@ async function startServerPackaged() {
   }
   serverStartConflictOnly = everyPortForeignOwned;
   return false;
+}
+
+function checkInManagedComposio() {
+  if (desktopRemoteAccess || !app.isPackaged || credentialStoreUnavailable) return;
+  void registerManagedComposio({ brokerUrl: composioBrokerUrl(), updateCredentials: updateSecureCredentialDocument, log: slog }).finally(syncManagedComposioCredentials);
 }
 
 function syncManagedComposioCredentials() {
@@ -939,7 +935,7 @@ function sharingController() {
     protectedPaths: [desktopDataDir(), cleanWorkspaceDir(desktopDataDir()), profilesDir(desktopDataDir())],
     fetch: (...args) => session.defaultSession.fetch(...args),
     environments: () => environmentsState.environments, localEnvironments: () => ownEnvironmentIds([desktopDataDir(), runningDataDir]),
-    enabled: refreshSharedComputersAllowed, t: nativeT,
+    enabled: refreshSharedComputersAllowed, t: nativeT, serverPorts: () => [SERVER_PORT],
     cloud: lendingTarget.cloud, myCloud: lendingTarget.environment, ownClouds: lendingTarget.places, screen: screenControl.now, askForScreen,
     prompt: createAskPrompt({ t: nativeT, dialog, window: () => mainWindow, idleSeconds: () => powerMonitor.getSystemIdleState(1) === "unknown" ? null : powerMonitor.getSystemIdleTime() }), startScreen: screenControl.start, confirmTerminal: () => lendingDialogs.lendTerminal(true, () => sharingController().lendTerminal(true)), log: slog,
     linkHeaders: async env => ({ cookie: (await session.defaultSession.cookies.get({ url: env.origin })).map(cookie => `${cookie.name}=${cookie.value}`).join("; ") }),
@@ -965,13 +961,13 @@ let hiddenStart = false;
 
 const lendingActivity = createActivityWindow({ BrowserWindow, icon: APP_ICON, background: () => windowBackground(nativeTheme.shouldUseDarkColors),
   entries: () => sharingController().activity(undefined, 200),
-  locale: () => { try { return jsonFile(path.join(app.getPath("userData"), "desktop-prefs.json")).read()?.language || app.getLocale(); } catch { return app.getLocale(); } } });
+  locale: nativeText.intlTag });
 let lendingTray = null;
 function lendingIndicator() {
   lendingTray ??= createLendingIndicator({
-    Tray, Menu, nativeImage, iconPath: APP_ICON, t: nativeT, onPause: () => sharingController().pause(), onActivity: () => lendingActivity.show(),
+    Tray, Menu, nativeImage, Notification, iconPath: APP_ICON, t: nativeT, onPause: () => sharingController().pause(), onActivity: () => lendingActivity.show(),
     onResume: () => void sharingController().resume()?.catch(error => slog(`lending resume: ${error?.message ?? error}`)), onStartScreen: () => void screenControl.start(),
-    onTerminal: on => void lendingDialogs.lendTerminal(on, () => sharingController().lendTerminal(on)).catch(error => slog(`lending terminal: ${error?.message ?? error}`)),
+    onTerminal: on => void lendingDialogs.lendTerminal(on, () => sharingController().lendTerminal(on)).catch(error => slog(`lending terminal: ${error?.message ?? error}`)), onQuit: process.platform === "win32" ? () => app.quit() : null,
   });
   return lendingTray;
 }
@@ -983,7 +979,8 @@ function environmentsFile() {
   return path.join(app.getPath("userData"), "environments.json");
 }
 
-const environmentsStore = createEnvironmentsFile({ file: environmentsFile, fs, path, log: slog });
+const placeSwitch = createPlaceSwitch({ changed: () => railChanged(), kept: () => homePlaces.remembered() });
+const environmentsStore = createEnvironmentsFile({ file: environmentsFile, fs, path, log: slog }); vouchForPlainHttpServers(app.commandLine, environmentsStore.read().environments);
 
 function activeOrigin() {
   return activeEnvironment(environmentsState)?.origin ?? rendererOrigin();
@@ -1043,7 +1040,7 @@ async function switchLocalEnvironmentTo(targetDir, targetId, quiet = false) {
   if (!app.isPackaged) return { ok: false, error: "dev" };
   // A second switch would be un-paused by the first's finally mid-handoff.
   if (localSwitchInFlight) return { ok: false, error: "busy" };
-  const previousDir = runningDataDir ?? startupEnvironmentDir(environmentsState, desktopDataDir());
+  const previousDir = runningDataDir ?? startupEnvironmentDir(environmentsState, desktopDataDir()), asked = placeSwitch.turn(), windowFollows = () => placeSwitch.turn() === asked || (mainWindow && !mainWindow.isDestroyed() && senderIsLocal({ sender: mainWindow.webContents }));
   let startedProc = null;
   let switchSucceeded = false;
   const failedSwitch = () => {
@@ -1101,7 +1098,7 @@ async function switchLocalEnvironmentTo(targetDir, targetId, quiet = false) {
             throw error;
           }
         },
-        persistActive: (id) => persistEnvironments(withActive(environmentsState, id)),
+        persistActive: (id) => { if (windowFollows()) persistEnvironments(withActive(environmentsState, id)); },
         log: slog,
       },
     });
@@ -1110,7 +1107,7 @@ async function switchLocalEnvironmentTo(targetDir, targetId, quiet = false) {
       return failedSwitch();
     }
     switchSucceeded = true;
-    navigateMainWindow(rendererOrigin());
+    if (windowFollows()) navigateMainWindow(rendererOrigin());
     return { ok: true };
   } catch (error) {
     slog(`environment switch to ${targetDir} failed (${error?.message ?? error})`);
@@ -1130,7 +1127,11 @@ async function switchLocalEnvironmentTo(targetDir, targetId, quiet = false) {
   }
 }
 
-async function switchEnvironment(id) {
+function switchEnvironment(id) {
+  return placeSwitch.ask(id, stale => switchEnvironmentTo(id, stale));
+}
+
+async function switchEnvironmentTo(id, stale) {
   if (id === LOCAL_ID && cleanWorkspace.profile()) return void await localProfiles.computer();
   if (id === environmentsState.activeId || (id !== LOCAL_ID && !environmentsState.environments.some(entry => entry.id === id))) return;
   localProfiles.cancel();
@@ -1141,6 +1142,7 @@ async function switchEnvironment(id) {
     return await switchLocalEnvironmentTo(desktopDataDir(), LOCAL_ID);
   }
   if (entry && handSaved(entry) && !(await serverOpens(entry, { t: nativeT, fetch: (...args) => session.defaultSession.fetch(...args), dialog, forget: (gone) => forgetEnvironment(gone, false, true) }))) return;
+  if (stale()) return;
   persistEnvironments(withActive(environmentsState, id)); navigateMainWindow(activeOrigin());
 }
 
@@ -1190,7 +1192,7 @@ async function addServerFromClipboard() {
   }
 }
 
-const serverConnect = createServerConnect({ fetch: (...args) => session.defaultSession.fetch(...args), t: nativeT,
+const serverConnect = createServerConnect({ fetch: (...args) => session.defaultSession.fetch(...args), t: nativeT, tailnet: () => onTailnet(os.networkInterfaces()),
   ownEnvironmentId: async () => (await (await localServerRequest("/.well-known/openmausbot/environment")).json())?.environmentId ?? null,
   ask: async (found) => (await dialog.showMessageBox({ type: "question", buttons: [nativeT("native.dialog.connect.button"), nativeT("native.common.cancel")], defaultId: 0, cancelId: 1,
     message: nativeT("native.dialog.connect.title", { host: found.label }), detail: nativeT(found.code || found.credential ? "native.dialog.connect.withCode" : "native.dialog.connect.noCode") })).response === 0,
@@ -1336,7 +1338,7 @@ function createWindow({ deferNavigation = false } = {}) {
       contextIsolation: true,
       preload: path.join(__dirname, "preload.cjs"),
       additionalArguments: [...desktopCompanionRendererArguments(rendererOrigin(), desktopRemoteAccess),
-        `--omb-app-version=${app.getVersion()}`],
+        `--omb-app-version=${app.getVersion()}`, ...(linuxSoftwareRendering ? [SOFTWARE_RENDERING_ARG] : [])],
     },
   });
   mainWindow = win; hiddenStart = false; chromeRail.attach(win);
@@ -1631,10 +1633,8 @@ ipcMain.handle("desktop:save-file", localOnly("desktop:save-file", async (event,
     return choice.filePath;
   });
 }));
-ipcMain.handle("desktop:reveal-file", localOnly("desktop:reveal-file", async (_event, rawPath) => {
-  if (desktopRemoteAccess) throw new Error("That file is on the computer this app is connected to");
-  return revealInFolder(rawPath, { reveal: (target) => shell.showItemInFolder(target) });
-}));
+ipcMain.handle("desktop:reveal-file", localOnly("desktop:reveal-file", async (_event, rawPath) => { if (desktopRemoteAccess) throw new Error("That file is on the computer this app is connected to"); return revealInFolder(rawPath, { reveal: (target) => shell.showItemInFolder(target) }); }));
+ipcMain.handle("desktop:open-folder", localOnly("desktop:open-folder", async (_event, rawPath) => { if (desktopRemoteAccess) throw new Error("That folder is on the computer this app is connected to"); return openFolder(rawPath, { open: (target) => shell.openPath(target) }); }));
 ipcMain.handle("desktop:open-html", localOnly("desktop:open-html", (_event, source, name) => openHtmlCopy(source, name, { dir: path.join(app.getPath("userData"), "open-html"), t: nativeT, open: (file) => shell.openPath(file) })));
 ipcMain.handle("desktop:open-logs", localOrHome("desktop:open-logs", () => openLogsFolder(LOG_DIR, { open: (folder) => shell.openPath(folder) })));
 ipcMain.handle("desktop:skin", (event, skin) => {
@@ -1820,6 +1820,7 @@ ipcMain.handle("desktop-remote:disconnect", localOnly("desktop-remote:disconnect
 
 const localWorkspaceOnly = (channel, handler) => localOnly(channel, workspaceOnly(handler));
 const updaterPageAllowed = event => workspaceSenderAllowed(event, mainWindow?.webContents, environmentsState, rendererOrigin());
+const activePageOrigin = event => updaterPageAllowed(event) && !senderIsLocal(event) ? activeEnvironment(environmentsState)?.origin ?? null : null;
 const updaterPageOffered = updaterPageAllowed;
 ipcMain.on("update:offered", event => {
   try { event.returnValue = updaterPageOffered(event) === true; } catch { event.returnValue = false; }
@@ -1963,7 +1964,7 @@ ipcMain.handle("desktop:capabilities", async (event) =>
   }),
 );
 
-async function saveWorkspaceCredential(name, value) {
+async function saveWorkspaceCredential(name, value, options) {
   const patchFor = CREDENTIAL_PATCH[name];
   if (!patchFor || typeof value !== "string") {
     throw new Error("Unsupported credential");
@@ -1981,7 +1982,7 @@ async function saveWorkspaceCredential(name, value) {
         { "content-type": "application/json" },
         { packaged: app.isPackaged, token: desktopMutationToken },
       ),
-      body: JSON.stringify(patchFor(secret)),
+      body: JSON.stringify(patchFor(secret, options)),
     });
     const body = await response.json().catch(() => null);
     if (!response.ok) throw credentialSaveError(response.status, body, nativeT);
@@ -1990,7 +1991,7 @@ async function saveWorkspaceCredential(name, value) {
   if (!app.isPackaged) return applyToHarness();
 
   // Commit the encrypted value before the server makes it live; a failed reload rolls credentials.bin back.
-  return updateSecureCredentialDocument(
+  const saved = await updateSecureCredentialDocument(
     (credentials) => {
       if (secret) credentials[name] = secret;
       else delete credentials[name];
@@ -1998,11 +1999,12 @@ async function saveWorkspaceCredential(name, value) {
     },
     applyToHarness,
   );
+  if (name === "composioApiKey" && !secret) checkInManagedComposio();
+  return saved;
 }
 
-ipcMain.handle("credential:set", localOnly("credential:set", (_event, name, value) =>
-  saveWorkspaceCredential(name, value),
-));
+installCredentialStoreIpc({ ipcMain, localOnly, dialog, windowFor: (sender) => BrowserWindow.fromWebContents(sender), t: nativeT, appName: () => app.name, unreadable: () => credentialStoreUnavailable, quitting: () => desktopShutdownStarted, moveAside: () => fs.renameSync(CREDENTIALS_FILE, `${CREDENTIALS_FILE}.unreadable-${Date.now()}`), log: slog, relaunch: relaunchAfterDesktopRemoteChange });
+ipcMain.handle("credential:set", localOnly("credential:set", (_event, name, value, options) => saveWorkspaceCredential(name, value, options)));
 
 ipcMain.handle("approvals:set-trusted-mode", localOnly("approvals:set-trusted-mode", (_event, botId, mode, options) => {
   // A separately launched dev server is outside this trust path: never degrade this grant to loopback HTTP.
@@ -2180,7 +2182,7 @@ app.whenReady().then(async () => {
   }
   registerCuaIpc();
   androidDevice.registerIpc(ipcMain);
-  registerUpdaterIpc({ pageAllowed: updaterPageAllowed });
+  registerUpdaterIpc({ pageAllowed: updaterPageAllowed, serverPage: event => activePageOrigin(event), confirmRestart: async (version, server) => Boolean(mainWindow && !mainWindow.isDestroyed()) && (await dialog.showMessageBox(mainWindow, { type: "question", message: nativeT("native.update.forServer", { version, server }), detail: nativeT("native.update.forServerDetail"), buttons: [nativeT("native.update.restartNow"), nativeT("native.update.notNow")], defaultId: 0, cancelId: 1, noLink: true })).response === 0 });
   desktopPrefs = nativeText.prefs;
   registerDesktopPrefs({ ipcMain, prefs: desktopPrefs, localConfig: jsonFile(path.join(desktopDataDir(), "config.json")).read,
     frame: { made: () => windowFrameMade, restarts: process.platform === "win32", changed: () => void broadcastDesktopCapabilities() },
@@ -2373,5 +2375,5 @@ function releaseDesktopDataDirLease() {
 
 // before-quit is too early (this app defers it); will-quit is Electron's last boundary, and the process hook covers app.exit().
 app.on("will-quit", releaseDesktopDataDirLease);
-app.on("will-quit", () => desktopTray?.destroy());
+app.on("will-quit", () => { desktopTray?.destroy();  });
 process.once("exit", releaseDesktopDataDirLease);

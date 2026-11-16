@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { DesktopNoticesBridge, DesktopNoticesState } from "../../electron/desktop-prefs.mjs";
 import { GROK_MOVE_POPUP } from "./GrokMovePopup";
+
 import { SIMPLE_MODE_PROMPT } from "./SimpleModePrompt";
 
 /** null until main answers; a page main refuses has nothing due. */

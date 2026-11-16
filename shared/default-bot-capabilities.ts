@@ -6,7 +6,7 @@ export function hasDefaultBotCapabilities(bot: DefaultBotFields): boolean {
 }
 
 export const DEFAULT_BOT_CAPABILITIES = {
-  toolScope: undefined, memoryEnabled: true, mcpServers: undefined, composio: true, browser: true,
+  toolScope: undefined, toolsOff: undefined, memoryEnabled: true, mcpServers: undefined, composio: true, browser: true,
   connectorTools: undefined, connectorScopes: undefined, phoneApps: undefined, xResearch: true, voiceNotes: true,
 } satisfies BotCapabilities;
 

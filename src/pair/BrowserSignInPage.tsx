@@ -6,7 +6,7 @@ import { t } from "../lib/i18n";
 import { LoginShell } from "./LoginShell";
 
 /** Nothing is redeemed until the person continues, so a sent link never signs this browser in unseen; the credential is never shown. */
-export function BrowserSignInPage({ credential, owner }: { credential: string; owner: string }) {
+export function BrowserSignInPage({ credential, owner }: { credential: string; owner: string; team?: string }) {
   const [attemptId] = useState(() => newAttemptId());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);

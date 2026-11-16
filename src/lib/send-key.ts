@@ -1,13 +1,14 @@
 import { useSyncExternalStore } from "react";
 
+import { SEND_KEYS } from "../../shared/app-settings";
 import { activeLocale } from "./i18n";
 import { isMacPlatform } from "./keyboard-shortcuts";
 import { PHONE_LAYOUT, useMediaQuery } from "./use-media-query";
+import { windowPrefChanged } from "./window-pref-changes";
 
 export const SEND_KEY_KEY = "omb-send-key";
 
-/** The Enter-adds-a-line modes are for input methods that confirm a conversion with Enter (Japanese). */
-export const SEND_KEYS = ["enter", "shift-enter", "mod-enter"] as const;
+export { SEND_KEYS };
 export type SendKey = (typeof SEND_KEYS)[number];
 
 export function defaultSendKey(locale: string = activeLocale(), phone = false): SendKey {
@@ -47,7 +48,7 @@ function storage(): Storage | undefined {
   }
 }
 
-function sendKey(phone = false): SendKey {
+export function readSendKey(phone = false): SendKey {
   if (sessionChoice !== undefined) return sessionChoice;
   try {
     return parseSendKey(storage()?.getItem(SEND_KEY_KEY), defaultSendKey(activeLocale(), phone));
@@ -87,9 +88,10 @@ export function setSendKey(mode: SendKey): void {
   } catch {
   }
   notify();
+  windowPrefChanged();
 }
 
 export function useSendKey(): SendKey {
   const phone = useMediaQuery(PHONE_LAYOUT);
-  return useSyncExternalStore(subscribe, () => sendKey(phone), () => defaultSendKey(activeLocale(), phone));
+  return useSyncExternalStore(subscribe, () => readSendKey(phone), () => defaultSendKey(activeLocale(), phone));
 }

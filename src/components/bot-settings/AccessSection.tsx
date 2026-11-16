@@ -10,7 +10,8 @@ import { SettingsHelp } from "../SettingsHelp";
 import { hasDefaultBotCapabilities } from "../../../shared/default-bot-capabilities";
 import type { LocaleKey } from "@/locales";
 import { mcpServersForBot, mcpServersOfBot, mcpSwitch, useMcpServers } from "@/lib/mcp-servers";
-import { placeFacts, placeViewFor, usePlaceSeat } from "@/lib/place-view";
+import { instanceSupportsLocalComputer, localComputerDisabledReason, localComputerSelectable } from "@/lib/local-computer";
+import { placeBlocked, placeFacts, placeHasIssue, placeViewFor, usePlaceSeat, type PlaceSeat } from "@/lib/place-view";
 import { shortPath } from "@/lib/short-path";
 import { isOwnThreadFolder } from "../../../shared/thread-folder";
 import { useDesktopCapabilities } from "../DesktopCapabilities";
@@ -18,9 +19,11 @@ import { CloudBackendPicker } from "../CloudBackendPicker";
 import { ConnectedComputers } from "../ConnectedComputers";
 import { WorkTargetPicker } from "../WorkTargetPicker";
 import { targetLabel, useWorkTarget } from "@/lib/work-target";
+import { placeManagedBy, worksOnChoices, WorksOnGrid, worksOnSelected, type WorksOnMode } from "../WorksOnGrid";
 import { Switch } from "../SettingsPrimitives";
 import { PhoneAppsCard } from "./PhoneAppsCard";
 import { ProposalStatus } from "./ProposalStatus";
+import { ToolGroupsCard } from "./ToolGroupsCard";
 import { ToolSelectionCard } from "./ToolSelectionCard";
 import { BotApiCard } from "./BotApiCard";
 import { ToolBudgetLine } from "./ToolBudgetLine";
@@ -608,7 +611,7 @@ export function CloudPreference({ bot, patch }: { bot: Bot; patch: ReturnType<ty
   if (!cloudPreferenceShown(bot, state.config)) return null;
   return (
     <>
-      {!bot.computer && (
+      {!bot.computer && !draft && (
         <div className="mt-3 rounded-lg bg-inset px-3 py-2.5 text-[12px] leading-relaxed text-ink-secondary">
           <span className="inline-flex items-center gap-1 font-medium text-ink">{t("botAccess.cloud.autoTitle")}
             <SettingsHelp label={t("botAccess.cloud.autoTitle")}>{t("botAccess.cloud.autoDescription")}</SettingsHelp>
@@ -640,6 +643,37 @@ export function CloudPreference({ bot, patch }: { bot: Bot; patch: ReturnType<ty
       )}
     </>
   );
+}
+
+function DraftWorksOn({ bot, patch, seat }: { bot: Bot; patch: ReturnType<typeof useBotSettingsDerived>["patch"]; seat: PlaceSeat }) {
+  const { state } = useStore();
+  const { capabilities } = useDesktopCapabilities();
+  const providerSupportsLocal = instanceSupportsLocalComputer(state.instances, bot);
+  const localReason = localComputerDisabledReason({ capabilities, providerSupportsLocal });
+  const named = { ...bot, name: bot.name || t("sidebar.newBotSimple") };
+  const options = worksOnChoices(state.config, capabilities).map(([mode, labelKey, descriptionKey, Icon]) => {
+    const view = placeViewFor(placeFacts({
+      bot: named, place: mode ?? "auto", seat, config: state.config, instances: state.instances,
+      local: {
+        ready: localComputerSelectable({ capabilities, providerSupportsLocal }),
+        reason: localReason ?? t("computer.unavailableLocal"),
+      },
+    }));
+    const managedBy = placeManagedBy(mode, bot.cloudBackend, state.config?.managedPolicy);
+    return {
+      mode, labelKey, descriptionKey, Icon, view, managedBy,
+      selected: worksOnSelected(mode, bot.computer, capabilities),
+      disabled: Boolean(managedBy) || placeBlocked(view),
+      issue: !managedBy && placeHasIssue(view),
+      note: placeHasIssue(view) ? view.line : mode === "local" ? localReason ?? undefined : undefined,
+    };
+  });
+  const choose = (mode: WorksOnMode) => patch(mode === "browser" ? { computer: mode, browser: true } : { computer: mode });
+  return <>
+    <div className="text-[15px] font-medium text-ink">{t("computer.worksOn")}</div>
+    <p className="mt-1 text-[12px] leading-5 text-ink-secondary">{t(state.config?.cloudHome ? "computer.worksOnHintCloudHome" : "computer.worksOnHint")}</p>
+    <WorksOnGrid options={options} onSelect={choose} />
+  </>;
 }
 
 export type AccessPart = "worksOn" | "folder" | "apps" | "phone" | "xResearch" | "mcp" | "tools" | "browser" | "webhooks" | "always";
@@ -695,6 +729,7 @@ export function AccessSection({
   return (
     <div className="flex flex-col gap-4">
       {shows("worksOn") && <div className="rounded-xl bg-card p-4" data-testid="access-works-on">
+{draft ? <DraftWorksOn bot={bot} patch={patch} seat={placeSeat} /> : <>
         <div className="text-[15px] font-medium text-ink">{t("access.worksOn", { name: bot.name, short: bot.workTarget?.kind === "connected" ? targetLabel(workTarget.selected, workTarget.status) : worksOn.short })}</div>
         <ProposalStatus bot={bot} kind="owner" />
         <button
@@ -709,6 +744,7 @@ export function AccessSection({
         </button>
         {!draft && <WorkTargetPicker bot={bot} />}
         {bot.workTarget?.kind !== "connected" && <CloudPreference bot={bot} patch={patch} />}
+</>}
       </div>}
 
       {shows("worksOn") && <ConnectedComputers bot={bot} />}
@@ -773,6 +809,7 @@ export function AccessSection({
 
       {shows("phone") && <PhoneAppsCard bot={bot} patch={patch} />}
       {shows("mcp") && <McpServersCard bot={bot} patch={patch} />}
+      {!draft && shows("tools") && <ToolGroupsCard bot={bot} patch={patch} />}
       {shows("tools") && <ToolSelectionCard key={bot.id} bot={bot} engineKind={derived.engine?.driverKind} />}
 
       {shows("browser") && <div className="rounded-xl bg-card p-4">

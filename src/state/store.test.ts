@@ -1009,18 +1009,25 @@ describe("notification routing", () => {
       selectedId: "bot-1",
       bots,
       groups,
+      forkPanel: null,
     })).toBe("main-thread");
     expect(visibleNotificationThread({
       activeView: "chat",
       selectedId: "room-1",
       bots,
       groups,
+      forkPanel: null,
     })).toBe("room-thread");
+    expect(visibleNotificationThread({
+      activeView: "chat", selectedId: "room-1", bots, groups,
+      forkPanel: { kind: "group", ownerId: "room-1", threadId: "fork-thread" } as AppState["forkPanel"],
+    }, "fork-thread")).toBe("fork-thread");
     expect(visibleNotificationThread({
       activeView: "routines",
       selectedId: "bot-1",
       bots,
       groups,
+      forkPanel: null,
     })).toBeNull();
   });
 });
@@ -2576,6 +2583,8 @@ describe("live config frames", () => {
 
   it("keeps an OMB Cloud home's flag through live config refreshes, and adds none elsewhere", () => {
     expect(configStatusFromFrame({ ...baseFrame, cloudHome: true }).cloudHome).toBe(true);
+    expect(configStatusFromFrame({ ...baseFrame, awakeLimit: 3, pausedBots: ["scout"] })).toMatchObject({ awakeLimit: 3, pausedBots: ["scout"] });
+    expect(configStatusFromFrame(baseFrame)).not.toHaveProperty("pausedBots");
     expect(configStatusFromFrame(baseFrame)).not.toHaveProperty("cloudHome");
   });
 
@@ -2962,13 +2971,14 @@ describe("restoring the open conversation", () => {
       expect(stored.get(LAST_CONVERSATION_KEY)).toBe("bot-2");
     });
 
-    it("a pressed Steer that stays queued for its pictures says why, and a plain queued answer stays quiet", async () => {
+    it("a pressed Steer that stays queued says why: pictures anywhere, any held room steer, and a plain 1:1 queued answer stays quiet", async () => {
       const { stream } = await boot();
       stream.send(hello());
       await settle();
       const answers: Record<string, unknown> = {
         "/api/bots/bot-1/queue/q-image/steer": { ok: true, queued: true, threadId: "bot-1-thread", blockedBy: "images" },
         "/api/groups/room-1/queue/q-room/steer": { ok: true, queued: true, threadId: "room-thread", blockedBy: "images" },
+        "/api/groups/room-1/queue/q-room-plain/steer": { ok: true, queued: true, threadId: "room-thread" },
         "/api/bots/bot-1/queue/q-plain/steer": { ok: true, queued: true, threadId: "bot-1-thread" },
       };
       vi.stubGlobal("fetch", (path: string) => Promise.resolve(new Response(JSON.stringify(answers[path.replace(/\?since=[^&]*$/, "")] ?? {}))));
@@ -2989,6 +2999,12 @@ describe("restoring the open conversation", () => {
       await settle();
       expect(settled).toHaveBeenCalledTimes(3);
       expect(seen.notice).toEqual({ kind: "steer-images", botName: null });
+
+      flushSync(() => dispatch({ type: "notice", notice: null }));
+      flushSync(() => dispatch({ type: "steerGroupQueued", groupId: "room-1", queueId: "q-room-plain", onSettled: settled }));
+      await settle();
+      expect(settled).toHaveBeenCalledTimes(4);
+      expect(seen.notice).toMatchObject({ kind: "note", text: expect.stringContaining("Nothing was stopped") });
     });
 
     it("the provider restores the conversation remembered on this device", async () => {
@@ -3251,6 +3267,24 @@ describe("a routine's answer and its broadcast", () => {
     state = reducer(state, { type: "routinePatched", routine: paused });
     expect(state.routines).toEqual([resumed]);
     expect(reducer(state, { type: "routinePatched", routine: { ...resumed, failureStreak: 1 } }).routines[0]).toMatchObject({ failureStreak: 1 });
+  });
+});
+
+describe("room order from the server", () => {
+  const room = (id: string): Group => ({ id, threadId: `${id}-thread`, name: id, memberIds: [], createdAt: 1, messages: [] } as unknown as Group);
+  const hydrated = reducer(initialState, { type: "hydrate", bots: [], groups: [room("a"), room("b"), room("c")], computerControl: {} });
+  const ids = (state: AppState) => state.groups.map((candidate) => candidate.id);
+
+  it("applies a groups.order frame as a stable partial reorder", () => {
+    expect(ids(reducer(hydrated, { type: "groupsOrdered", groupIds: ["c", "b", "a"] }))).toEqual(["c", "b", "a"]);
+    const partial = reducer(hydrated, { type: "groupsOrdered", groupIds: ["c", "a"] });
+    expect(ids(partial)).toEqual(["c", "b", "a"]);
+    expect(partial.groups[0]).toBe(hydrated.groups[2]);
+  });
+
+  it("ignores ids it does not know and leaves an unchanged order alone", () => {
+    expect(ids(reducer(hydrated, { type: "groupsOrdered", groupIds: ["ghost", "b", "a"] }))).toEqual(["b", "a", "c"]);
+    expect(reducer(hydrated, { type: "groupsOrdered", groupIds: ["a", "b", "c"] })).toBe(hydrated);
   });
 });
 

@@ -23,7 +23,7 @@ export function createSharedComputerRoutes(deps: {
   /** On a Cloud home every lent computer is the owner's, under this one name. */
   cloudHomeLender: string | null;
   principal: (auth: RequestAuth) => string | null;
-  personKey: (session: Pick<SessionRecord, "id" | "email">) => string;
+  personKey: (session: SessionRecord) => string;
   /** Only an owner pairing on a personal server may delegate permissions to its bots. */
   botPermissions?: (auth: RequestAuth) => boolean;
   /** A Cloud home that agreed to sleep sends the desktop away until it wakes (server/cloud-power.ts). */
@@ -101,7 +101,8 @@ export function createSharedComputerRoutes(deps: {
     if (action === "poll") {
       const power = deps.power();
       if (power?.sleeping()) return answerAsleep(res, json);
-      const job = await deps.computers.poll(id, auth.session.id, secret, power ? AbortSignal.any([responseGone(res), power.sleepSignal()]) : responseGone(res));
+      const job = await deps.computers.poll(id, auth.session.id, secret, power ? AbortSignal.any([responseGone(res), power.sleepSignal()]) : responseGone(res),
+        deps.cloudHomeLender ?? deps.personKey(auth.session));
       if (!job && power?.sleeping()) return answerAsleep(res, json);
       return json(res, 200, { job, access: deps.computers.accessMode(deps.principal(auth), id!) });
     }

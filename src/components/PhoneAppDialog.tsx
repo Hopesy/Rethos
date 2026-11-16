@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { QRCodeSVG } from "qrcode.react";
 
 import { ANDROID_APK_URL, openExternalLink } from "@/lib/app-links";
@@ -9,7 +10,9 @@ export const PHONE_APPS: ReadonlyArray<{ id: "android"; nameKey: LocaleKey; acti
   { id: "android", nameKey: "phoneApp.android", actionKey: "phoneApp.androidAction", url: ANDROID_APK_URL },
 ];
 
-export function PhoneAppDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+export interface PhoneAppConnect { key: string; subtitle: string; onSelect(): void }
+
+export function PhoneAppDialog({ open, onClose, connect = [] }: { open: boolean; onClose: () => void; connect?: readonly PhoneAppConnect[] }) {
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -27,7 +30,7 @@ export function PhoneAppDialog({ open, onClose }: { open: boolean; onClose: () =
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6"
       onMouseDown={(event) => event.target === event.currentTarget && onClose()}
@@ -42,6 +45,10 @@ export function PhoneAppDialog({ open, onClose }: { open: boolean; onClose: () =
           {t("phoneApp.title")}
         </h2>
         <p className="mt-1 text-[13px] leading-relaxed text-ink-secondary">{t("phoneApp.androidSubtitle")}</p>
+        {connect.map(destination => <button key={destination.key} type="button" data-phone-app-connect={destination.key}
+          className="ui-button mt-3 w-full" onClick={() => { onClose(); destination.onSelect(); }}>
+          {t("sidebar.menu.connectPhone")} · {destination.subtitle}
+        </button>)}
         <ul className="mt-4 grid grid-cols-1 gap-3">
           {PHONE_APPS.map((app) => (
             <li key={app.id} data-phone-app={app.id} className="flex flex-col items-center gap-3 rounded-xl bg-card p-4 text-center">
@@ -64,6 +71,6 @@ export function PhoneAppDialog({ open, onClose }: { open: boolean; onClose: () =
           {t("common.close")}
         </button>
       </div>
-    </div>
+    </div>, document.body
   );
 }

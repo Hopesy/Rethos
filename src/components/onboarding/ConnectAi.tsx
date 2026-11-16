@@ -3,6 +3,7 @@ import { Check, ChevronDown, LoaderCircle, RefreshCw, X } from "lucide-react";
 import { EngineSetup } from "@/components/EngineSetup";
 import { engineReady } from "@/components/EngineLibrary";
 import { InstanceProviderMark } from "@/components/ProviderIcons";
+
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
 import { engineDisplayName } from "@/lib/engine-name";
@@ -75,6 +76,8 @@ export function ConnectAi({ tested }: { hosted?: boolean; tested: WelcomeAiNow |
   const connected = tested && aiWorks(tested) ? tested.instance : undefined;
   const backup = state.instances.find((instance) => engineReady(instance) && freeFallback(instance));
   const { recommended, others } = aiChoices(state.instances.filter((instance) => instance.install && !engineReady(instance)));
+  // Hosted: the organization provides the AI and refuses a key of the person's own.
+  const otherRows = others;
 
   return (
     <div className="flex w-full flex-col">
@@ -122,9 +125,9 @@ export function ConnectAi({ tested }: { hosted?: boolean; tested: WelcomeAiNow |
       )}
       {failed && <p role="alert" className="mt-2 text-[13px] text-danger">{t("onboarding.engines.error")}</p>}
 
-      {(others.length > 0) && (
+      {(otherRows.length > 0) && (
         <div className="mt-3 w-full divide-y divide-hairline/40 overflow-hidden rounded-2xl bg-card text-left">
-          {others.map((instance) => (
+          {otherRows.map((instance) => (
             <OtherWay key={instance.instanceId} instance={instance} open={open === instance.instanceId}
               onToggle={() => setOpen(open === instance.instanceId ? null : instance.instanceId)} />
           ))}

@@ -1,4 +1,4 @@
-import { ChevronLeft, LayoutGrid, Puzzle, Search, UsersRound, X, Zap } from "lucide-react";
+import { ChevronLeft, LayoutGrid, Puzzle, Rocket, Search, UsersRound, X, Zap } from "lucide-react";
 import { useEffect, useRef, type CSSProperties } from "react";
 
 import { t } from "@/lib/i18n";
@@ -41,6 +41,13 @@ export function SidebarPhoneBar() {
       icon: <UsersRound size={18} />,
       active: state.activeView === "team-map",
       onSelect: () => dispatch({ type: "showTeamMap" }),
+    },
+    {
+      key: "published-apps",
+      label: t("sidebar.nav.publishedApps"),
+      icon: <Rocket size={18} />,
+      active: state.activeView === "published-apps",
+      onSelect: () => dispatch({ type: "showPublishedApps" }),
     },
     {
       key: "apps",

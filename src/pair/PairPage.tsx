@@ -65,3 +65,7 @@ export function PairPage({ initialCode, reason }: { initialCode: string | null; 
       </>}
   </LoginShell>;
 }
+
+export function TeamLeftPage({ team }: { team: string | null }) {
+  return <LoginShell><p role="status">{t("homeLine.left", { name: team ?? "Rethos" })}</p></LoginShell>;
+}

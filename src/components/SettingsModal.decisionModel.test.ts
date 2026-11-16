@@ -1,33 +1,15 @@
-import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
+import { fullContext, resolveSettingsTarget, searchSettings } from "./settings/settings-index";
+import { t } from "@/lib/i18n";
 
-import { StoreProvider } from "@/state/store";
-
-beforeAll(() => {
-  (globalThis as { window?: unknown }).window ??= {};
-  (globalThis as { document?: unknown }).document ??= { documentElement: { dataset: {} } };
-});
-
-// Pinned to Advanced: these cover the Advanced rail; Simple has its own suite.
-vi.mock("@/lib/interface-mode", () => ({ useAdvancedMode: () => true, setAdvancedMode: () => {} }));
-vi.mock("@/lib/analytics", () => ({
-  analyticsEnabled: () => false,
-  setAnalyticsEnabled: () => {},
-}));
-
-describe("Settings → Decision and extraction", () => {
-  it("is a sidebar item of its own, not a row under Connections", async () => {
-    const { SettingsModal } = await import("./SettingsModal");
-    const html = renderToStaticMarkup(createElement(StoreProvider, null, createElement(SettingsModal)));
-    expect(html).toContain('data-settings-section="decisionModel"');
-    expect(html).toMatch(/<button[^>]*>(?:<svg[\s\S]*?<\/svg>)?Decision and extraction<\/button>/);
+describe("decision and extraction settings", () => {
+  it("opens the routing section from existing settings links", () => {
+    expect(resolveSettingsTarget("decisionModel", fullContext())).toEqual({ page: "ai", anchor: "routing" });
   });
-
-  it("matches searches for decision, extraction, jev, typesafe, cloudflare, routing and auto", async () => {
-    const { SECTIONS, sectionMatches } = await import("./SettingsModal");
-    const section = SECTIONS.find((entry) => entry.id === "decisionModel")!;
-    for (const query of ["decision", "extraction", "jev", "typesafe", "cloudflare", "workers ai", "routing", "auto"]) expect(sectionMatches(section, query)).toBe(true);
-    expect(sectionMatches(section, "backups")).toBe(false);
+  it("finds routing by its supported providers and functions", () => {
+    for (const query of ["decision", "extraction", "jev", "typesafe", "cloudflare", "workers ai", "routing"]) {
+      const hits = searchSettings(query, fullContext(), entry => t(entry.labelKey!), page => t(page.labelKey));
+      expect(hits.some(hit => hit.entry.id === "routing"), query).toBe(true);
+    }
   });
 });

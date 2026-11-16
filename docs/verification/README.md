@@ -41,6 +41,9 @@ recipe from sending messages to the user's running app by accident.
 
 ## Drive
 
+The [2026-11-16 upstream integration record](upstream-sync-2026-11-16.md)
+lists the Rethos compatibility checks and isolated UI acceptance evidence.
+
 Use only mapped, tested commands:
 
 - [The headless command line](headless-cli.md)
@@ -58,10 +61,10 @@ Use only mapped, tested commands:
 - [MausBot, everyone's helper](mausbot.md)
 - [Profile proposal and credential-card lifecycle](proposal-cards.md)
 - [Full Access without duplicate approvals](full-access.md)
+- [Bots changing app settings, and the guards Full access cannot skip](app-settings.md)
 - [Gmail draft creation, send approval and revision](gmail-drafts.md)
 - [Exact command allowlist UI and saved rules](command-allowlist.md)
 - [The safety floor: a never-list no grant can allow](safety-floor.md)
-- [Peer approval denial, expiry, and cancellation](peer-approvals.md)
 - [Waiting for an occupied desktop](computer-wait.md)
 - [Chat UI, driven headlessly](chat-ui.md)
 - [Computer panel focus hand-off](computer-panel-focus.md)
@@ -73,6 +76,7 @@ Use only mapped, tested commands:
 - [A new Cloud's first hour](first-hour.md)
 - [Chat widgets](widgets.md)
 - [Pages and apps in a room](room-pages.md)
+- [Published apps](published-apps.md)
 - [The Inbox on every plan](inbox.md)
 - [Reactions](reactions.md)
 - [Chat widgets: prompts to try with a real bot](widget-prompts.md)
@@ -137,6 +141,11 @@ and a synthetic OAuth provider in a disposable workspace.
 The [Whop fixture](whop.md) checks its one-click setup, cancellation, denied
 consent, discovery failures, reconnect and disconnect using that same registry
 and a synthetic provider, without accessing a real Whop account.
+
+The [bot contact cards fixture](bot-contact-cards.md) checks the AgentMail,
+AgentPhone, Vapi and Telnyx cards: a pasted key that is refused, replaced and
+deleted on Disconnect, kept in a header and out of every listing, against a
+loopback stand-in for Vapi.
 
 The [Postiz fixture](postiz.md) checks the Apps page's Postiz card in the Social
 category: Postiz Cloud's sign-in and an API key for a person's own Postiz, the
@@ -208,6 +217,11 @@ instructions, history restore, skill/memory refresh, and stale-response isolatio
 The [hosted Slack management fixture](hosted-slack-management.md) checks the
 agent settings link to Admin: hosted-only availability, the member-readable
 route module, and stale-response isolation.
+
+The [Slack for Team Clouds fixture](team-slack.md) checks a Slack message handed over with a member's own session:
+a channel's shared conversation, a direct message's private chat, who may ask and stop, and the signed reports a
+stand-in Admin takes; and the same on a My Cloud, where both are the owner's ordinary conversations. It reaches no
+Slack workspace and no real Admin.
 
 The [chat and settings polish fixture](chat-polish.md) exercises attachment
 galleries, opt-in video playback, persisted tool details, and responsive settings

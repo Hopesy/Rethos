@@ -8,10 +8,12 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { fromMarkdown } from "mdast-util-from-markdown";
 
 import { windowsPathDestinations } from "../shared/markdown-windows-paths.ts";
+import { linkPlainPaths } from "../shared/markdown-plain-paths.ts";
+import { PREVIEW_MAX_BYTES } from "../shared/upload-limits.ts";
 import { inSecretFolder, SECRET_FILE_REFUSAL } from "./secret-folder.ts";
 import { userErrorThrown } from "./user-errors.ts";
 
-export const MESSAGE_FILE_MAX_BYTES = 25 * 1024 * 1024;
+export const MESSAGE_FILE_MAX_BYTES = PREVIEW_MAX_BYTES;
 /** Saving a linked file streams it to the person, so it may be larger than anything read into memory or previewed. */
 export const MESSAGE_FILE_DOWNLOAD_MAX_BYTES = 500 * 1024 * 1024;
 
@@ -134,7 +136,7 @@ export function referencedFileName(href: string): string | null {
 }
 
 /** Lexical on purpose: `resolve` and `fileURLToPath` follow the runner OS, and `/C:/notes.md` is not `C:\\notes.md`. */
-function referencedPathIdentity(href: string, allowForwardSlashUNC = true): string {
+export function referencedPathIdentity(href: string, allowForwardSlashUNC = true): string {
   const path = referencedPath(href, true, allowForwardSlashUNC);
   if (/^[a-z]:[\\/]/i.test(path) || path.startsWith("\\\\") || path.startsWith("//")) {
     return `windows:${win32.resolve(path)}`;
@@ -167,12 +169,15 @@ function walkMarkdown(node: MarkdownNode, visit: (node: MarkdownNode) => void): 
   }
 }
 
-function renderedMarkdownTargets(markdown: string): string[] {
+/** `plainPaths`: also the paths written as plain text, which the app renders as links too. */
+function renderedMarkdownTargets(markdown: string, plainPaths = false): string[] {
   const definitions = new Map<string, string>();
   const links: string[] = [];
   const references: string[] = [];
 
-  walkMarkdown(fromMarkdown(markdown, { mdastExtensions: [windowsPathDestinations] }), (node) => {
+  const tree = fromMarkdown(markdown, { mdastExtensions: [windowsPathDestinations] });
+  if (plainPaths) linkPlainPaths(tree, markdown);
+  walkMarkdown(tree, (node) => {
     if (node.type === "definition" && node.identifier && node.url) {
       if (!definitions.has(node.identifier)) definitions.set(node.identifier, node.url);
     } else if ((node.type === "link" || node.type === "image") && node.url) {
@@ -224,7 +229,7 @@ export function messageReferencesFile(text: string, requested: string): boolean 
     return false;
   }
 
-  for (const target of renderedMarkdownTargets(text)) {
+  for (const target of renderedMarkdownTargets(text, true)) {
     try {
       if (referencedPathIdentity(target, false) === wanted) return true;
     } catch {
@@ -362,6 +367,15 @@ export function mimeFor(path: string): string {
     case ".odt": return "application/vnd.oasis.opendocument.text";
     case ".ods": return "application/vnd.oasis.opendocument.spreadsheet";
     case ".odp": return "application/vnd.oasis.opendocument.presentation";
+    // Archives are typed by name only and stay downloads: never previewed, never unpacked. foo.tar.gz is a .gz.
+    case ".zip": return "application/zip";
+    case ".rar": return "application/vnd.rar";
+    case ".7z": return "application/x-7z-compressed";
+    case ".tar": return "application/x-tar";
+    case ".gz": return "application/gzip";
+    case ".tgz": return "application/x-compressed-tar";
+    case ".bz2": return "application/x-bzip2";
+    case ".xz": return "application/x-xz";
     default: return "application/octet-stream";
   }
 }
@@ -405,7 +419,8 @@ export async function openMessageFile(
     let handle: FileHandle | undefined;
     try {
       const noFollow = typeof constants.O_NOFOLLOW === "number" ? constants.O_NOFOLLOW : 0;
-      handle = await open(canonicalBefore, constants.O_RDONLY | noFollow);
+      const nonBlock = typeof constants.O_NONBLOCK === "number" ? constants.O_NONBLOCK : 0;
+      handle = await open(canonicalBefore, constants.O_RDONLY | noFollow | nonBlock);
       const opened = await handle.stat();
       if (opened.isDirectory()) throw statusError(400, "the link points to a folder, not a file", "directory");
       if (!opened.isFile()) throw statusError(400, "the link does not point to a regular file");
@@ -444,6 +459,7 @@ const SAVED_SINCE_SLACK_MS = 2_000;
 export async function openFileSavedSince(
   href: string,
   options: { since: number; refuse: readonly string[] },
+  maxBytes = MESSAGE_FILE_MAX_BYTES,
 ): Promise<OpenedMessageFile> {
   const requested = referencedPath(href, false, false);
   if (!isAbsolute(requested) || requested.startsWith("\\\\") || requested.startsWith("//")) throw outsideWorkspace();
@@ -459,7 +475,7 @@ export async function openFileSavedSince(
   if (hidden || refused.some((root) => containedBy(root, canonical))) {
     throw statusError(403, "files in hidden folders or in the app's own data can't be attached", "outside_workspace");
   }
-  const file = await openMessageFile(canonical, [dirname(canonical)]);
+  const file = await openMessageFile(canonical, [dirname(canonical)], maxBytes);
   const opened = await file.handle.stat().catch(async (error: unknown) => {
     await file.handle.close().catch(() => undefined);
     throw error;
