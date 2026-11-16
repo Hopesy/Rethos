@@ -75,7 +75,7 @@ export function ConnectedComputers({ bot, manage = false }: { bot?: Bot; manage?
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <span className="break-words text-[13px] font-medium text-ink">{computer.name}</span>
-            <span className={`shrink-0 text-[12px] ${computer.online ? "text-success" : "text-ink-secondary"}`}>
+            <span className={`shrink-0 text-[12px] ${computer.online && (!computer.access || computer.access === "enabled") ? "text-success" : "text-ink-secondary"}`}>
               {t(computer.access === "paused" ? "workTarget.paused" : computer.access === "revoked" ? "computer.connected.unshared" : !computer.online ? "computer.connected.offline" : computer.busy ? "computer.connected.busy" : "computer.connected.online")}
             </span>
           </div>

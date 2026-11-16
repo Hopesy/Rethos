@@ -5,6 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { api } from "@/state/api";
 import type { Bot } from "@/state/store";
 import { setLocale } from "@/lib/i18n";
+import { setAdvancedMode } from "@/lib/interface-mode";
 import { WorkTargetPicker } from "./WorkTargetPicker";
 import type { WorkTarget, WorkTargetStatus } from "../../shared/work-target";
 
@@ -13,9 +14,9 @@ const device: WorkTarget = { kind: "connected", computerId: "11111111-1111-4111-
 const bot = { id: "chief", threadId: "main", name: "Rethos", approvalMode: "ask", tasks: [] } as unknown as Bot;
 let host: HTMLDivElement, root: Root, status: WorkTargetStatus;
 const render = (value = bot, thread = false) => act(async () => { root.render(createElement(WorkTargetPicker, { bot: value, thread })); });
-const choose = (value: string) => act(async () => { const select = host.querySelector("select")!; select.value = value; select.dispatchEvent(new Event("change", { bubbles: true })); });
+const choose = (value: string) => act(async () => { host.querySelector<HTMLButtonElement>(`[data-work-target="${value}"]`)!.click(); });
 beforeEach(() => {
-  setLocale("en"); vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+  setLocale("en"); setAdvancedMode(false); vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   status = { defaultTarget: { kind: "auto" }, selected: { kind: "auto" }, options: [
     { target: { kind: "auto" }, label: "Auto", available: true, ready: true },
     { target: device, label: "Office PC", available: true, ready: false },
@@ -45,6 +46,16 @@ it("saves an offline device without falling back, preserves rejected folder draf
   await act(async () => { const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!; setter.call(input, "C:\\Projects"); input.dispatchEvent(new Event("input", { bubbles: true })); });
   await act(async () => { host.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); });
   expect(status.defaultTarget).toEqual({ ...device, cwd: "C:\\Projects" });
+  const calls = vi.mocked(api).mock.calls.length;
+  await choose(`connected:${device.kind === "connected" ? device.computerId : ""}:`);
+  expect(api).toHaveBeenCalledTimes(calls);
+  expect(host.querySelector('[aria-pressed="true"]')?.textContent).toContain("Office PC");
+  await act(async () => { setAdvancedMode(true); });
+  expect(host.querySelector("input")?.value).toBe("C:\\Projects");
+  expect(host.querySelector('[aria-pressed="true"]')?.getAttribute("aria-label")).toBe("Office PC");
+  await act(async () => { setAdvancedMode(false); });
+  expect(host.querySelector("input")?.value).toBe("C:\\Projects");
+  expect(api).toHaveBeenCalledTimes(calls);
 });
 
 it("pins only the selected conversation and follows the bot again when cleared", async () => {
