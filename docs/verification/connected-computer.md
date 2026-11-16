@@ -116,3 +116,12 @@ Type checks, server/UI builds, scoped lint and locale validation passed.
 Bot defaults and conversation pins use the owner-scoped work-target API. A connected target carries a stable computer ID and optional working folder; Windows folders are validated with Windows path rules. Clearing a conversation pin follows the bot again. Off applies to files, terminal and desktop operations.
 
 The native fixture also covers target selection, a second device, offline refusal, pause/resume and persisted revocation. The browser verification exercises the real WorkTargetPicker, AccessSection, ComputerPanel and ConnectedComputers against an isolated server. Check persistence after reload, simple/advanced transitions, the conversation Off/follow flow, server-scoped pause/resume, keyboard-accessible help and a 390px viewport. Evidence for 0.1.162 is stored in .Rethos-temp/work-location/browser-verification.json and target-mobile.png.
+
+The work-location picker keeps named connected computers, inherited bot defaults
+and managed locations in the same card grid. Its visible panel refreshes after
+connection changes and on focus; leaving the panel stops its polling. The
+regressions in `src/components/WorkTargetPicker.test.ts` cover late connection,
+pause status, inherited automatic selection and saved folders. A disposable
+server and native sharing client exercised those operations through the real
+renderer, including reload, both interface modes, Daylight/Midnight and a 390px
+viewport. Evidence is under `.Rethos-temp/work-target-picker/`.

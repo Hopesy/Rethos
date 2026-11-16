@@ -1,13 +1,11 @@
 import { useState } from "react";
-import { Box, Check, Cloud, CornerDownRight, Globe, Monitor, Power, Sparkles, type LucideIcon } from "lucide-react";
-import { workTargetKey, workTargetLegacyFields, type WorkTarget } from "../../shared/work-target";
+import { Box, Check, Cloud, CornerDownRight, Globe, Monitor, Power, RefreshCw, Sparkles, type LucideIcon } from "lucide-react";
+import { workTargetKey, type WorkTarget } from "../../shared/work-target";
 import type { Bot } from "@/state/store";
 import { targetLabel, useWorkTarget } from "@/lib/work-target";
 import { t } from "@/lib/i18n";
 import { cn } from "@/lib/cn";
 import { useAdvancedMode } from "@/lib/interface-mode";
-import { worksOnSimpleLabel } from "@/lib/place-view";
-import { useDesktopCapabilities } from "./DesktopCapabilities";
 import { SettingsHelp } from "./SettingsHelp";
 import { LocalComputerAutoWarning } from "./LocalComputerAutoWarning";
 import { approvalModeFor, threadApproval } from "../../shared/approval-mode";
@@ -18,8 +16,8 @@ function targetAppearance(target: WorkTarget) {
     ? { Icon: Cloud, hint: "computer.dest.cloudDesc" } as const
     : { Icon: Box, hint: "computer.dest.vmDesc" } as const;
   return ({
-    auto: { Icon: Sparkles, hint: "computer.dest.autoDesc" },
-    local: { Icon: Monitor, hint: "computer.dest.localDesc" },
+    auto: { Icon: Sparkles, hint: "workTarget.autoHelp" },
+    local: { Icon: Monitor, hint: "workTarget.hostHelp" },
     browser: { Icon: Globe, hint: "computer.dest.browserDesc" },
     off: { Icon: Power, hint: "computer.dest.offDesc" },
   } as const)[target.kind];
@@ -45,7 +43,7 @@ function TargetCard({ value, label, description, issue, title, Icon, selected, d
       <span className="mt-1.5 block text-[11px] leading-4 text-ink-secondary">{issue ?? description}</span>
     </> : <>
       <Icon size={16} className={cn("shrink-0", selected ? "text-accent" : "text-ink-secondary")} aria-hidden="true" />
-      <span className="w-full truncate text-[12px] font-medium leading-4">{label}</span>
+      <span dir="auto" className="flex min-h-8 w-full items-center justify-center break-words text-[12px] font-medium leading-4">{label}</span>
       {issue && <span className="w-full truncate text-[11px] leading-3 text-ink-secondary">{issue}</span>}
     </>}
   </button>;
@@ -53,8 +51,7 @@ function TargetCard({ value, label, description, issue, title, Icon, selected, d
 
 export function WorkTargetPicker({ bot, thread = false }: { bot: Bot; thread?: boolean }) {
   const advanced = useAdvancedMode();
-  const { capabilities } = useDesktopCapabilities();
-  const { status, selected, saving, error, save } = useWorkTarget(bot, thread);
+  const { status, selected, saving, error, save, refresh } = useWorkTarget(bot, thread, true);
   const [draft, setDraft] = useState<{ key: string; value: string } | null>(null);
   const [confirmLocal, setConfirmLocal] = useState(false);
   const task = thread ? bot.tasks?.find(item => item.threadId === bot.threadId) : undefined;
@@ -69,27 +66,29 @@ export function WorkTargetPicker({ bot, thread = false }: { bot: Bot; thread?: b
   const choices = options.some(option => choiceKey(option.target) === choiceKey(selected)) || value === "follow"
     ? options : [{ target: selected, label: targetLabel(selected, status), available: false, ready: false }, ...options];
   const label = t(thread ? "workTarget.conversation" : "computer.simple.whereWorks", { name: bot.name });
+  const visibleChoices = choices.filter(option => advanced || !thread || option.target.kind !== "auto"
+    || status?.defaultTarget.kind !== "auto" || status.pinnedTarget?.kind === "auto");
+  const cards = visibleChoices.map(option => {
+    const optionKey = choiceKey(option.target), checked = value === optionKey;
+    const { Icon, hint } = targetAppearance(option.target);
+    const state = option.target.kind === "connected"
+      ? t(option.state === "paused" ? "workTarget.paused" : option.state === "revoked" ? "computer.connected.unshared" : option.ready ? "computer.connected.online" : "computer.connected.offline") : undefined;
+    const issue = !option.available && !state ? t("place.view.ccUnavailable.short") : state ?? (!option.ready ? t("vm.main.notReady") : undefined);
+    return <TargetCard key={optionKey} value={optionKey} selected={checked} Icon={Icon} advanced={advanced}
+      label={targetLabel(option.target, status)} description={state ?? t(hint)} issue={issue} title={option.reason}
+      disabled={!status || saving || !option.available} onClick={() => { if (!checked) choose(option.target); }} />;
+  });
   return <section className="rounded-xl bg-card p-4" data-testid="work-target-picker">
     <div className="flex items-center gap-1 text-[15px] font-medium text-ink">
       {label}
       <SettingsHelp label={t("computer.worksOn")}>{t("workTarget.help")}</SettingsHelp>
+      <button type="button" aria-label={t("computer.connected.retry")} disabled={saving} onClick={refresh} className="ms-auto rounded p-1.5 text-ink-secondary hover:bg-control disabled:opacity-50"><RefreshCw size={14} /></button>
     </div>
-    <div role="group" aria-label={label} aria-busy={saving} className={cn("mt-3 grid gap-2", advanced ? "auto-rows-fr grid-cols-2" : "grid-cols-3")}>
-      {thread && <TargetCard value="follow" label={t("place.followBot")} selected={value === "follow"}
+    <div role="group" aria-label={label} aria-busy={saving} className={cn("mt-3 grid auto-rows-fr gap-2", advanced ? "grid-cols-2" : "grid-cols-3")}>
+      {thread && <TargetCard value="follow" label={t("workTarget.followBot")} selected={value === "follow"}
         description={t("place.followBotDetail", { place: targetLabel(status?.defaultTarget ?? selected, status) })}
         Icon={CornerDownRight} advanced={advanced} disabled={!status || saving} onClick={() => { if (value !== "follow") void save(null); }} />}
-      {choices.map(option => {
-        const optionKey = choiceKey(option.target), checked = value === optionKey;
-        const { Icon, hint } = targetAppearance(option.target);
-        const state = option.target.kind === "connected"
-          ? t(option.state === "paused" ? "workTarget.paused" : option.state === "revoked" ? "computer.connected.unshared" : option.ready ? "computer.connected.online" : "computer.connected.offline") : undefined;
-        const issue = state && (!option.ready || option.state === "paused" || option.state === "revoked") ? state
-          : !option.available ? t("place.view.ccUnavailable.short") : !option.ready ? t("vm.main.notReady") : undefined;
-        return <TargetCard key={optionKey} value={optionKey} selected={checked} Icon={Icon} advanced={advanced}
-          label={advanced || option.target.kind === "connected" ? targetLabel(option.target, status) : worksOnSimpleLabel(workTargetLegacyFields(option.target).computer, capabilities.host.platform)}
-          description={state ?? t(hint)} issue={issue} title={option.reason}
-          disabled={!status || saving || !option.available} onClick={() => { if (!checked) choose(option.target); }} />;
-      })}
+      {cards}
     </div>
     <p className={cn("mt-3 break-words text-[12px] leading-5 text-ink-secondary", advanced && "border-t border-hairline/40 pt-3")} role="status">{t("workTarget.selected", { name: targetLabel(selected, status) })}</p>
     {selected.kind === "connected" && <form className="mt-3 flex gap-2" onSubmit={async event => {

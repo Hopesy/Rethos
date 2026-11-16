@@ -11147,5 +11147,10 @@
   "sidebar.newBotOn.onlyThere": "Signed in only there: {ais}.",
   "sidebar.newBotOn.onlyHere": "Signed in only here: {ais}.",
   "sidebar.newBotOn.needsUpdate": "My Cloud needs its next update for this.",
-  "browser.hostSetup.container": "Chrome's sandbox can't start in this container. Its operator can set this to run the browser without it and rely on the container's isolation, then restart Rethos:"
+  "browser.hostSetup.container": "Chrome's sandbox can't start in this container. Its operator can set this to run the browser without it and rely on the container's isolation, then restart Rethos:",
+  "workTarget.auto": "Choose automatically",
+  "workTarget.followBot": "Follow Bot",
+  "workTarget.host": "Bot host computer",
+  "workTarget.hostHelp": "The desktop of the computer running this bot. To use a connected computer, select its device name.",
+  "workTarget.autoHelp": "Let the bot choose an available work location for the task."
 }

@@ -10466,5 +10466,10 @@
   "sidebar.menu.getPhoneApp": "取得手機 App",
   "sidebar.menu.weeklyUsage": "每週用量",
   "settings.section.usage": "用量",
-  "sidebar.menu.support": "說明與支援"
+  "sidebar.menu.support": "說明與支援",
+  "workTarget.auto": "自動選擇",
+  "workTarget.followBot": "跟隨 Bot",
+  "workTarget.host": "Bot 所在電腦",
+  "workTarget.hostHelp": "執行此 Bot 的電腦桌面。使用已連接的電腦時，請選擇對應裝置名稱。",
+  "workTarget.autoHelp": "由 Bot 為任務選擇可用的工作位置。"
 }

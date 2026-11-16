@@ -11147,5 +11147,10 @@
   "call.live.disclosureCustomCloud": "实时通话会将你的语音、聊天中的近期消息、Bot 的回复和审批详情发送到自定义接口。接口密钥保存在云端。",
   "keys.purpose.liveKeyCustom": "必填。实时通话使用的自定义接口密钥",
   "serverError.bot.alwaysAllowFull": "此 Bot 已设为始终允许 {max} 个工具。请先在设置的“访问”中移除一个，然后重试。",
-  "browser.hostSetup.container": "此服务器容器中无法启动 Chrome 沙箱。管理员可以设置以下选项，依靠容器隔离运行浏览器，然后重启 Rethos："
+  "browser.hostSetup.container": "此服务器容器中无法启动 Chrome 沙箱。管理员可以设置以下选项，依靠容器隔离运行浏览器，然后重启 Rethos：",
+  "workTarget.auto": "自动选择",
+  "workTarget.followBot": "跟随 Bot",
+  "workTarget.host": "Bot 所在电脑",
+  "workTarget.hostHelp": "运行此 Bot 的电脑桌面。使用已连接的电脑时，请选择对应设备名。",
+  "workTarget.autoHelp": "由 Bot 为任务选择可用的工作位置。"
 }

@@ -48091,7 +48091,12 @@
       "keys.purpose.liveKeyCustom": "8e99e704d8b7f385fcc744b307bb9d3e132a506bc3cdee57fc51941822fc745a",
       "serverError.bot.alwaysAllowFull": "1caf76fd33c01df36490a0cc1aeff51c85c3b6b5f3d35c5df748db434fdf15c3",
       "routines.server.desktopRetired": "415f8e6914ece2030a0d6a05f15fd3b96e42632fbb9272bfd619b990625ff677",
-      "browser.hostSetup.container": "8b93305ac26f0a0e414d76cd545cbce7a16f37acb26b44514bdd0d2abd0646cd"
+      "browser.hostSetup.container": "8b93305ac26f0a0e414d76cd545cbce7a16f37acb26b44514bdd0d2abd0646cd",
+      "workTarget.auto": "85128d4f5a07c570253f6e7cf0ec52e75505f1a05622093ab1e6e273f4a965a1",
+      "workTarget.followBot": "c869f775d52783c1d1d9e9c865fb995d4c9c9b6064d30fc483f42deba68cedbf",
+      "workTarget.host": "304f2ec29497a4b5a80cdf625deba80e543c3411f82ed3445f37ce2ace620c2f",
+      "workTarget.hostHelp": "6275966be946516a51645f7efa48291057caa3a9eca024f8831d6a70440db841",
+      "workTarget.autoHelp": "c7748b07a1daef45e4eb1bcefce2fc78189f768ea3db435a4bf558b572f99f87"
     },
     "zh-tw": {
       "whop.description": "1a07cf04ef17029448d3781415cbac16d54e66b821907a40d94e0e6349710e70",
@@ -58474,7 +58479,12 @@
       "server.routines.card.sessionContinues": "af4dedfee873451f6b9f28c12ef5b4f683c98ae795a706fe7fd58da470374c47",
       "server.routines.card.onceContinues": "47f36e2af395ab1cc4c1fa758a4e169404e1e0164fb07d2ad82914228cf99297",
       "server.connect.secretSavedAsRef": "d9e0f7dd9a0e700b8f4c024c87cc1c5af2515886758e5fb28b3a12126f64e990",
-      "routines.server.desktopRetired": "415f8e6914ece2030a0d6a05f15fd3b96e42632fbb9272bfd619b990625ff677"
+      "routines.server.desktopRetired": "415f8e6914ece2030a0d6a05f15fd3b96e42632fbb9272bfd619b990625ff677",
+      "workTarget.auto": "85128d4f5a07c570253f6e7cf0ec52e75505f1a05622093ab1e6e273f4a965a1",
+      "workTarget.followBot": "c869f775d52783c1d1d9e9c865fb995d4c9c9b6064d30fc483f42deba68cedbf",
+      "workTarget.host": "304f2ec29497a4b5a80cdf625deba80e543c3411f82ed3445f37ce2ace620c2f",
+      "workTarget.hostHelp": "6275966be946516a51645f7efa48291057caa3a9eca024f8831d6a70440db841",
+      "workTarget.autoHelp": "c7748b07a1daef45e4eb1bcefce2fc78189f768ea3db435a4bf558b572f99f87"
     },
     "uk": {
       "pro.fromPrice": "a48a04a457d60b08b54fc83e7a6c4584ffedb1e23621859084900c8521a3af7b",

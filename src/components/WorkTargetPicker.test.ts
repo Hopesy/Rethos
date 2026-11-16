@@ -31,7 +31,7 @@ beforeEach(() => {
   });
   host = document.createElement("div"); document.body.append(host); root = createRoot(host);
 });
-afterEach(() => { act(() => root.unmount()); host.remove(); vi.unstubAllGlobals(); });
+afterEach(() => { act(() => root.unmount()); host.remove(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
 it("saves an offline device without falling back, preserves rejected folder drafts, and persists a valid remote folder", async () => {
   await render(); await choose(`connected:${device.kind === "connected" ? device.computerId : ""}:`);
@@ -64,4 +64,37 @@ it("pins only the selected conversation and follows the bot again when cleared",
   expect(status.pinnedTarget).toEqual({ kind: "off" }); expect(status.defaultTarget).toEqual(device);
   expect(vi.mocked(api).mock.calls.some(([, init]) => init?.body === JSON.stringify({ target: { kind: "off" }, acknowledgeLocalAuto: false, threadId: "main" }))).toBe(true);
   await choose("follow"); expect(status.pinnedTarget).toBeUndefined(); expect(status.selected).toEqual(device);
+});
+
+it("keeps named computers in the original grid and hides the redundant automatic choice", async () => {
+  status.options.push({ target: { kind: "local" }, label: "this computer", available: false, ready: false });
+  await render(bot, true);
+  expect(host.querySelector('[data-work-target="follow"]')?.textContent).toContain("Follow Bot");
+  expect(host.querySelector('[data-work-target="auto"]')).toBeNull();
+  const grid = host.querySelector('[role="group"]')!;
+  expect(host.querySelectorAll('[role="group"]')).toHaveLength(1);
+  expect([...grid.children].map(card => card.getAttribute("aria-label"))).toEqual(["Follow Bot", "Office PC", "Off", "Bot host computer"]);
+  expect(host.querySelector<HTMLButtonElement>('[data-work-target="local"]')?.disabled).toBe(true);
+  await act(async () => setAdvancedMode(true));
+  expect(host.querySelector('[data-work-target="local"]')?.textContent).toContain("Bot host computer");
+  expect(host.querySelector('[data-work-target="auto"]')).not.toBeNull();
+});
+
+it("refreshes computers that connect after opening, updates their status, and stops after unmount", async () => {
+  vi.useFakeTimers();
+  const computer = status.options.splice(1, 1)[0]!;
+  await render();
+  expect(host.querySelector('[data-work-target^="connected:"]')).toBeNull();
+  status = { ...status, options: [...status.options, { ...computer, ready: true, state: "online" }] };
+  await act(async () => vi.advanceTimersByTimeAsync(10_000));
+  const card = host.querySelector<HTMLButtonElement>('[data-work-target^="connected:"]')!;
+  expect(card.textContent).toContain("Office PC");
+  expect(card.textContent).toContain("Online");
+  status = { ...status, options: status.options.map(option => option.target.kind === "connected" ? { ...option, ready: false, state: "paused" } : option) };
+  await act(async () => window.dispatchEvent(new Event("focus")));
+  expect(card.textContent).toContain("Paused");
+  await act(async () => root.render(null));
+  const calls = vi.mocked(api).mock.calls.length;
+  await act(async () => vi.advanceTimersByTimeAsync(20_000));
+  expect(api).toHaveBeenCalledTimes(calls);
 });
