@@ -3219,7 +3219,6 @@
       "server.meetings.card.speechStopped": "dfbb5ca1820e4ed45f043ef17627fe2caa67914519d34b1dd285aabda61e2c47",
       "serverError.pair.tooMany": "19527c64f6ec9bd538c2d72424858fb4a8a9272532aa3b6375018585775fd5c2",
       "serverError.pair.emailCode": "68c973f152cfb2a2e31297465950da40b2a1a8816a837a0eee4b6d7ffc619e0a",
-      "serverError.pair.oldCode": "7a4f3c4512a46be26a8f100aca2cebdfae3afcd6d3f5d965b5749e2621ad826a",
       "serverError.pair.scriptKey": "07cb8d178d8c2f9b13ff94b7a65a1da54b1c2abef61c5015f6229824abd642c1",
       "serverError.pair.notACode": "1a22adbe62929c1dde93b68be4d42ac2a1addd7c722f0a42546f5920e3065aa1",
       "pair.emailCode": "81c2e322abeb89f738de06ccdbefa7893c976a129b89c194299c75bd490fe128",
@@ -3995,7 +3994,12 @@
       "together.switch.title": "2829f92e4a9012d2265d7a82806d5750743ca14c0600d688485825dd4272938a",
       "together.switch.line": "f1da9a3fe37ffcb0273f52889240d8e3d13709220eca9c08b5b923f9def19409",
       "together.switch.failed": "ad8287436402edb5c91ee0cc4bfe88f3301bac459a7d49e4cd2c564fa20aa1b8",
-      "remote.phones.empty": "7aa5cde61510f42e788a3ff33c41d0335180a049c83ff4b0534ca95b8ad41940"
+      "remote.phones.empty": "7aa5cde61510f42e788a3ff33c41d0335180a049c83ff4b0534ca95b8ad41940",
+      "engineSetup.cloudPasteSummary": "99bef9b03db7662e2944939a6bf8e904d5c674c3577540ef994a9f5c4862ed5f",
+      "engineSetup.cloudPasteHint": "e6e7b723c8ec76caec36a54986610db04f079430fd3a7a1986c627e18480a7ea",
+      "server.routines.card.conversationKept": "ea038ec2124d474aa977c0faeb838dae7c8c2436cc44fc5382c231a7539c0fb9",
+      "server.routines.card.sessionContinues": "af4dedfee873451f6b9f28c12ef5b4f683c98ae795a706fe7fd58da470374c47",
+      "server.routines.card.onceContinues": "47f36e2af395ab1cc4c1fa758a4e169404e1e0164fb07d2ad82914228cf99297"
     },
     "es": {
       "whop.description": "1a07cf04ef17029448d3781415cbac16d54e66b821907a40d94e0e6349710e70",
@@ -9840,7 +9844,6 @@
       "server.meetings.card.speechStopped": "dfbb5ca1820e4ed45f043ef17627fe2caa67914519d34b1dd285aabda61e2c47",
       "serverError.pair.tooMany": "19527c64f6ec9bd538c2d72424858fb4a8a9272532aa3b6375018585775fd5c2",
       "serverError.pair.emailCode": "68c973f152cfb2a2e31297465950da40b2a1a8816a837a0eee4b6d7ffc619e0a",
-      "serverError.pair.oldCode": "7a4f3c4512a46be26a8f100aca2cebdfae3afcd6d3f5d965b5749e2621ad826a",
       "serverError.pair.scriptKey": "07cb8d178d8c2f9b13ff94b7a65a1da54b1c2abef61c5015f6229824abd642c1",
       "serverError.pair.notACode": "1a22adbe62929c1dde93b68be4d42ac2a1addd7c722f0a42546f5920e3065aa1",
       "pair.emailCode": "81c2e322abeb89f738de06ccdbefa7893c976a129b89c194299c75bd490fe128",
@@ -10505,7 +10508,13 @@
       "together.switch.title": "2829f92e4a9012d2265d7a82806d5750743ca14c0600d688485825dd4272938a",
       "together.switch.line": "f1da9a3fe37ffcb0273f52889240d8e3d13709220eca9c08b5b923f9def19409",
       "together.switch.failed": "ad8287436402edb5c91ee0cc4bfe88f3301bac459a7d49e4cd2c564fa20aa1b8",
-      "remote.phones.empty": "7aa5cde61510f42e788a3ff33c41d0335180a049c83ff4b0534ca95b8ad41940"
+      "remote.phones.empty": "7aa5cde61510f42e788a3ff33c41d0335180a049c83ff4b0534ca95b8ad41940",
+      "engineSetup.cloudPasteSummary": "99bef9b03db7662e2944939a6bf8e904d5c674c3577540ef994a9f5c4862ed5f",
+      "engineSetup.cloudPasteHint": "e6e7b723c8ec76caec36a54986610db04f079430fd3a7a1986c627e18480a7ea",
+      "task.bulk.retitle": "70425d709318f9bdf8830f149b5298d8aab8df851a0631bdc40e58759e81296b",
+      "task.bulk.retitling": "6570061ecf4e09f529036fa3bba7e33b8150c83dd11cdf3792c435ed9469e4dc",
+      "task.bulk.retitleResult": "83306c1404f4170a9594bb2238aeac49e469b340b2f45b5c01952faaf5bc0eb5",
+      "task.bulk.retitleFailed": "fe8013b5add18967ec7df89806ef632a9a0c40012e6f651c0b236cc4127fbab6"
     },
     "fr": {
       "pro.fromPrice": "a48a04a457d60b08b54fc83e7a6c4584ffedb1e23621859084900c8521a3af7b",
@@ -13584,7 +13593,6 @@
       "server.meetings.card.speechStopped": "dfbb5ca1820e4ed45f043ef17627fe2caa67914519d34b1dd285aabda61e2c47",
       "serverError.pair.tooMany": "19527c64f6ec9bd538c2d72424858fb4a8a9272532aa3b6375018585775fd5c2",
       "serverError.pair.emailCode": "68c973f152cfb2a2e31297465950da40b2a1a8816a837a0eee4b6d7ffc619e0a",
-      "serverError.pair.oldCode": "7a4f3c4512a46be26a8f100aca2cebdfae3afcd6d3f5d965b5749e2621ad826a",
       "serverError.pair.scriptKey": "07cb8d178d8c2f9b13ff94b7a65a1da54b1c2abef61c5015f6229824abd642c1",
       "serverError.pair.notACode": "1a22adbe62929c1dde93b68be4d42ac2a1addd7c722f0a42546f5920e3065aa1",
       "pair.emailCode": "81c2e322abeb89f738de06ccdbefa7893c976a129b89c194299c75bd490fe128",
@@ -14317,7 +14325,9 @@
       "together.switch.title": "2829f92e4a9012d2265d7a82806d5750743ca14c0600d688485825dd4272938a",
       "together.switch.line": "f1da9a3fe37ffcb0273f52889240d8e3d13709220eca9c08b5b923f9def19409",
       "together.switch.failed": "ad8287436402edb5c91ee0cc4bfe88f3301bac459a7d49e4cd2c564fa20aa1b8",
-      "remote.phones.empty": "7aa5cde61510f42e788a3ff33c41d0335180a049c83ff4b0534ca95b8ad41940"
+      "remote.phones.empty": "7aa5cde61510f42e788a3ff33c41d0335180a049c83ff4b0534ca95b8ad41940",
+      "engineSetup.cloudPasteSummary": "99bef9b03db7662e2944939a6bf8e904d5c674c3577540ef994a9f5c4862ed5f",
+      "engineSetup.cloudPasteHint": "e6e7b723c8ec76caec36a54986610db04f079430fd3a7a1986c627e18480a7ea"
     },
     "hi": {
       "pro.fromPrice": "a48a04a457d60b08b54fc83e7a6c4584ffedb1e23621859084900c8521a3af7b",
@@ -17249,7 +17259,6 @@
       "server.meetings.card.speechStopped": "dfbb5ca1820e4ed45f043ef17627fe2caa67914519d34b1dd285aabda61e2c47",
       "serverError.pair.tooMany": "19527c64f6ec9bd538c2d72424858fb4a8a9272532aa3b6375018585775fd5c2",
       "serverError.pair.emailCode": "68c973f152cfb2a2e31297465950da40b2a1a8816a837a0eee4b6d7ffc619e0a",
-      "serverError.pair.oldCode": "7a4f3c4512a46be26a8f100aca2cebdfae3afcd6d3f5d965b5749e2621ad826a",
       "serverError.pair.scriptKey": "07cb8d178d8c2f9b13ff94b7a65a1da54b1c2abef61c5015f6229824abd642c1",
       "serverError.pair.notACode": "1a22adbe62929c1dde93b68be4d42ac2a1addd7c722f0a42546f5920e3065aa1",
       "pair.emailCode": "81c2e322abeb89f738de06ccdbefa7893c976a129b89c194299c75bd490fe128",
@@ -17983,7 +17992,9 @@
       "together.switch.title": "2829f92e4a9012d2265d7a82806d5750743ca14c0600d688485825dd4272938a",
       "together.switch.line": "f1da9a3fe37ffcb0273f52889240d8e3d13709220eca9c08b5b923f9def19409",
       "together.switch.failed": "ad8287436402edb5c91ee0cc4bfe88f3301bac459a7d49e4cd2c564fa20aa1b8",
-      "remote.phones.empty": "7aa5cde61510f42e788a3ff33c41d0335180a049c83ff4b0534ca95b8ad41940"
+      "remote.phones.empty": "7aa5cde61510f42e788a3ff33c41d0335180a049c83ff4b0534ca95b8ad41940",
+      "engineSetup.cloudPasteSummary": "99bef9b03db7662e2944939a6bf8e904d5c674c3577540ef994a9f5c4862ed5f",
+      "engineSetup.cloudPasteHint": "e6e7b723c8ec76caec36a54986610db04f079430fd3a7a1986c627e18480a7ea"
     },
     "ja": {
       "whop.description": "1a07cf04ef17029448d3781415cbac16d54e66b821907a40d94e0e6349710e70",
@@ -25488,7 +25499,6 @@
       "server.meetings.card.speechStopped": "dfbb5ca1820e4ed45f043ef17627fe2caa67914519d34b1dd285aabda61e2c47",
       "serverError.pair.tooMany": "19527c64f6ec9bd538c2d72424858fb4a8a9272532aa3b6375018585775fd5c2",
       "serverError.pair.emailCode": "68c973f152cfb2a2e31297465950da40b2a1a8816a837a0eee4b6d7ffc619e0a",
-      "serverError.pair.oldCode": "7a4f3c4512a46be26a8f100aca2cebdfae3afcd6d3f5d965b5749e2621ad826a",
       "serverError.pair.scriptKey": "07cb8d178d8c2f9b13ff94b7a65a1da54b1c2abef61c5015f6229824abd642c1",
       "serverError.pair.notACode": "1a22adbe62929c1dde93b68be4d42ac2a1addd7c722f0a42546f5920e3065aa1",
       "pair.emailCode": "81c2e322abeb89f738de06ccdbefa7893c976a129b89c194299c75bd490fe128",
@@ -26088,7 +26098,13 @@
       "together.switch.title": "2829f92e4a9012d2265d7a82806d5750743ca14c0600d688485825dd4272938a",
       "together.switch.line": "f1da9a3fe37ffcb0273f52889240d8e3d13709220eca9c08b5b923f9def19409",
       "together.switch.failed": "ad8287436402edb5c91ee0cc4bfe88f3301bac459a7d49e4cd2c564fa20aa1b8",
-      "remote.phones.empty": "7aa5cde61510f42e788a3ff33c41d0335180a049c83ff4b0534ca95b8ad41940"
+      "remote.phones.empty": "7aa5cde61510f42e788a3ff33c41d0335180a049c83ff4b0534ca95b8ad41940",
+      "engineSetup.cloudPasteSummary": "99bef9b03db7662e2944939a6bf8e904d5c674c3577540ef994a9f5c4862ed5f",
+      "engineSetup.cloudPasteHint": "e6e7b723c8ec76caec36a54986610db04f079430fd3a7a1986c627e18480a7ea",
+      "task.bulk.retitle": "70425d709318f9bdf8830f149b5298d8aab8df851a0631bdc40e58759e81296b",
+      "task.bulk.retitling": "6570061ecf4e09f529036fa3bba7e33b8150c83dd11cdf3792c435ed9469e4dc",
+      "task.bulk.retitleResult": "83306c1404f4170a9594bb2238aeac49e469b340b2f45b5c01952faaf5bc0eb5",
+      "task.bulk.retitleFailed": "fe8013b5add18967ec7df89806ef632a9a0c40012e6f651c0b236cc4127fbab6"
     },
     "pt-br": {
       "voice.gemini.keyPlaceholder": "8c87ba2043a4a89d63c90cae8a6dafd5cbd193652e923b97988e381a74773e10",
@@ -35658,7 +35674,7 @@
       "server.meetings.card.settingUp": "d81cfcf225f32d72d2a48a5465074c34913dfbddbb22096076ddb87f02bb3e32",
       "server.meetings.card.speechStopped": "dfbb5ca1820e4ed45f043ef17627fe2caa67914519d34b1dd285aabda61e2c47",
       "serverError.pair.emailCode": "68c973f152cfb2a2e31297465950da40b2a1a8816a837a0eee4b6d7ffc619e0a",
-      "serverError.pair.oldCode": "7a4f3c4512a46be26a8f100aca2cebdfae3afcd6d3f5d965b5749e2621ad826a",
+      "serverError.pair.oldCode": "98e7e9174a64246ed5be756b5d2ff84d9a0dbc6f0362fafd4794b5da3217dccc",
       "serverError.pair.scriptKey": "07cb8d178d8c2f9b13ff94b7a65a1da54b1c2abef61c5015f6229824abd642c1",
       "serverError.pair.notACode": "1a22adbe62929c1dde93b68be4d42ac2a1addd7c722f0a42546f5920e3065aa1",
       "pair.fromLink": "dbb9850b1f41a907905761e472e2c434f19bbddbf827c23c60bf6bc4185aec7c",
@@ -35957,12 +35973,6 @@
       "server.mcp.problem.notFound": "c13c9b1627765e908c61becffdecf4dc78277e519d7439722ce0fb6336cd01ca",
       "server.mcp.problem.timeout": "8229ad60ab199a10f9b970656c657c5df4096606b70a1fef3aef09837f832a88",
       "server.mcp.problem.cantConnect": "def48e41b7746250c2af76b8426c8a40d37a27b06972e6537617df9ee691b875",
-      "modelgoOffer.title": "8ec5f51323c495a47fd557900715ec15b3da2e259565795d80ab33f20b48a59b",
-      "modelgoOffer.line": "d16cba1245de18c3622a693615703187eb204be3a9b79a2c9988256c33b030ce",
-      "modelgoOffer.sponsor": "fd6e874f43f84791735073557ac711f75fc46b06a1d54009727d9f7017aee043",
-      "modelgoOffer.getKey": "a924525b9ba78ecd9db2884d80396d5dae485186aa549e3cbef08785723faa82",
-      "modelgoOffer.name": "e4289c5aa9fda7be5c34830842a68861d5d15f20e7b95ccbf77937a6b87cc058",
-      "modelgoOffer.link": "36d2f296e03d65fd53dedf77b0f1e994db6e4f58d6ceacd9a345eda4feca8665",
       "cloudWelcome.bring.subTeamYours": "1d3e87449e1bc422e6ebc014820e593ecc5e75b9eb299934c473d59864a12565",
       "cloudWelcome.invite.title": "6978814074311b8054bccc8bcc255c22547da4a266c4539057df1891f34eace2",
       "cloudWelcome.invite.body": "6c429e975ccbd3f782ac283010186a00a591f241d37286ca3c939eb70449ab73",
@@ -35990,7 +36000,6 @@
       "model.local.noTools": "a77bd5462a4fec62f9db562f03042d112dd593819f32b66569f048960288d686",
       "keys.modelgo.label": "ec659ee58f0bf4ebbf286345ea78f224c1034aba54aaea92b034a69646f64107",
       "keys.modelgo.placeholder": "957d418e8e7810a7e53f86009cd843e8cf678078884a9b7dc1172c38b283b4fe",
-      "keys.modelgo.note": "c6a89bd6b6a629580f3f9c7c1db1a61da156e403e401fd06eabfcf7bd70ba7f3",
       "activity.action.routine.handover": "544baf5ef1afd784c5a70d6225158bd8d0290e49c4e849f7920ba8e33711a6bc",
       "activity.action.member.left": "3d786c0b02e974dab85b0d649a24e8a2e08fca00d8249fa34c6a66c384050356",
       "botPanel.memory.editText": "e9938c0a9a18c1996f3d6c806bc9b67a189eb30390b854df8fd4687c86e4a255",
@@ -36777,7 +36786,7 @@
       "decider.custom.master": "fb358a0554b30e5cbb67256d5bfbb7e5fea005ec86ea59454f2578c780e930b7",
       "decider.custom.masterNeedsKey": "89db6b4605d9fa86398c2d4b80660b848f663cc2f2efdf1f7583c4e902a6861b",
       "decider.custom.baseUrl": "70589413a3c9793339fcf764276727ac652fa7dfe2f15fb5671251303a52ca49",
-      "decider.custom.baseUrlDetail": "c8ab9ecb22687e7208ebcb6f1a2bcd02c32b0b10890c36a790d3c642939ace58",
+      "decider.custom.baseUrlDetail": "9db506c16c3f8282c63ee248726f470a57d9b4db75a2d7646176b6f7d7978bb2",
       "decider.custom.baseUrlPlaceholder": "2467c53b1babc443bf5bd26d6e2bf571499a5e6324bae883d466c67157b51c25",
       "decider.custom.model": "089ef2b6dbb34fa9bb82acd6a7a001bf8859980102e4b39463bc39a9a0819491",
       "decider.custom.modelPlaceholder": "3d8be4b4bb18bec3193355037111dad4e084322d1b12230620df7e75311f9b96",
@@ -36981,7 +36990,44 @@
       "together.switch.line": "f1da9a3fe37ffcb0273f52889240d8e3d13709220eca9c08b5b923f9def19409",
       "together.switch.failed": "ad8287436402edb5c91ee0cc4bfe88f3301bac459a7d49e4cd2c564fa20aa1b8",
       "together.state.signin": "010c70e3503b8907767eb9dd465788bb7698d05ccddc383e0685031935a70db2",
-      "remote.phones.empty": "7aa5cde61510f42e788a3ff33c41d0335180a049c83ff4b0534ca95b8ad41940"
+      "remote.phones.empty": "7aa5cde61510f42e788a3ff33c41d0335180a049c83ff4b0534ca95b8ad41940",
+      "call.live.botVoice": "c322987a70ef66a124a8870c34db8d5f62a1cafc07a1fcad3e0c05ea1ab513ab",
+      "call.live.botVoiceDefault": "dc762426a11c0644fd3e9a5cb8dafdeebcce95e4e5772a628deec94ed0ad36a5",
+      "call.live.defaultVoice": "47813ba0bdf5a3bf09d2b412144b8d02bbb66adc2defd595b0dcfe6a02f45c20",
+      "decider.custom.api.chat": "0d2bf27ce2f0da9d769cc5b72daae5734896f549faf792976236fde58be9b95e",
+      "engineSetup.cloudPasteSummary": "99bef9b03db7662e2944939a6bf8e904d5c674c3577540ef994a9f5c4862ed5f",
+      "engineSetup.cloudPasteHint": "e6e7b723c8ec76caec36a54986610db04f079430fd3a7a1986c627e18480a7ea",
+      "serverError.bot.alwaysAllowFull": "1caf76fd33c01df36490a0cc1aeff51c85c3b6b5f3d35c5df748db434fdf15c3",
+      "chat.cloudGuest.ownerApproves": "aadd80b6e03cb0cd6d217c5365ea5bab64c4ab20460ae213b1ca6b0f3bac46c2",
+      "serverError.card.cloudOwnerOnly": "0e42ca25d5bb39f9d127462765bc2430a5c6792e130b80fbb30ea68e54be8ae4",
+      "call.live.provider.custom": "5fb0795eaf2ee446b929b73b8c78d7c2c15d3aa3cbaf6cc1e5df78e855450393",
+      "call.live.customEndpoint": "be6c76aba07a7890baab87c3bd80c40ec66d1a63650e9e370bd4810adea7f80e",
+      "call.live.customModel": "5e2c614c23f02239bc03c6c04fcb681950f9e72bf8fdff6be79c79841cbb10c0",
+      "call.live.customHint": "d33d48f02b645a9f9e1c32df92a6fb02bb0b72cc2ed60eb5e06112f8e9c5ad93",
+      "call.live.customKey": "f12176907a5b14c717e4f32560ea1b65c535271e7a484112aaa5511c1d3686eb",
+      "call.live.customNeedsKey": "f3a8a345177c5aaf2cb18b4cbe4ae195c54ba8a1108d03167a9537ae892721f3",
+      "call.live.customKeyTitle": "143a719a2fd736a4519678c901bfee45918b681c200a59f4e4318cc2ab3d27fd",
+      "call.live.customKeyExplain": "f4851a8cf42a27283a308feaca26c0b7b7f4acd1befedf7e49960279afb71bc7",
+      "call.live.customKeyField": "a7090a1486ef559b7e38467d904d45c7a96a45de158769c1e00499ed0f42b953",
+      "call.live.customCost": "de2a01497b1bdd6aff4d12e8a01bc607fb005e96e272ae77c8d6740e6853d8ef",
+      "call.live.needsCustom": "a55223cc78bd2411b92a1f544877599eae7e6815e67f5e0debf1d487bdbb7ae6",
+      "call.live.disclosureCustom": "cf9a25b5ed7e5bf386f9d8e7be6d0d713bc1d142e92d2cf6c663df5788ac6eb8",
+      "call.live.disclosureCustomCloud": "b789b3cd12e4647003e2f65e294c7e7790fcc3dbe06a77946c2ec7cab4e856c5",
+      "keys.purpose.liveKeyCustom": "8e99e704d8b7f385fcc744b307bb9d3e132a506bc3cdee57fc51941822fc745a",
+      "task.bulk.retitle": "70425d709318f9bdf8830f149b5298d8aab8df851a0631bdc40e58759e81296b",
+      "task.bulk.retitling": "6570061ecf4e09f529036fa3bba7e33b8150c83dd11cdf3792c435ed9469e4dc",
+      "task.bulk.retitleResult": "83306c1404f4170a9594bb2238aeac49e469b340b2f45b5c01952faaf5bc0eb5",
+      "task.bulk.retitleFailed": "fe8013b5add18967ec7df89806ef632a9a0c40012e6f651c0b236cc4127fbab6",
+      "server.routines.card.conversationKept": "ea038ec2124d474aa977c0faeb838dae7c8c2436cc44fc5382c231a7539c0fb9",
+      "server.routines.card.sessionContinues": "af4dedfee873451f6b9f28c12ef5b4f683c98ae795a706fe7fd58da470374c47",
+      "server.routines.card.onceContinues": "47f36e2af395ab1cc4c1fa758a4e169404e1e0164fb07d2ad82914228cf99297",
+      "sidebar.newBotOn.computer": "176820cb9508e2bea1ff6e6fc3682f0fd1f40432ea13da222725fb7d7666cd13",
+      "sidebar.newBotOn.cloud": "73bae32207d218e788c314dd82fdf2bf2d1a6e80febdb0101a3d897c0bd269db",
+      "sidebar.newBotOn.asleep": "8f27c03517f86b5fedc5cbdf7bc50e8d761809c4a9f3ab3e277cbca202b47fc8",
+      "sidebar.newBotOn.noAi": "90560bfa52da1eeef7f9a7e212ab43b68e8a9104bf02cff500b08e8440d3e86a",
+      "sidebar.newBotOn.onlyThere": "ee143ffe98b9c13337df5499526fa6b85e2df7f1b595a43f94dd907a74ab3789",
+      "sidebar.newBotOn.onlyHere": "5fa107188d3ebf59545c5522c3540371a95d16a3625a4f57e84f093849baabc4",
+      "sidebar.newBotOn.needsUpdate": "2fe10ee88189ee8ef942992b455e968fed8af782c1e7353b5a1ac4c54365c1b0"
     },
     "zh": {
       "pro.fromPrice": "a48a04a457d60b08b54fc83e7a6c4584ffedb1e23621859084900c8521a3af7b",
@@ -44375,7 +44421,7 @@
       "server.meetings.card.speechStopped": "dfbb5ca1820e4ed45f043ef17627fe2caa67914519d34b1dd285aabda61e2c47",
       "serverError.pair.tooMany": "19527c64f6ec9bd538c2d72424858fb4a8a9272532aa3b6375018585775fd5c2",
       "serverError.pair.emailCode": "68c973f152cfb2a2e31297465950da40b2a1a8816a837a0eee4b6d7ffc619e0a",
-      "serverError.pair.oldCode": "7a4f3c4512a46be26a8f100aca2cebdfae3afcd6d3f5d965b5749e2621ad826a",
+      "serverError.pair.oldCode": "98e7e9174a64246ed5be756b5d2ff84d9a0dbc6f0362fafd4794b5da3217dccc",
       "serverError.pair.scriptKey": "07cb8d178d8c2f9b13ff94b7a65a1da54b1c2abef61c5015f6229824abd642c1",
       "serverError.pair.notACode": "1a22adbe62929c1dde93b68be4d42ac2a1addd7c722f0a42546f5920e3065aa1",
       "pair.emailCode": "81c2e322abeb89f738de06ccdbefa7893c976a129b89c194299c75bd490fe128",
@@ -47284,7 +47330,21 @@
       "workTarget.reconnect": "2af0f0a6d96cc9253e0d111dcdd082f2ca1ec6d179cf5683aed466e72906cdee",
       "workTarget.accessScope": "3dffbb03d926465777a3195ac70547f2591878ad71df2cfa8828b5476bae7430",
       "workTarget.screenHint": "11a07c27c2572f703711763c29abd67950ee538214d58fa26efad0b04360a160",
-      "workTarget.paused": "e159b06187d369a0615f66ce577582b5c983d4ea59b3a62b702049f61753f0bf"
+      "workTarget.paused": "e159b06187d369a0615f66ce577582b5c983d4ea59b3a62b702049f61753f0bf",
+      "engineSetup.cloudPasteSummary": "99bef9b03db7662e2944939a6bf8e904d5c674c3577540ef994a9f5c4862ed5f",
+      "engineSetup.cloudPasteHint": "e6e7b723c8ec76caec36a54986610db04f079430fd3a7a1986c627e18480a7ea",
+      "chat.cloudGuest.ownerApproves": "aadd80b6e03cb0cd6d217c5365ea5bab64c4ab20460ae213b1ca6b0f3bac46c2",
+      "serverError.card.cloudOwnerOnly": "0e42ca25d5bb39f9d127462765bc2430a5c6792e130b80fbb30ea68e54be8ae4",
+      "server.routines.card.conversationKept": "ea038ec2124d474aa977c0faeb838dae7c8c2436cc44fc5382c231a7539c0fb9",
+      "server.routines.card.sessionContinues": "af4dedfee873451f6b9f28c12ef5b4f683c98ae795a706fe7fd58da470374c47",
+      "server.routines.card.onceContinues": "47f36e2af395ab1cc4c1fa758a4e169404e1e0164fb07d2ad82914228cf99297",
+      "sidebar.newBotOn.computer": "176820cb9508e2bea1ff6e6fc3682f0fd1f40432ea13da222725fb7d7666cd13",
+      "sidebar.newBotOn.cloud": "73bae32207d218e788c314dd82fdf2bf2d1a6e80febdb0101a3d897c0bd269db",
+      "sidebar.newBotOn.asleep": "8f27c03517f86b5fedc5cbdf7bc50e8d761809c4a9f3ab3e277cbca202b47fc8",
+      "sidebar.newBotOn.noAi": "90560bfa52da1eeef7f9a7e212ab43b68e8a9104bf02cff500b08e8440d3e86a",
+      "sidebar.newBotOn.onlyThere": "ee143ffe98b9c13337df5499526fa6b85e2df7f1b595a43f94dd907a74ab3789",
+      "sidebar.newBotOn.onlyHere": "5fa107188d3ebf59545c5522c3540371a95d16a3625a4f57e84f093849baabc4",
+      "sidebar.newBotOn.needsUpdate": "2fe10ee88189ee8ef942992b455e968fed8af782c1e7353b5a1ac4c54365c1b0"
     },
     "zh-tw": {
       "whop.description": "1a07cf04ef17029448d3781415cbac16d54e66b821907a40d94e0e6349710e70",
@@ -52037,7 +52097,6 @@
       "server.meetings.card.speechStopped": "dfbb5ca1820e4ed45f043ef17627fe2caa67914519d34b1dd285aabda61e2c47",
       "serverError.pair.tooMany": "19527c64f6ec9bd538c2d72424858fb4a8a9272532aa3b6375018585775fd5c2",
       "serverError.pair.emailCode": "68c973f152cfb2a2e31297465950da40b2a1a8816a837a0eee4b6d7ffc619e0a",
-      "serverError.pair.oldCode": "7a4f3c4512a46be26a8f100aca2cebdfae3afcd6d3f5d965b5749e2621ad826a",
       "serverError.pair.scriptKey": "07cb8d178d8c2f9b13ff94b7a65a1da54b1c2abef61c5015f6229824abd642c1",
       "serverError.pair.notACode": "1a22adbe62929c1dde93b68be4d42ac2a1addd7c722f0a42546f5920e3065aa1",
       "pair.emailCode": "81c2e322abeb89f738de06ccdbefa7893c976a129b89c194299c75bd490fe128",
@@ -57660,7 +57719,14 @@
       "memory.defaultAlwaysOn": "abdcb1c8c984f946657e5039ea1c7a248000b53f0c009cb0f3f111986c40655f",
       "botAccess.tools.unsaved": "785d3f77385f7e0b197db58e756422472211e4c5494ed1bf70cca12501c96ca6",
       "botAccess.tools.failed": "050f06b32a5af6948e3426bca74e67f3ec8b964d277f62897e871be4951f809b",
-      "botAccess.tools.discard": "f9bfa3dc7c8fcdea10ec324b8f3a6876f76fc8f541aa41b2e1da20979064dc0b"
+      "botAccess.tools.discard": "f9bfa3dc7c8fcdea10ec324b8f3a6876f76fc8f541aa41b2e1da20979064dc0b",
+      "engineSetup.cloudPasteSummary": "99bef9b03db7662e2944939a6bf8e904d5c674c3577540ef994a9f5c4862ed5f",
+      "engineSetup.cloudPasteHint": "e6e7b723c8ec76caec36a54986610db04f079430fd3a7a1986c627e18480a7ea",
+      "chat.cloudGuest.ownerApproves": "aadd80b6e03cb0cd6d217c5365ea5bab64c4ab20460ae213b1ca6b0f3bac46c2",
+      "serverError.card.cloudOwnerOnly": "0e42ca25d5bb39f9d127462765bc2430a5c6792e130b80fbb30ea68e54be8ae4",
+      "server.routines.card.conversationKept": "ea038ec2124d474aa977c0faeb838dae7c8c2436cc44fc5382c231a7539c0fb9",
+      "server.routines.card.sessionContinues": "af4dedfee873451f6b9f28c12ef5b4f683c98ae795a706fe7fd58da470374c47",
+      "server.routines.card.onceContinues": "47f36e2af395ab1cc4c1fa758a4e169404e1e0164fb07d2ad82914228cf99297"
     },
     "uk": {
       "pro.fromPrice": "a48a04a457d60b08b54fc83e7a6c4584ffedb1e23621859084900c8521a3af7b",
@@ -61029,7 +61095,6 @@
       "server.meetings.card.speechStopped": "dfbb5ca1820e4ed45f043ef17627fe2caa67914519d34b1dd285aabda61e2c47",
       "serverError.pair.tooMany": "19527c64f6ec9bd538c2d72424858fb4a8a9272532aa3b6375018585775fd5c2",
       "serverError.pair.emailCode": "68c973f152cfb2a2e31297465950da40b2a1a8816a837a0eee4b6d7ffc619e0a",
-      "serverError.pair.oldCode": "7a4f3c4512a46be26a8f100aca2cebdfae3afcd6d3f5d965b5749e2621ad826a",
       "serverError.pair.scriptKey": "07cb8d178d8c2f9b13ff94b7a65a1da54b1c2abef61c5015f6229824abd642c1",
       "serverError.pair.notACode": "1a22adbe62929c1dde93b68be4d42ac2a1addd7c722f0a42546f5920e3065aa1",
       "pair.emailCode": "81c2e322abeb89f738de06ccdbefa7893c976a129b89c194299c75bd490fe128",
@@ -61747,7 +61812,9 @@
       "together.switch.title": "2829f92e4a9012d2265d7a82806d5750743ca14c0600d688485825dd4272938a",
       "together.switch.line": "f1da9a3fe37ffcb0273f52889240d8e3d13709220eca9c08b5b923f9def19409",
       "together.switch.failed": "ad8287436402edb5c91ee0cc4bfe88f3301bac459a7d49e4cd2c564fa20aa1b8",
-      "remote.phones.empty": "7aa5cde61510f42e788a3ff33c41d0335180a049c83ff4b0534ca95b8ad41940"
+      "remote.phones.empty": "7aa5cde61510f42e788a3ff33c41d0335180a049c83ff4b0534ca95b8ad41940",
+      "engineSetup.cloudPasteSummary": "99bef9b03db7662e2944939a6bf8e904d5c674c3577540ef994a9f5c4862ed5f",
+      "engineSetup.cloudPasteHint": "e6e7b723c8ec76caec36a54986610db04f079430fd3a7a1986c627e18480a7ea"
     },
     "vi": {
       "whop.description": "1a07cf04ef17029448d3781415cbac16d54e66b821907a40d94e0e6349710e70",
@@ -67092,7 +67159,6 @@
       "server.meetings.card.speechStopped": "dfbb5ca1820e4ed45f043ef17627fe2caa67914519d34b1dd285aabda61e2c47",
       "serverError.pair.tooMany": "19527c64f6ec9bd538c2d72424858fb4a8a9272532aa3b6375018585775fd5c2",
       "serverError.pair.emailCode": "68c973f152cfb2a2e31297465950da40b2a1a8816a837a0eee4b6d7ffc619e0a",
-      "serverError.pair.oldCode": "7a4f3c4512a46be26a8f100aca2cebdfae3afcd6d3f5d965b5749e2621ad826a",
       "serverError.pair.scriptKey": "07cb8d178d8c2f9b13ff94b7a65a1da54b1c2abef61c5015f6229824abd642c1",
       "serverError.pair.notACode": "1a22adbe62929c1dde93b68be4d42ac2a1addd7c722f0a42546f5920e3065aa1",
       "pair.emailCode": "81c2e322abeb89f738de06ccdbefa7893c976a129b89c194299c75bd490fe128",
@@ -67761,7 +67827,9 @@
       "together.switch.title": "2829f92e4a9012d2265d7a82806d5750743ca14c0600d688485825dd4272938a",
       "together.switch.line": "f1da9a3fe37ffcb0273f52889240d8e3d13709220eca9c08b5b923f9def19409",
       "together.switch.failed": "ad8287436402edb5c91ee0cc4bfe88f3301bac459a7d49e4cd2c564fa20aa1b8",
-      "remote.phones.empty": "7aa5cde61510f42e788a3ff33c41d0335180a049c83ff4b0534ca95b8ad41940"
+      "remote.phones.empty": "7aa5cde61510f42e788a3ff33c41d0335180a049c83ff4b0534ca95b8ad41940",
+      "engineSetup.cloudPasteSummary": "99bef9b03db7662e2944939a6bf8e904d5c674c3577540ef994a9f5c4862ed5f",
+      "engineSetup.cloudPasteHint": "e6e7b723c8ec76caec36a54986610db04f079430fd3a7a1986c627e18480a7ea"
     },
     "tr": {
       "whop.description": "1a07cf04ef17029448d3781415cbac16d54e66b821907a40d94e0e6349710e70",
@@ -73106,7 +73174,6 @@
       "server.meetings.card.speechStopped": "dfbb5ca1820e4ed45f043ef17627fe2caa67914519d34b1dd285aabda61e2c47",
       "serverError.pair.tooMany": "19527c64f6ec9bd538c2d72424858fb4a8a9272532aa3b6375018585775fd5c2",
       "serverError.pair.emailCode": "68c973f152cfb2a2e31297465950da40b2a1a8816a837a0eee4b6d7ffc619e0a",
-      "serverError.pair.oldCode": "7a4f3c4512a46be26a8f100aca2cebdfae3afcd6d3f5d965b5749e2621ad826a",
       "serverError.pair.scriptKey": "07cb8d178d8c2f9b13ff94b7a65a1da54b1c2abef61c5015f6229824abd642c1",
       "serverError.pair.notACode": "1a22adbe62929c1dde93b68be4d42ac2a1addd7c722f0a42546f5920e3065aa1",
       "pair.emailCode": "81c2e322abeb89f738de06ccdbefa7893c976a129b89c194299c75bd490fe128",
@@ -73775,7 +73842,9 @@
       "together.switch.title": "2829f92e4a9012d2265d7a82806d5750743ca14c0600d688485825dd4272938a",
       "together.switch.line": "f1da9a3fe37ffcb0273f52889240d8e3d13709220eca9c08b5b923f9def19409",
       "together.switch.failed": "ad8287436402edb5c91ee0cc4bfe88f3301bac459a7d49e4cd2c564fa20aa1b8",
-      "remote.phones.empty": "7aa5cde61510f42e788a3ff33c41d0335180a049c83ff4b0534ca95b8ad41940"
+      "remote.phones.empty": "7aa5cde61510f42e788a3ff33c41d0335180a049c83ff4b0534ca95b8ad41940",
+      "engineSetup.cloudPasteSummary": "99bef9b03db7662e2944939a6bf8e904d5c674c3577540ef994a9f5c4862ed5f",
+      "engineSetup.cloudPasteHint": "e6e7b723c8ec76caec36a54986610db04f079430fd3a7a1986c627e18480a7ea"
     },
     "pl": {
       "whop.description": "1a07cf04ef17029448d3781415cbac16d54e66b821907a40d94e0e6349710e70",
@@ -80388,7 +80457,6 @@
       "server.meetings.card.speechStopped": "dfbb5ca1820e4ed45f043ef17627fe2caa67914519d34b1dd285aabda61e2c47",
       "serverError.pair.tooMany": "19527c64f6ec9bd538c2d72424858fb4a8a9272532aa3b6375018585775fd5c2",
       "serverError.pair.emailCode": "68c973f152cfb2a2e31297465950da40b2a1a8816a837a0eee4b6d7ffc619e0a",
-      "serverError.pair.oldCode": "7a4f3c4512a46be26a8f100aca2cebdfae3afcd6d3f5d965b5749e2621ad826a",
       "serverError.pair.scriptKey": "07cb8d178d8c2f9b13ff94b7a65a1da54b1c2abef61c5015f6229824abd642c1",
       "serverError.pair.notACode": "1a22adbe62929c1dde93b68be4d42ac2a1addd7c722f0a42546f5920e3065aa1",
       "pair.emailCode": "81c2e322abeb89f738de06ccdbefa7893c976a129b89c194299c75bd490fe128",
@@ -81050,7 +81118,13 @@
       "together.switch.title": "2829f92e4a9012d2265d7a82806d5750743ca14c0600d688485825dd4272938a",
       "together.switch.line": "f1da9a3fe37ffcb0273f52889240d8e3d13709220eca9c08b5b923f9def19409",
       "together.switch.failed": "ad8287436402edb5c91ee0cc4bfe88f3301bac459a7d49e4cd2c564fa20aa1b8",
-      "remote.phones.empty": "7aa5cde61510f42e788a3ff33c41d0335180a049c83ff4b0534ca95b8ad41940"
+      "remote.phones.empty": "7aa5cde61510f42e788a3ff33c41d0335180a049c83ff4b0534ca95b8ad41940",
+      "engineSetup.cloudPasteSummary": "99bef9b03db7662e2944939a6bf8e904d5c674c3577540ef994a9f5c4862ed5f",
+      "engineSetup.cloudPasteHint": "e6e7b723c8ec76caec36a54986610db04f079430fd3a7a1986c627e18480a7ea",
+      "task.bulk.retitle": "70425d709318f9bdf8830f149b5298d8aab8df851a0631bdc40e58759e81296b",
+      "task.bulk.retitling": "6570061ecf4e09f529036fa3bba7e33b8150c83dd11cdf3792c435ed9469e4dc",
+      "task.bulk.retitleResult": "83306c1404f4170a9594bb2238aeac49e469b340b2f45b5c01952faaf5bc0eb5",
+      "task.bulk.retitleFailed": "fe8013b5add18967ec7df89806ef632a9a0c40012e6f651c0b236cc4127fbab6"
     },
     "ru": {
       "whop.description": "1a07cf04ef17029448d3781415cbac16d54e66b821907a40d94e0e6349710e70",
@@ -87721,7 +87795,6 @@
       "server.meetings.card.speechStopped": "dfbb5ca1820e4ed45f043ef17627fe2caa67914519d34b1dd285aabda61e2c47",
       "serverError.pair.tooMany": "19527c64f6ec9bd538c2d72424858fb4a8a9272532aa3b6375018585775fd5c2",
       "serverError.pair.emailCode": "68c973f152cfb2a2e31297465950da40b2a1a8816a837a0eee4b6d7ffc619e0a",
-      "serverError.pair.oldCode": "7a4f3c4512a46be26a8f100aca2cebdfae3afcd6d3f5d965b5749e2621ad826a",
       "serverError.pair.scriptKey": "07cb8d178d8c2f9b13ff94b7a65a1da54b1c2abef61c5015f6229824abd642c1",
       "serverError.pair.notACode": "1a22adbe62929c1dde93b68be4d42ac2a1addd7c722f0a42546f5920e3065aa1",
       "pair.emailCode": "81c2e322abeb89f738de06ccdbefa7893c976a129b89c194299c75bd490fe128",
@@ -88378,7 +88451,13 @@
       "together.switch.title": "2829f92e4a9012d2265d7a82806d5750743ca14c0600d688485825dd4272938a",
       "together.switch.line": "f1da9a3fe37ffcb0273f52889240d8e3d13709220eca9c08b5b923f9def19409",
       "together.switch.failed": "ad8287436402edb5c91ee0cc4bfe88f3301bac459a7d49e4cd2c564fa20aa1b8",
-      "remote.phones.empty": "7aa5cde61510f42e788a3ff33c41d0335180a049c83ff4b0534ca95b8ad41940"
+      "remote.phones.empty": "7aa5cde61510f42e788a3ff33c41d0335180a049c83ff4b0534ca95b8ad41940",
+      "engineSetup.cloudPasteSummary": "99bef9b03db7662e2944939a6bf8e904d5c674c3577540ef994a9f5c4862ed5f",
+      "engineSetup.cloudPasteHint": "e6e7b723c8ec76caec36a54986610db04f079430fd3a7a1986c627e18480a7ea",
+      "task.bulk.retitle": "70425d709318f9bdf8830f149b5298d8aab8df851a0631bdc40e58759e81296b",
+      "task.bulk.retitling": "6570061ecf4e09f529036fa3bba7e33b8150c83dd11cdf3792c435ed9469e4dc",
+      "task.bulk.retitleResult": "83306c1404f4170a9594bb2238aeac49e469b340b2f45b5c01952faaf5bc0eb5",
+      "task.bulk.retitleFailed": "fe8013b5add18967ec7df89806ef632a9a0c40012e6f651c0b236cc4127fbab6"
     },
     "it": {
       "whop.description": "1a07cf04ef17029448d3781415cbac16d54e66b821907a40d94e0e6349710e70",
@@ -94852,7 +94931,6 @@
       "server.meetings.card.speechStopped": "dfbb5ca1820e4ed45f043ef17627fe2caa67914519d34b1dd285aabda61e2c47",
       "serverError.pair.tooMany": "19527c64f6ec9bd538c2d72424858fb4a8a9272532aa3b6375018585775fd5c2",
       "serverError.pair.emailCode": "68c973f152cfb2a2e31297465950da40b2a1a8816a837a0eee4b6d7ffc619e0a",
-      "serverError.pair.oldCode": "7a4f3c4512a46be26a8f100aca2cebdfae3afcd6d3f5d965b5749e2621ad826a",
       "serverError.pair.scriptKey": "07cb8d178d8c2f9b13ff94b7a65a1da54b1c2abef61c5015f6229824abd642c1",
       "serverError.pair.notACode": "1a22adbe62929c1dde93b68be4d42ac2a1addd7c722f0a42546f5920e3065aa1",
       "pair.emailCode": "81c2e322abeb89f738de06ccdbefa7893c976a129b89c194299c75bd490fe128",
@@ -95512,7 +95590,13 @@
       "together.switch.title": "2829f92e4a9012d2265d7a82806d5750743ca14c0600d688485825dd4272938a",
       "together.switch.line": "f1da9a3fe37ffcb0273f52889240d8e3d13709220eca9c08b5b923f9def19409",
       "together.switch.failed": "ad8287436402edb5c91ee0cc4bfe88f3301bac459a7d49e4cd2c564fa20aa1b8",
-      "remote.phones.empty": "7aa5cde61510f42e788a3ff33c41d0335180a049c83ff4b0534ca95b8ad41940"
+      "remote.phones.empty": "7aa5cde61510f42e788a3ff33c41d0335180a049c83ff4b0534ca95b8ad41940",
+      "engineSetup.cloudPasteSummary": "99bef9b03db7662e2944939a6bf8e904d5c674c3577540ef994a9f5c4862ed5f",
+      "engineSetup.cloudPasteHint": "e6e7b723c8ec76caec36a54986610db04f079430fd3a7a1986c627e18480a7ea",
+      "task.bulk.retitle": "70425d709318f9bdf8830f149b5298d8aab8df851a0631bdc40e58759e81296b",
+      "task.bulk.retitling": "6570061ecf4e09f529036fa3bba7e33b8150c83dd11cdf3792c435ed9469e4dc",
+      "task.bulk.retitleResult": "83306c1404f4170a9594bb2238aeac49e469b340b2f45b5c01952faaf5bc0eb5",
+      "task.bulk.retitleFailed": "fe8013b5add18967ec7df89806ef632a9a0c40012e6f651c0b236cc4127fbab6"
     },
     "ko": {
       "connectedWorkspaces.localTitle": "7d6deafeab011d734c3fdd1bfd6f69544fbb746a004019269bdb48544b01164b",
@@ -102689,7 +102773,6 @@
       "server.meetings.card.speechStopped": "dfbb5ca1820e4ed45f043ef17627fe2caa67914519d34b1dd285aabda61e2c47",
       "serverError.pair.tooMany": "19527c64f6ec9bd538c2d72424858fb4a8a9272532aa3b6375018585775fd5c2",
       "serverError.pair.emailCode": "68c973f152cfb2a2e31297465950da40b2a1a8816a837a0eee4b6d7ffc619e0a",
-      "serverError.pair.oldCode": "7a4f3c4512a46be26a8f100aca2cebdfae3afcd6d3f5d965b5749e2621ad826a",
       "serverError.pair.scriptKey": "07cb8d178d8c2f9b13ff94b7a65a1da54b1c2abef61c5015f6229824abd642c1",
       "serverError.pair.notACode": "1a22adbe62929c1dde93b68be4d42ac2a1addd7c722f0a42546f5920e3065aa1",
       "pair.emailCode": "81c2e322abeb89f738de06ccdbefa7893c976a129b89c194299c75bd490fe128",
@@ -103307,7 +103390,13 @@
       "together.switch.title": "2829f92e4a9012d2265d7a82806d5750743ca14c0600d688485825dd4272938a",
       "together.switch.line": "f1da9a3fe37ffcb0273f52889240d8e3d13709220eca9c08b5b923f9def19409",
       "together.switch.failed": "ad8287436402edb5c91ee0cc4bfe88f3301bac459a7d49e4cd2c564fa20aa1b8",
-      "remote.phones.empty": "7aa5cde61510f42e788a3ff33c41d0335180a049c83ff4b0534ca95b8ad41940"
+      "remote.phones.empty": "7aa5cde61510f42e788a3ff33c41d0335180a049c83ff4b0534ca95b8ad41940",
+      "engineSetup.cloudPasteSummary": "99bef9b03db7662e2944939a6bf8e904d5c674c3577540ef994a9f5c4862ed5f",
+      "engineSetup.cloudPasteHint": "e6e7b723c8ec76caec36a54986610db04f079430fd3a7a1986c627e18480a7ea",
+      "task.bulk.retitle": "70425d709318f9bdf8830f149b5298d8aab8df851a0631bdc40e58759e81296b",
+      "task.bulk.retitling": "6570061ecf4e09f529036fa3bba7e33b8150c83dd11cdf3792c435ed9469e4dc",
+      "task.bulk.retitleResult": "83306c1404f4170a9594bb2238aeac49e469b340b2f45b5c01952faaf5bc0eb5",
+      "task.bulk.retitleFailed": "fe8013b5add18967ec7df89806ef632a9a0c40012e6f651c0b236cc4127fbab6"
     }
   }
 }

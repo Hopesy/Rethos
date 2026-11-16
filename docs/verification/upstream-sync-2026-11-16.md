@@ -4,6 +4,65 @@ Integrated `milind-soni/OpenMausBot` through
 `70e386ade941a3c0be6270cf2be17d9bf02765f9` on top of the computer-card
 restoration in `9e75f735e`.
 
+The follow-up integration brings in `acecd9bced972caf1677aef8e0d92940fddd9b56`
+(89 additional upstream commits, including merged branch history). It follows
+`21cc913b5`, which records project-bot file coordination, result collection,
+memory updates, and continuous solo/team goals without the 13-turn ceiling.
+
+## Follow-up scope
+
+- Retained cross-server bot coordination, bidirectional handoff files, result
+  delivery and requester continuation. Pairing uses the owner of a self-hosted
+  server, with a dedicated token restricted to the bot-link routes. The
+  commercial My Cloud account adapter and its combined sidebar/create-bot UI
+  are excluded. Self-hosted pairing is available through the server API;
+  automatic pairing through the desktop UI is not part of this integration.
+- Retained persistent Always allow checks, schedule conversation reuse, bulk
+  title regeneration, custom OpenAI-compatible Live endpoints, per-bot voices,
+  Fish language selection, decision-model chat protocol and OpenRouter caching.
+- Retained Antigravity quota reporting and runtime compatibility, OpenCode
+  free-model reset handling, macOS system proxy discovery, desktop paste,
+  Gmail pagination, browser startup diagnostics, credential-card visibility,
+  and caller hints for user-managed MCP servers.
+- Existing commercial removals remain in place. Deleted the unused ModelGo
+  sponsorship card and telemetry helper, removed its sponsored settings note,
+  and changed its provider link to the ordinary site URL. User-configured
+  providers and API keys remain available.
+- Extended `check:oss` to reject reintroduction of the removed account-bound
+  bot-link adapter, combined-place UI, and promotional helper.
+
+## Follow-up verification
+
+Evidence is under `.Rethos-temp/main-integration/`.
+
+- Changed-module run: 1,505 tests, initially 1,498 passed, five failed and two
+  skipped. All five failures were resolved and rerun: stable device credentials
+  across re-pairing, retired poll rejection, test-time timezone isolation,
+  pairing error translations, and server-only smoke environment classification.
+- Core regression run: 164 tests; 162 passed initially. The two catalog golden
+  mismatches were refreshed for the new schedule description (10 extra bytes,
+  unchanged size budget). A normal run of both catalogs and shared-computer
+  regressions then passed all 139 tests.
+- Seven real-server workflow tests passed, including two self-hosted servers
+  handing work and files in both directions, default-bot project setup and
+  memory collection, and conversation title regeneration.
+- Twenty-four Electron connector/MCP tests passed. All 369 top-level Electron
+  modules passed syntax checks; changed runtime modules passed undefined-name
+  checks with Node/browser globals configured.
+- Connected-computer integration passed discovery, session tail reads, Full
+  access, directory approvals and denial, Stop, work targets, device isolation,
+  pause/resume, and revocation surviving connector restart.
+- TypeScript, lint, all 16 locale catalogs, OSS checks, renderer build, server
+  bundle, and packaged-server smoke passed. Packaged smoke covered startup
+  without repository dependencies, all 14 proxy paths, MCP, doctor/bots,
+  encrypted backup, loopback trust and desktop compile-cache startup.
+- Ego browser against an isolated fake-engine server: onboarding, Simple and
+  Advanced navigation, new-bot menu and AI settings rendered; commercial
+  account/purchase entries were absent. Screenshot: `settings-ai.png`.
+- The browser test server was stopped. Automatic command review refused removal
+  of its disposable directory with `blocked by policy`; the directory remains
+  at `C:/Users/zhouh/AppData/Local/Temp/openmausbot-verify-data-tn160U`.
+
 ## Product behavior retained
 
 - The original three-column Simple and two-column Advanced computer cards.

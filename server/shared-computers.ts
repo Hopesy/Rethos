@@ -30,6 +30,8 @@ export const sharedComputerRegistration = z.object({
   mcpServers: z.literal(true).optional(),
   /** The environment ids of its own OpenMausBot installs, which an MCP server's `runsOn` names; sent with mcpServers. */
   environments: z.array(z.string().uuid()).max(8).optional(),
+  /** It passes an MCP call's caller on to the MCP server; sent only to a server that advertises mcpCaller. */
+  mcpCaller: z.literal(true).optional(),
 }).strict();
 const wireSecrets = z.record(z.string().min(1).max(256), z.string().max(16_384));
 /** An MCP server as this server keeps it for a lent computer: that computer starts, or reaches, exactly this and nothing else. */
@@ -51,8 +53,11 @@ export const sharedComputerOperation = z.object({
   max_bytes: z.number().int().min(4).max(32768).optional(), file_id: z.string().max(160).optional(),
   limit: z.number().int().min(1).max(100).optional(), sort: z.enum(["name", "modified"]).optional(),
 }).strict();
+/** Which bot and conversation made an MCP call: a hint for the MCP server, never proof of identity. Only this server's
+ * own lent-MCP route sets it; a bot's shared_computer operation can't (sharedComputerOperation refuses the field). */
+export type McpCaller = { botId: string; threadId: string };
 export type Registration = z.infer<typeof sharedComputerRegistration>;
-export type Operation = z.infer<typeof sharedComputerOperation>;
+export type Operation = z.infer<typeof sharedComputerOperation> & { caller?: McpCaller };
 /** Server-authored after the current turn's permission check; absent from the model's operation schema. */
 export type ComputerFileScope = { root: string; write: boolean };
 export type AuthorizedComputerOperation = Operation & { file_scope?: ComputerFileScope };
@@ -493,7 +498,9 @@ export class SharedComputers {
     const { timeout_seconds: _timeout, ...withoutTimeout } = operation;
     const timed = entry.registration.commandTimeouts ? operation : withoutTimeout;
     const { old_text: _old, new_text: _new, ...withoutEdits } = timed;
-    const forDesktop = entry.registration.fileEdits ? timed : withoutEdits;
+    const edited = entry.registration.fileEdits ? timed : withoutEdits;
+    const { caller: _caller, ...withoutCaller } = edited;
+    const forDesktop = entry.registration.mcpCaller && operation.action === "mcp_call" ? edited : withoutCaller;
     return new Promise((resolve, reject) => {
       const id = randomUUID();
       const job: Job = { id, operation: forDesktop, ...(by ? { by: { name: by.name, color: by.color } } : {}), active, sent: false, leased: false, resolve, reject, timer: setTimeout(() => this.finish(entry, job, failure("Computer action timed out. Its outcome is unknown; inspect before retrying.")), jobDeadlineMs(entry.registration, operation)) };

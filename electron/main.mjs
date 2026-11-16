@@ -91,6 +91,7 @@ import { createLendingTarget } from "./lending-target.mjs"; import { createOpenA
 import { cleanWorkspaceDir, createCleanWorkspace, profilesDir } from "./clean-workspace.mjs"; import { createLocalProfiles, createProfileRegistry } from "./local-profiles.mjs"; import { handSaved, installOwnHome } from "./own-home-main.mjs"; import { reopenSavedServer, serverOpens } from "./saved-server.mjs"; import { installTwoPlacesMain } from "./two-places-main.mjs";
 import { askForMicrophone, openPrivacySettings } from "./privacy-settings.mjs"; import { openStartPlace } from "./start-place.mjs"; import { installCloudRail, railPlaces } from "./cloud-rail.mjs"; import { createPlaceInboxWatch } from "./place-inbox-watch.mjs"; import { installPlaceLook } from "./place-look.mjs"; import { CHROME_RAIL_PATH, createChromeRail } from "./chrome-rail.mjs";
 import { createWindowStateFile } from "./window-state-file.mjs";
+import { createSystemProxyCache } from "./system-proxy.mjs";
 import { createEnvironmentsFile, ENVIRONMENTS_SAVE_FAILED } from "./environments-file.mjs";
 import { installServerSessions, reportOwnListeners } from "./server-session.mjs";
 
@@ -232,7 +233,7 @@ let desktopDataDirLease = null;
 let runningDataDir = null;
 let localSwitchInFlight = false;
 let desktopPrefs = null, ownHome = null, twoPlaces = null, windowFrameMade = null;
-const utilityServerExits = new WeakMap();
+const utilityServerExits = new WeakMap(), systemProxy = createSystemProxyCache();
 const UTILITY_SERVER_STOP_TIMEOUT_MS = 6_500;
 const trustedApprovalMode = createTrustedApprovalModeCoordinator({ randomId: randomUUID, t: (...args) => nativeT(...args) });
 const desktopMutationToken = randomBytes(32).toString("base64url");
@@ -246,7 +247,7 @@ const serverSupervisor = createServerSupervisor({
     serverReady = true;
     serverStartConflictOnly = false;
     slog(`server ready pid=${proc.pid} port=${SERVER_PORT}`);
-    syncManagedComposioCredentials(); railChanged();
+    syncManagedComposioCredentials(); railChanged(); void systemProxy.refresh();
     reportOwnListeners(proc);
     routineWake.start();
     for (const win of appWindows()) {
@@ -617,9 +618,8 @@ async function startServerOn(port, dataDir = runningDataDir ?? startupEnvironmen
     userData: app.getPath("userData"),
   });
   const childEnv = managedComposioChildEnvironment(composioBrokerUrl(), secureCredentials, {
-    ...process.env,
     // The parent owns the data-dir lease; a child only validates it, so fallback-port children never replace it.
-    ...desktopDataDirLease.utilityServerLeaseEnvironment(),
+    ...process.env, ...systemProxy.latest(), ...desktopDataDirLease.utilityServerLeaseEnvironment(),
     OMB_DATA_DIR: dataDir,
     // Fail-closed until this process sends the private connection; never a descriptor inherited from the shell.
     OMB_DESKTOP_PARENT: "1",
@@ -696,6 +696,7 @@ async function startServerOn(port, dataDir = runningDataDir ?? startupEnvironmen
 
 async function startServerPackaged() {
   let everyPortForeignOwned = true;
+  await systemProxy.refresh();
   for (let attempt = 0; attempt < 2; attempt++) {
     for (const port of DESKTOP_PORTS) {
       if (desktopShutdownStarted) return false;

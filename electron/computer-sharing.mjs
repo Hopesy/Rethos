@@ -6,7 +6,7 @@ import { computerId as uuid, deviceCredentials, cloudGrant } from "./computer-sh
 import { setTimeout as delay } from "node:timers/promises";
 import { allowedServerOrigin } from "./server-address.mjs";
 import { createSharedCua, executeSharedOperation, personalSecretPaths, sharedComputerError, validCommandSeconds } from "./shared-computer-access.mjs";
-import { createLentMcp, LENT_MCP_ACTIONS, ownPorts, validLentMcpServer } from "./lent-mcp.mjs";
+import { createLentMcp, LENT_MCP_ACTIONS, ownPorts, validLentMcpJob } from "./lent-mcp.mjs";
 import { sharedCuaConnection } from "./shared-cua-connection.mjs";
 export { sharedCuaConnection };
 import { createLendingActivity, describeSharedOperation } from "./lending-activity.mjs";
@@ -22,7 +22,7 @@ import { actingBot } from "./lending-indicator.mjs";
 import { existingFolders, validateSharedFolders } from "./computer-sharing-folders.mjs";
 export { isHomeFolder, existingFolders, validateSharedFolders } from "./computer-sharing-folders.mjs";
 
-const JOB_KEYS = new Set(["computer_id", "action", "folder_id", "path", "content", "encoding", "expected_sha256", "old_text", "new_text", "command", "timeout_seconds", "tool_name", "arguments", "server", "file_scope", "offset", "tail", "max_bytes", "file_id", "limit", "sort"]);
+const JOB_KEYS = new Set(["computer_id", "action", "folder_id", "path", "content", "encoding", "expected_sha256", "old_text", "new_text", "command", "timeout_seconds", "tool_name", "arguments", "server", "file_scope", "offset", "tail", "max_bytes", "file_id", "limit", "sort", "caller"]);
 const JOB_ACTIONS = new Set(["list_files", "read_file", "write_file", "edit_file", "append_file", "delete_file", "run_command", "computer_tools", "computer_call", ...LENT_MCP_ACTIONS]);
 const optionalText = (value, max) => value === undefined || (typeof value === "string" && value.length <= max);
 /** Refuses malformed input only; the grant still decides whether the operation is allowed. */
@@ -43,7 +43,7 @@ export function validSharedOperation(operation, computerId) {
     (operation.limit === undefined || (Number.isInteger(operation.limit) && operation.limit >= 1 && operation.limit <= 100)) &&
     (operation.sort === undefined || operation.sort === "name" || operation.sort === "modified") && optionalText(operation.file_id, 160) &&
     (operation.arguments === undefined || (Boolean(operation.arguments) && typeof operation.arguments === "object" && !Array.isArray(operation.arguments))) &&
-    (LENT_MCP_ACTIONS.has(operation.action) ? validLentMcpServer(operation.server) : operation.server === undefined);
+    validLentMcpJob(operation);
 }
 
 export function cloudLendingVerdict(binding, current, env) {
@@ -65,9 +65,9 @@ export function ownServerSession(auth) {
 }
 
 /** What a Cloud that keeps MCP servers for this computer hears: it runs them, and which installs here it is. */
-const lendsMcp = environments => {
+const lendsMcp = (environments, caller) => {
   const ids = Array.isArray(environments) ? environments.filter(uuid).slice(0, 8) : [];
-  return { mcpServers: true, ...(ids.length ? { environments: ids } : {}) };
+  return { mcpServers: true, ...(ids.length ? { environments: ids } : {}), ...(caller ? { mcpCaller: true } : {}) };
 };
 
 /** A Cloud grant lends the internet connection unless it was unticked: one kept without `internet` lends it too. */
@@ -335,7 +335,7 @@ export function createComputerSharing({ file, fetch: fetchImpl, environments, lo
     // A server of the person's own says what it takes from them in their own sign-in's answer (`lending`), never before pairing.
     const offered = { ...descriptor.capabilities, ...(ownServerSession(auth) && auth.lending && typeof auth.lending === "object" ? auth.lending : {}) };
     if (required && offered.sharedComputers !== true) throw new Error(UPDATE_SERVER);
-    return { supported: offered.sharedComputers === true, auth, info: { sessionId: auth.id, environmentId: descriptor.environmentId }, details: offered.lendingDetails === true, link: offered.deviceLink === true, chrome: offered.myChromeLink === true, timeouts: offered.commandTimeouts === true, long: offered.longCommands === true, edits: offered.fileEdits === true, asks: offered.computerAsks === true, mcp: offered.lentMcp === true, botPermissions: offered.botPermissions === true, accessControl: offered.computerAccessControl === true };
+    return { supported: offered.sharedComputers === true, auth, info: { sessionId: auth.id, environmentId: descriptor.environmentId }, details: offered.lendingDetails === true, link: offered.deviceLink === true, chrome: offered.myChromeLink === true, timeouts: offered.commandTimeouts === true, long: offered.longCommands === true, edits: offered.fileEdits === true, asks: offered.computerAsks === true, mcp: offered.lentMcp === true, caller: offered.mcpCaller === true, botPermissions: offered.botPermissions === true, accessControl: offered.computerAccessControl === true };
   };
   const identity = async env => {
     await requireEnabled();
@@ -349,8 +349,8 @@ export function createComputerSharing({ file, fetch: fetchImpl, environments, lo
    * server the move chose (lending-target.mjs `own:<environment id>`). */
   const ownHomeId = env => { const current = cloud(env); return current?.origin === env.origin && current.accountId?.startsWith("own:") ? current.accountId.slice(4) : null; };
   /** What the server says it takes, remembered for its connect; a server of the person's own never gets the device link. */
-  const takes = (env, { details, link, chrome: takesChrome, timeouts, long, edits, mcp, botPermissions, accessControl }) => {
-    for (const [set, on] of [[supportsDetails, details], [supportsLink, link], [supportsChrome, takesChrome], [supportsTimeouts, timeouts], [supportsLong, long], [supportsEdits, edits], [supportsMcp, mcp], [supportsBotPermissions, botPermissions], [supportsAccessControl, accessControl]]) {
+  const takes = (env, { details, link, chrome: takesChrome, timeouts, long, edits, mcp, caller, botPermissions, accessControl }) => {
+    for (const [set, on] of [[supportsDetails, details], [supportsLink, link], [supportsChrome, takesChrome], [supportsTimeouts, timeouts], [supportsLong, long], [supportsEdits, edits], [supportsMcp, mcp], [supportsMcpCaller, caller], [supportsBotPermissions, botPermissions], [supportsAccessControl, accessControl]]) {
       if (on) set.add(env.id); else set.delete(env.id);
     }
   };
@@ -370,8 +370,8 @@ export function createComputerSharing({ file, fetch: fetchImpl, environments, lo
     takes(env, { ...described, link: false, chrome: false });
     return described.info;
   };
-  /** The Clouds that keep MCP servers for this computer to run. */
-  const supportsMcp = new Set();
+  /** The Clouds that keep MCP servers for this computer to run, and those that say which bot and conversation made a call. */
+  const supportsMcp = new Set(), supportsMcpCaller = new Set();
   const supportsDetails = new Set();
   const supportsLink = new Set();
   /** The Clouds that take the person's Chrome over the device link. */
@@ -471,7 +471,7 @@ export function createComputerSharing({ file, fetch: fetchImpl, environments, lo
             ...(supportsTimeouts.has(env.id) ? { commandTimeouts: true } : {}),
             ...(supportsLong.has(env.id) ? { longCommands: true } : {}),
             ...(supportsEdits.has(env.id) ? { fileEdits: true } : {}),
-            ...((grant.cloud || grant.own) && supportsMcp.has(env.id) ? lendsMcp(localEnvironments()) : {}),
+            ...((grant.cloud || grant.own) && supportsMcp.has(env.id) ? lendsMcp(localEnvironments(), supportsMcpCaller.has(env.id)) : {}),
           }, signal, grant.secret);
           if (signal.aborted) break;
           status.set(env.id, { connected: true });

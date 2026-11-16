@@ -191,6 +191,27 @@ describe("shared computer authority and lifecycle", () => {
       broker.close();
     }
   });
+  it("sends an MCP call's caller only to a desktop that said it takes one, so an older desktop keeps running MCP calls", async () => {
+    const server = { name: "local", url: "http://127.0.0.1:19501/mcp", type: "http" as const, headers: {} };
+    const caller = { botId: "kiwi", threadId: "t-1" };
+    for (const [scopes, sent] of [[{ mcpServers: true as const }, false], [{ mcpServers: true as const, mcpCaller: true as const }, true]] as const) {
+      const broker = new SharedComputers(() => true);
+      const computer = { ...registration(), ...scopes }; broker.register(computer, alice, secret);
+      const call = broker.request({ computer_id: computer.id, action: "mcp_call", server, tool_name: "search", arguments: {}, caller }, alice.person, () => true);
+      call.catch(() => {});
+      const job = await broker.poll(computer.id, alice.session, secret);
+      expect(job!.operation.caller, JSON.stringify(scopes)).toEqual(sent ? caller : undefined);
+      expect("caller" in job!.operation).toBe(sent);
+      broker.close();
+    }
+    const broker = new SharedComputers(() => true);
+    const computer = { ...registration(), mcpServers: true as const, mcpCaller: true as const }; broker.register(computer, alice, secret);
+    const list = broker.request({ computer_id: computer.id, action: "mcp_tools", server, caller }, alice.person, () => true);
+    list.catch(() => {});
+    expect("caller" in (await broker.poll(computer.id, alice.session, secret))!.operation, "only a tool call names its caller").toBe(false);
+    broker.close();
+    expect(sharedComputerOperation.safeParse({ computer_id: computer.id, action: "mcp_call", server, tool_name: "x", caller }).success, "a bot's own operation can't name a caller").toBe(false);
+  });
   it("turn cancellation rejects queued and already delivered actions", async () => {
     vi.useFakeTimers();
     const broker = new SharedComputers(() => true);
@@ -316,14 +337,14 @@ describe("owner partition (audit H1, H2)", () => {
     const computer = registration({ computer: true });
     broker.register(computer, { session: "old", person: alice.person }, secret);
     await vi.advanceTimersByTimeAsync(40_001);
-    broker.register(computer, { session: "new", person: alice.person }, other);
+    broker.register(computer, { session: "new", person: alice.person }, secret);
     expect(broker.known(alice.person)).toMatchObject([{ id: computer.id, online: true }]);
     expect(broker.status(alice.person)).toMatchObject([{ id: computer.id, online: true }]);
     const operation = { computer_id: computer.id, action: "computer_tools" as const };
     const result = broker.request(operation, alice.person, () => true);
-    const job = await broker.poll(computer.id, "new", other);
+    const job = await broker.poll(computer.id, "new", secret);
     expect(job?.operation).toEqual(operation);
-    broker.complete(computer.id, "new", other, job!.id, { ok: true });
+    broker.complete(computer.id, "new", secret, job!.id, { ok: true });
     await expect(result).resolves.toEqual({ ok: true });
     broker.close();
     rmSync(dir, { recursive: true, force: true });
@@ -335,16 +356,17 @@ describe("owner partition (audit H1, H2)", () => {
     broker.register(computer, { session: "old", person: alice.person }, secret);
     const gone = new AbortController();
     const dropped = broker.poll(computer.id, "old", secret, gone.signal);
+    const disconnected = expect(dropped).rejects.toMatchObject({ status: 403 });
     await vi.advanceTimersByTimeAsync(5_000);
-    broker.register(computer, { session: "new", person: alice.person }, other);
+    broker.register(computer, { session: "new", person: alice.person }, secret);
     await vi.advanceTimersByTimeAsync(1);
     gone.abort();
-    await expect(dropped).resolves.toBeNull();
+    await disconnected;
     const operation = { computer_id: computer.id, action: "computer_tools" as const };
     const result = broker.request(operation, alice.person, () => true);
-    const job = await broker.poll(computer.id, "new", other);
+    const job = await broker.poll(computer.id, "new", secret);
     expect(job?.operation).toEqual(operation);
-    broker.complete(computer.id, "new", other, job!.id, { ok: true });
+    broker.complete(computer.id, "new", secret, job!.id, { ok: true });
     await expect(result).resolves.toEqual({ ok: true });
     broker.close();
   });

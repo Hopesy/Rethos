@@ -42,6 +42,7 @@ export type BotUpdatePatch = Partial<
     | "speakReplies"
     | "replyStyle"
     | "voice"
+    | "liveVoice"
     | "voiceNotes"
     | "voiceNoteEveryReply"
     | "xResearch"
