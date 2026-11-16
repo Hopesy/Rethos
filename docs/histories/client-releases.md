@@ -1,5 +1,15 @@
 # 客户端发布记录
 
+### Windows 与 Android 0.1.163
+
+2026-11-16 已发布 [Rethos 0.1.163](https://github.com/Hopesy/Rethos/releases/tag/v0.1.163)，Windows、Android 和 VPS 均来自提交 `792b0a526bce7dcdac68f9cb8bacda5595559c45`。本版合入通用上游更新，支持主 Bot 创建项目 Bot、带文件分派、收回结果并维护项目记忆；单 Bot 与团队目标取消固定 13 轮上限，继续保留完成、取消、预算和人工审核条件。
+
+- [源码 CI](https://github.com/Hopesy/Rethos/actions/runs/43831656991) 29 项检查通过。[联合候选构建](https://github.com/Hopesy/Rethos/actions/runs/43831658128)通过 Windows 实际安装启动、连接电脑权限、Android 模拟器与正式签名验收。[Docker 双架构构建](https://github.com/Hopesy/Rethos/actions/runs/43831656828)通过启动、OSS、浏览器、HTTPS 配对及持久化检查。Windows 大工作区测试的夹具准备曾超时，单独复验 6 项通过，对应 CI 分片重跑通过。
+- 五个公开文件已重新下载，GitHub 摘要与 SHA256SUMS 逐项一致。Windows 内部产品与文件版本均为 0.1.163；APK 为 0.1.163 / 1163，应用 ID `cc.hopesy.rethos` 与原签名证书保留，两个 Latest 下载入口指向本版本。Windows 安装程序为 268807182 字节、SHA256 `e56993a055b39dca01e39659054fdf5ff0a1cbdfc527c85840adf122baa244cb`；APK 为 2006671 字节、SHA256 `f9e97a78cdd1389e865c74ad23c4a449b0832c36e2642b4fc47738ff3a1e3251`。
+- VPS 已固定镜像 `ghcr.io/hopesy/rethos@sha256:eabe5f65c1a86c11dcd9b662d8d73286c4c2669b2ddbd854d0183501447e8351`，容器健康，公网版本与新前端资源核对通过。升级前配置与完整数据卷备份位于 `/home/zhouhl/rethos-backups/rethos-before-clients-0.1.163-20261116-085838`。原 Token、6 个 Bot 的模型、权限、工作位置与主 Bot 能力、模型连接、2 个定时任务的计划和启用状态、7 份记忆/角色文件摘要核对一致。
+- 修复 Bot 暂停后接收新任务、部门重命名丢失暂停状态、桌面接管期间切换工作位置、隔离模式切换中的接管竞态、设置弹层焦点及手机设置链接。补齐 693 项简体中文文案并保持完整目录；移除过时的套餐并发限制，诊断与并发说明使用悬浮帮助。官方商业云、购买、套餐、试用和推广入口保持移除。
+- 隔离服务验证共享 VM 的 66 项接管情景，团队首次进入、文件迁移、默认成员权限与暂停 24 项，成员例行任务与主 Bot 分派 16 项。Ego 检查真实聊天和设置页面、自定义模型入口、私有桌面卡片与悬浮帮助，并核对 Daylight、Midnight。证据位于 `.Rethos-temp/release-0.1.163/`。
+
 ### Windows 与 Android 0.1.162
 
 2026-11-16 已发布 [Rethos 0.1.162](https://github.com/Hopesy/Rethos/releases/tag/v0.1.162)，Windows、Android 和 VPS 均来自提交 `e0f01c55a7b17e370a84951aeee1ca29f91ec7ee`。本次统一具体电脑与工作目录、Bot/会话目标和按服务器管理的接入权限，并移除商业托管账号、购买、套餐、试用、Boat 执行器及相关后台入口。
