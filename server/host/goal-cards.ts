@@ -3,7 +3,6 @@ import { fittedLine } from "../routine-lines.ts";
 // The goal run card: one receipt per run in the conversation it runs in, a room's or a one-on-one chat's.
 import type { GroupGoalRunCardData, GroupGoalRunStatus } from "../../shared/group-goal-run.ts";
 import { redactSecretsInText } from "../../shared/redact.ts";
-import { GROUP_GOAL_MAX_TURNS } from "../group-goal-run.ts";
 import { buildNotification, type Notification } from "../notify.ts";
 import type { RoutineManager, RoutineRun } from "../routines.ts";
 import type { BotRecord, Message, Store } from "../store.ts";
@@ -16,7 +15,6 @@ export interface LiveGoalRun {
   coordinatorBotId: string;
   coordinatorName: string;
   turnCount: number;
-  maxTurns: number;
   startedAt: number;
   finished: boolean;
 }
@@ -64,7 +62,6 @@ export function createGoalCards(deps: GoalCardDeps) {
         coordinatorBotId: coordinator.id,
         coordinatorName: coordinator.name,
         turnCount: 0,
-        maxTurns: GROUP_GOAL_MAX_TURNS,
         detail,
         startedAt,
       },
@@ -76,7 +73,6 @@ export function createGoalCards(deps: GoalCardDeps) {
       coordinatorBotId: coordinator.id,
       coordinatorName: coordinator.name,
       turnCount: 0,
-      maxTurns: GROUP_GOAL_MAX_TURNS,
       startedAt,
       finished: false,
     };
@@ -102,7 +98,6 @@ export function createGoalCards(deps: GoalCardDeps) {
       coordinatorBotId: run.coordinatorBotId,
       coordinatorName: redactSecretsInText(run.coordinatorName),
       turnCount: run.turnCount,
-      maxTurns: run.maxTurns,
       ...detailFields(safeDetail, text),
       startedAt: run.startedAt,
       finishedAt,
@@ -158,7 +153,6 @@ export function createGoalCards(deps: GoalCardDeps) {
         coordinatorBotId: run.coordinatorBotId,
         coordinatorName: redactSecretsInText(run.coordinatorName),
         turnCount: run.turnCount,
-        maxTurns: run.maxTurns,
         ...fields,
         startedAt: run.startedAt,
       },

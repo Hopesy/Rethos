@@ -27,6 +27,15 @@ function message(status: GroupGoalRunCardData["status"], detail?: string): Messa
 }
 
 describe("GoalRunCard", () => {
+  it("shows continuing goals beyond thirteen turns without a total ceiling", () => {
+    const current = message("working");
+    delete current.goalRun!.maxTurns;
+    current.goalRun!.turnCount = 40;
+    const markup = renderToStaticMarkup(createElement(GoalRunCard, { message: current, solo: true, onStop: () => {} }));
+    expect(markup).toContain("Sprout · Turn 40");
+    expect(markup).not.toContain(" of ");
+    expect(markup).toContain(">Stop</button>");
+  });
   it("shows live goal progress without expanding into a run log", () => {
     const markup = renderToStaticMarkup(createElement(GoalRunCard, {
       message: message("working", "Luna is reviewing the second draft."),

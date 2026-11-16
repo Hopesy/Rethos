@@ -18,7 +18,8 @@ export interface GroupGoalRunCardData {
   coordinatorBotId: string;
   coordinatorName: string;
   turnCount: number;
-  maxTurns: number;
+  /** A turn ceiling recorded by older servers; current runs omit it. */
+  maxTurns?: number;
   detail?: string;
   /** Fixed detail words, used only while they reconstruct the stored English. */
   detailCode?: string;

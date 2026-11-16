@@ -6,6 +6,7 @@ repository's fake Claude and fake Codex engines:
 
 ```sh
 pnpm exec vitest run server/team-setup.e2e.test.ts
+pnpm exec vitest run server/project-agent-workflow.e2e.test.ts
 pnpm exec vitest run server/bot-deletion-write-failure.e2e.test.ts
 pnpm exec vitest run server/team-setup-requests.test.ts server/store.test.ts
 pnpm exec vitest run server/index.test.ts -t 'delet|Full and Custom bots'
@@ -18,6 +19,16 @@ printed server log, then removes its fixture data. It uses a real active-turn
 capability to call the internal tools, not the owner bot-settings API. Model
 planning is simulated in this deterministic test; provider authentication and
 real-world task quality are not proven by fake engines.
+
+The project workflow fixture uses the workspace's actual default bot and one
+person request. Through its injected MCP tools, the bot creates Zelos,
+XDTerminal, XDTag, XDForge and XDTrace, sends their brief in two batches that
+respect the coordination tool's per-call fan-out, receives five report files,
+and writes portfolio memory after the return. Each specialist writes its own
+project memory. Assertions check the input and returned file bytes, automatic
+requester resumption, memory isolation and the completed goal card. The
+scripted provider's transcript is retained beside the server log as
+`.workflow.json`.
 
 ## Sample requests
 

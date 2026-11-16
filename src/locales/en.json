@@ -11122,5 +11122,7 @@
   "sidebar.menu.getPhoneApp": "Get the phone app",
   "sidebar.menu.weeklyUsage": "Weekly usage",
   "settings.section.usage": "Usage",
-  "sidebar.menu.support": "Help and support"
+  "sidebar.menu.support": "Help and support",
+  "routines.goal.turn": "Turn {turn}",
+  "chat.notice.goalWorkingContinuous": "{name} is working on turn {turn}."
 }

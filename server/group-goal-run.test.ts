@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   GROUP_GOAL_CONTROL_CLOSE,
   GROUP_GOAL_CONTROL_OPEN,
-  GROUP_GOAL_MAX_TURNS,
   groupGoalAssignmentKey,
   groupGoalCompletionTurnId,
   groupGoalCoordinatorInstructions,
@@ -89,9 +88,7 @@ describe("group goal runs", () => {
       .toBe(groupGoalAssignmentKey("scout-id", "verify the release"));
   });
 
-  it("reserves the final bounded turn for coordinator evaluation", () => {
-    expect(GROUP_GOAL_MAX_TURNS % 2).toBe(1);
-  });
+
 });
 
 describe("groupGoalCoordinatorInstructions harness note", () => {
@@ -99,8 +96,6 @@ describe("groupGoalCoordinatorInstructions harness note", () => {
     goal: "Ship the release notes",
     members: [{ id: "lead", name: "Lead" }, { id: "scout", name: "Scout" }],
     turn: 3,
-    maxTurns: 13,
-    remainingTurns: 10,
   };
 
   it("renders a harness note on its own line, before the ledger guidance", () => {
@@ -123,7 +118,7 @@ const settled = (replyText: string): GoalStepResult => ({ ran: true, replyText, 
 /** Drives the real loop with scripted steps; a step that runs counts one turn, as a claimed member turn does. */
 function goalRun(options: { solo?: boolean; members?: Array<{ id: string; name: string }>; steps: Array<GoalStepResult | ((call: number) => GoalStepResult)>; cancelAfter?: number }) {
   const members = options.members ?? [{ id: "solo-id", name: "Solo" }];
-  const run = { goal: "Get every test passing", turnCount: 0, maxTurns: GROUP_GOAL_MAX_TURNS, finished: false };
+  const run = { goal: "Get every test passing", turnCount: 0, finished: false };
   const calls: Array<{ bot: string; coordinator: boolean; instructions: string }> = [];
   const finished: Array<{ status: GoalRunEnd; detail: string }> = [];
   const progress: string[] = [];
@@ -140,7 +135,7 @@ function goalRun(options: { solo?: boolean; members?: Array<{ id: string; name: 
       const scripted = options.steps[Math.min(calls.length - 1, options.steps.length - 1)]!;
       const result = typeof scripted === "function" ? scripted(calls.length) : scripted;
       if (result.ran) run.turnCount += 1;
-      if (options.cancelAfter === calls.length || calls.length > 4 * GROUP_GOAL_MAX_TURNS) cancelled = true;
+      if (options.cancelAfter === calls.length || calls.length > 200) cancelled = true;
       return result;
     },
     finish: (status, detail) => {
@@ -154,6 +149,18 @@ function goalRun(options: { solo?: boolean; members?: Array<{ id: string; name: 
 }
 
 describe("one goal-run loop for a room and a one-on-one chat", () => {
+  it("continues a progressing goal beyond thirteen turns until its deliverable is complete", async () => {
+    const goal = goalRun({
+      solo: true,
+      steps: [(call) => settled(envelope(call === 41
+        ? { status: "completed", detail: "All 40 project milestones were verified." }
+        : { status: "continue", next: "Solo", instruction: `Verify project milestone ${call}`, detail: `Milestone ${call - 1} verified` }))],
+    });
+    await goal.done;
+    expect(goal.run.turnCount).toBe(41);
+    expect(goal.finished).toEqual([{ status: "completed", detail: "All 40 project milestones were verified." }]);
+  });
+
   it("in a room of one the bot works in its own turns and finishes on the done marker", async () => {
     const goal = goalRun({
       solo: true,
@@ -164,7 +171,7 @@ describe("one goal-run loop for a room and a one-on-one chat", () => {
     });
     await goal.done;
     expect(goal.calls.map((call) => [call.bot, call.coordinator])).toEqual([["solo-id", true], ["solo-id", true]]);
-    expect(goal.calls[0]!.instructions).toContain("You are working alone toward a bounded goal.");
+    expect(goal.calls[0]!.instructions).toContain("You are working toward a continuing goal in your own conversation.");
     expect(goal.calls[0]!.instructions).toContain(`"next":"solo-id"`);
     expect(goal.calls[0]!.instructions).not.toContain("Available room members");
     expect(goal.calls[1]!.instructions).toContain("Harness note: Your next step: Fix the failing parser test");
@@ -172,14 +179,17 @@ describe("one goal-run loop for a room and a one-on-one chat", () => {
     expect(goal.run.turnCount).toBe(2);
   });
 
-  it("stops a room of one at the same turn cap as a room", async () => {
+  it("keeps assigning and reviewing a team's work beyond thirteen turns", async () => {
     const goal = goalRun({
-      solo: true,
-      steps: [(call) => settled(envelope({ status: "continue", next: "Solo", instruction: `Try approach ${call}`, detail: "Still going" }))],
+      members: [{ id: "lead", name: "Lead" }, { id: "worker", name: "Worker" }],
+      steps: [(call) => settled(call === 31 ? envelope({ status: "completed", detail: "All 15 deliverables reviewed." })
+        : call % 2 ? envelope({ status: "continue", next: "Worker", instruction: `Deliver milestone ${call}`, detail: `Reviewed ${call - 1}` })
+        : `Deliverable ${call} verified.`)],
     });
     await goal.done;
-    expect(goal.calls).toHaveLength(GROUP_GOAL_MAX_TURNS);
-    expect(goal.finished).toEqual([{ status: "limit-reached", detail: expect.stringContaining(`${GROUP_GOAL_MAX_TURNS}-turn safety limit`) }]);
+    expect(goal.calls).toHaveLength(31);
+    expect(goal.finished).toEqual([{ status: "completed", detail: "All 15 deliverables reviewed." }]);
+    expect(goal.calls.every(call => !call.instructions.includes("turn(s) remain"))).toBe(true);
   });
 
   it("blocks on the spend cap without retrying the refused turn", async () => {

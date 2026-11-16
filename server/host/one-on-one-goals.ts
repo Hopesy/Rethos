@@ -105,7 +105,7 @@ export function createOneOnOneGoals(deps: OneOnOneGoalDeps) {
     // One wait cap for the whole step: the busy wait and the lost-slot retries share it, so neither restarts the clock.
     const deadline = Date.now() + GROUP_GOAL_WAIT_MAX_MS;
     for (;;) {
-      if (goal.cancelled || run.turnCount >= run.maxTurns) return { ran: false, replyText: "" };
+      if (goal.cancelled || run.finished) return { ran: false, replyText: "" };
       const free = await waitUntilFree(goal, bot, threadId, deadline - Date.now());
       if (free === "cancelled") return { ran: false, replyText: "", outcome: "cancelled" };
       if (free === "unavailable") return { ran: false, replyText: "", outcome: "unavailable", stopReason: `${bot.name} is no longer available` };
@@ -144,7 +144,7 @@ export function createOneOnOneGoals(deps: OneOnOneGoalDeps) {
           return { ran: false, replyText: "", outcome, stopReason: message };
         }
         run.turnCount += 1;
-        const working = noticeFailure("chat.notice.goalWorking", { name: bot.name, turn: String(run.turnCount), max: String(run.maxTurns) });
+        const working = noticeFailure("chat.notice.goalWorkingContinuous", { name: bot.name, turn: String(run.turnCount) });
         deps.cards.progress(threadId, run, working.message, working.text);
         const result = await settled;
         if (goal.cancelled) {
@@ -164,7 +164,6 @@ export function createOneOnOneGoals(deps: OneOnOneGoalDeps) {
     }
   }
 
-  /** Appends the person's goal line and its run card, then works until the bot reports an outcome or the turns run out. */
   function start(botId: string, threadId: string, text: string, options: OneOnOneGoalStart = {}): Message {
     const bot = store.bot(botId);
     if (!bot || !store.taskByThread(botId, threadId)) throw Object.assign(userErrorThrown("serverError.chat.missingConversation"), { status: 404 });

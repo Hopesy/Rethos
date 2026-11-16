@@ -3,8 +3,6 @@ import { noticeFailure } from "./chat-notices.ts";
 import type { GroupGoalRunStatus } from "../shared/group-goal-run.ts";
 import type { GroupDefaultResponder } from "./store.ts";
 
-// Odd so the final bounded turn always falls to the coordinator for the completion decision.
-export const GROUP_GOAL_MAX_TURNS = 13;
 export const GROUP_GOAL_WAIT_MAX_MS = Math.max(1_000, Number(process.env.OMB_GOAL_WAIT_MAX_MS) || 30 * 60_000);
 const GROUP_GOAL_MAX_WAIT_EXHAUSTIONS = 3;
 export const GROUP_GOAL_CONTROL_OPEN = "<openmaus-goal>";
@@ -197,8 +195,6 @@ export function groupGoalCoordinatorInstructions(args: {
   goal: string;
   members: GoalRunMember[];
   turn: number;
-  maxTurns: number;
-  remainingTurns: number;
   note?: string;
   solo?: boolean;
 }): string {
@@ -208,10 +204,10 @@ export function groupGoalCoordinatorInstructions(args: {
     .join(", ");
   const self = args.solo ? active[0] : undefined;
   return [
-    self ? "You are working alone toward a bounded goal." : "You are the lead coordinator for a bounded team goal run.",
+    self ? "You are working toward a continuing goal in your own conversation." : "You are the lead coordinator for a continuing team goal.",
     `Goal: ${args.goal}`,
     ...(self ? [] : [`Available room members: ${roster}.`]),
-    `This is ${self ? "" : "team "}turn ${args.turn} of ${args.maxTurns}; ${args.remainingTurns} turn(s) remain after this one.`,
+    `This is ${self ? "" : "team "}turn ${args.turn}. Continue while concrete work remains within the user's scope; there is no fixed turn limit.`,
     ...(args.note ? [`Harness note: ${args.note}`] : []),
     self
       ? "Use the conversation as the progress ledger. Do the next concrete piece of work now, then decide whether the goal is genuinely complete, needs the human, is blocked, or needs another turn."
@@ -231,13 +227,12 @@ export function groupGoalWorkerInstructions(args: {
   coordinatorName: string;
   assignment: string;
   turn: number;
-  maxTurns: number;
 }): string {
   return [
-    `You are a specialist contributing to a bounded team goal run led by ${args.coordinatorName}.`,
+    `You are a specialist contributing to a continuing team goal led by ${args.coordinatorName}.`,
     `Goal: ${args.goal}`,
     `Your assignment: ${args.assignment}`,
-    `This is team turn ${args.turn} of ${args.maxTurns}.`,
+    `This is team turn ${args.turn}.`,
     "Do the assigned work now and put concrete results, evidence, or a clear blocker in your reply.",
     `Address your result to ${args.coordinatorName}. Do not invent a new orchestration protocol or emit an openmaus-goal control envelope.`,
   ].join("\n");
@@ -270,7 +265,7 @@ export interface GoalStepResult {
 export type GoalRunEnd = Exclude<GroupGoalRunStatus, "working">;
 
 export interface GoalRunDeps<Bot extends GoalRunMember> {
-  run: { goal: string; turnCount: number; maxTurns: number; finished: boolean };
+  run: { goal: string; turnCount: number; finished: boolean };
   coordinator: Bot;
   members: readonly Bot[];
   solo?: boolean;
@@ -310,7 +305,7 @@ export async function runGoalRun<Bot extends GoalRunMember>(deps: GoalRunDeps<Bo
 
   let coordinatorNote: string | undefined;
   let waitExhaustions = 0;
-  while (!deps.cancelled() && run.turnCount < run.maxTurns) {
+  while (!deps.cancelled() && !run.finished) {
     const coordinatorTurn = run.turnCount + 1;
     const note = coordinatorNote;
     coordinatorNote = undefined;
@@ -318,8 +313,6 @@ export async function runGoalRun<Bot extends GoalRunMember>(deps: GoalRunDeps<Bo
       goal: run.goal,
       members: goalMembers,
       turn: coordinatorTurn,
-      maxTurns: run.maxTurns,
-      remainingTurns: run.maxTurns - coordinatorTurn,
       note,
       solo: deps.solo,
     }));
@@ -361,7 +354,6 @@ export async function runGoalRun<Bot extends GoalRunMember>(deps: GoalRunDeps<Bo
       deps.finish(decision.status, decision.detail);
       return;
     }
-    if (run.turnCount >= run.maxTurns) break;
 
     const worker = resolveGroupGoalMember(decision.next, goalMembers);
     if (!worker) {
@@ -391,7 +383,6 @@ export async function runGoalRun<Bot extends GoalRunMember>(deps: GoalRunDeps<Bo
       coordinatorName: coordinator.name,
       assignment: decision.instruction,
       turn: workerTurn,
-      maxTurns: run.maxTurns,
     }));
     if (deps.cancelled()) return;
     if (workerResult.outcome === "unavailable") {
@@ -421,9 +412,5 @@ export async function runGoalRun<Bot extends GoalRunMember>(deps: GoalRunDeps<Bo
       deps.finish("failed", `${workerBot.name} could not return a result to ${coordinator.name}${reason ? ` — ${reason}` : ""}.`);
       return;
     }
-  }
-
-  if (!deps.cancelled() && !run.finished) {
-    deps.finish("limit-reached", `Paused at the ${run.maxTurns}-turn safety limit. Send the goal again to continue with a fresh bounded run.`);
   }
 }

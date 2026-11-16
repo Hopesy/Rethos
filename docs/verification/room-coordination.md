@@ -1,5 +1,23 @@
 # In-chat team coordination
 
+## Continuing project goals
+
+Direct and room goals keep running until the coordinator reports completion,
+needs input or a blocker, or Stop/resource policy ends the work. They have no
+fixed turn-count ceiling. Current receipts show the running turn; historical
+receipts may still carry their original `maxTurns` and terminal status.
+Repeated assignments, bounded provider retries, spend caps and busy-computer
+wait checks continue to apply. Cancelled work stays stopped.
+
+`server/group-goal-run.test.ts` checks 41 direct steps and 31 team steps.
+`server/group-goal-run-one-on-one.e2e.test.ts` and
+`server/group-goal-run.e2e.test.ts` each complete a 19-turn goal through real
+isolated servers. Stop, busy waits and failed providers are covered alongside
+those paths. `src/components/GoalRunCard.test.ts` covers continuous progress
+and old receipts.
+
+## Handoffs
+
 Independent bot conversations now dispatch as soon as a handoff is accepted;
 speakers in the same group chat still serialize (and say so; with parallel room jobs on, several room jobs run side by side, see below). A Chief waiting for returned
 results exposes `waitingForTeammates: true`, not a fake active `busy` turn.

@@ -10205,7 +10205,7 @@ async function runGroupGoalStep(args: {
   instructions: string;
 }): Promise<{ ran: boolean; replyText: string; outcome?: GroupMemberTurnOutcome; stopReason?: string | null }> {
   const run = args.operation.goalRun;
-  if (!run || args.operation.cancelled || run.turnCount >= run.maxTurns) {
+  if (!run || args.operation.cancelled || run.finished) {
     return { ran: false, replyText: "" };
   }
   for (;;) {
@@ -10225,7 +10225,7 @@ async function runGroupGoalStep(args: {
         stopReason: `${args.bot.name} stayed busy in another conversation for ${minutes} minute${minutes === 1 ? "" : "s"}`,
       };
     }
-    if (run.turnCount >= run.maxTurns) return { ran: false, replyText: "" };
+    if (args.operation.cancelled || run.finished) return { ran: false, replyText: "" };
 
     const result: GroupTurnOrchestration["result"] = {};
     let claimed = false;
@@ -10255,7 +10255,7 @@ async function runGroupGoalStep(args: {
             args.operation.botIds.add(args.bot.id);
             updateGroupGoalRunProgress(
               args.operation,
-              `${args.bot.name} is working on team turn ${run.turnCount} of ${run.maxTurns}.`,
+              `${args.bot.name} is working on team turn ${run.turnCount}.`,
             );
           },
           onTurnStarted: (turnId) => {

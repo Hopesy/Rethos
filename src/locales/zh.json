@@ -10438,5 +10438,7 @@
   "sidebar.menu.getPhoneApp": "获取手机应用",
   "sidebar.menu.weeklyUsage": "每周用量",
   "settings.section.usage": "用量",
-  "sidebar.menu.support": "帮助与支持"
+  "sidebar.menu.support": "帮助与支持",
+  "routines.goal.turn": "第 {turn} 轮",
+  "chat.notice.goalWorkingContinuous": "{name} 正在进行第 {turn} 轮。"
 }

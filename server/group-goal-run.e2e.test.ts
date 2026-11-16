@@ -34,8 +34,8 @@ const completeReplies = [
   "The verified draft is ready to ship.\n<openmaus-goal>{\"status\":\"completed\",\"detail\":\"Draft produced and independently verified.\"}</openmaus-goal>",
 ];
 
-const loopReplies = Array.from({ length: 13 }, (_, index) =>
-  index % 2 === 0
+const loopReplies = Array.from({ length: 19 }, (_, index) =>
+  index === 18 ? 'All nine milestones reviewed.\n<openmaus-goal>{"status":"completed","detail":"Long team project verified."}</openmaus-goal>' : index % 2 === 0
     ? `More work is needed.\n<openmaus-goal>{"status":"continue","next":"Looper","instruction":"Try approach ${index / 2 + 1}","detail":"Still working"}</openmaus-goal>`
     : `Approach ${Math.ceil(index / 2)} did not finish the task.`,
 );
@@ -987,19 +987,19 @@ describe("goal-driven channel runs", () => {
     }
   });
 
-  it("pauses a non-converging team at the hard turn limit", async () => {
+  it("continues a team project beyond thirteen turns until it completes", async () => {
     const looper = (await api("POST", "/api/bots", {
       name: "Looper",
       modelSelection: { instanceId: "loop", model: "claude-sonnet-5" },
       requireAvailableModel: true,
     })).body.bot;
     const room = (await api("POST", "/api/groups", {
-      name: "Bounded team",
+      name: "Continuing team",
       memberIds: [looper.id],
       setup: { bulletin: "", defaultResponder: { kind: "member", botId: looper.id } },
     })).body.group;
     const started = await api("POST", `/api/groups/${room.id}/messages`, {
-      text: "Keep trying forever",
+      text: "Verify all project milestones",
       mode: "goal",
     });
     expect(started.status).toBe(202);
@@ -1017,7 +1017,8 @@ describe("goal-driven channel runs", () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
       run = await goalRun();
     }
-    expect(run).toMatchObject({ status: "limit-reached", turnCount: 13, maxTurns: 13 });
+    expect(run).toMatchObject({ status: "completed", turnCount: 19, detail: "Long team project verified." });
+    expect(run).not.toHaveProperty("maxTurns");
   });
 
   it("never treats a failed provider turn as a completed goal", async () => {

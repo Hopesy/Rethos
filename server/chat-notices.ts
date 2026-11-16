@@ -46,6 +46,7 @@ export const CHAT_NOTICE = {
   "chat.notice.goalBusyOneAgain": "{name} stayed busy for {minutes} minute — send the goal again when they are free.",
   "chat.notice.goalBusyManyAgain": "{name} stayed busy for {minutes} minutes — send the goal again when they are free.",
   "chat.notice.goalWorking": "{name} is working on turn {turn} of {max}.",
+  "chat.notice.goalWorkingContinuous": "{name} is working on turn {turn}.",
   "chat.notice.goalEnded": "The goal run ended before the bot reported an outcome.",
   "chat.notice.teammateWorking": "Stopped here — {name} is still working; open to stop it too",
   "chat.notice.unknownTeammateWorking": "Stopped here — A teammate is still working; open to stop it too",

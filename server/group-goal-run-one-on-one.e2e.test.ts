@@ -81,8 +81,9 @@ beforeAll(async () => {
       }),
       loop: fixture("loop", {
         FAKE_CLAUDE_MODE: "happy",
-        FAKE_CLAUDE_REPLIES: JSON.stringify(Array.from({ length: 14 }, (_, index) =>
-          `Not there yet.\n${envelope({ status: "continue", next: "Looper", instruction: `Try approach ${index + 1}`, detail: "Still working" })}`)),
+        FAKE_CLAUDE_REPLIES: JSON.stringify(Array.from({ length: 19 }, (_, index) => index === 18
+          ? `All milestones verified.\n${envelope({ status: "completed", detail: "Long project verified." })}`
+          : `Not there yet.\n${envelope({ status: "continue", next: "Looper", instruction: `Try approach ${index + 1}`, detail: "Still working" })}`)),
       }),
       slow: fixture("slow", {
         FAKE_CLAUDE_MODE: "slow",
@@ -147,14 +148,13 @@ describe("one-on-one goal runs (a room of one)", () => {
       status: "completed",
       coordinatorBotId: bot.id,
       turnCount: 2,
-      maxTurns: 13,
       detail: "All tests pass.",
     });
     await expect.poll(() => busy(bot.id)).toBe(false);
 
     const sentPrompts = prompts("done");
     expect(sentPrompts).toHaveLength(2);
-    expect(sentPrompts[0]).toContain("You are working alone toward a bounded goal.");
+    expect(sentPrompts[0]).toContain("You are working toward a continuing goal in your own conversation.");
     expect(sentPrompts[0]).toContain("Get every test passing");
     expect(sentPrompts[1]).toContain("Your next step: Fix the last failing test");
 
@@ -218,12 +218,13 @@ describe("one-on-one goal runs (a room of one)", () => {
     expect((await messagesIn(bot.threadId)).filter((message) => message.kind === "goal.run")).toHaveLength(1);
   });
 
-  it("stops at the same turn cap as a room goal", async () => {
+  it("continues a long project past thirteen turns and finishes on its own", async () => {
     const bot = await newBot("Looper", "loop");
-    expect((await sendGoal(bot, "Keep trying forever")).status).toBe(202);
+    expect((await sendGoal(bot, "Complete every project milestone")).status).toBe(202);
     await expect.poll(() => cardIn(bot.threadId), { timeout: hostTimeout(30_000) })
-      .toMatchObject({ status: "limit-reached", turnCount: 13, maxTurns: 13 });
-    expect(prompts("loop")).toHaveLength(13);
+      .toMatchObject({ status: "completed", turnCount: 19, detail: "Long project verified." });
+    expect(prompts("loop")).toHaveLength(19);
+    expect(await cardIn(bot.threadId)).not.toHaveProperty("maxTurns");
   });
 
   it("never treats a failed turn as done: it is retried once, then the goal fails", async () => {
