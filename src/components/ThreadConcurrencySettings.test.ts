@@ -19,13 +19,13 @@ describe("ThreadConcurrencySettings", () => {
     expect(markup).toContain('aria-label="Help for Parallel threads"');
     expect(markup).toContain("Maximum running threads per bot");
   });
-  it("shows Starter's one thread per bot as a plan limit it cannot raise", () => {
+  it("keeps concurrency editable when an old server sends a retired plan flag", () => {
     fixture.limit = 1; fixture.cloudStarter = true;
     const markup = renderToStaticMarkup(createElement(ThreadConcurrencySettings));
     fixture.cloudStarter = undefined;
     expect(markup).toContain('value="1" selected=""');
-    expect(markup).toContain("disabled");
-    expect(markup).toContain("Your plan runs one thread at a time per bot.");
+    expect(markup).not.toContain('disabled=""');
+    expect(markup.match(/<option /g)).toHaveLength(16);
   });
   it("shows the confirmed server value", () => {
     fixture.limit = 10;

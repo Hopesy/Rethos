@@ -198,15 +198,15 @@ describe("Computer panel tabs", () => {
     }
   });
 
-  it("shows Screen, Browser, Data and Files in Simple mode", () => {
+  it("shows Screen, Phone, Browser, Data and Files in Simple mode", () => {
     fixture.android = true;
-    expect(tabs(render(makeBot()))).toEqual(["Screen", "Browser", "Data", "Files"]);
+    expect(tabs(render(makeBot()))).toEqual(["Screen", "Phone", "Browser", "Data", "Files"]);
   });
 
   it("keeps the Advanced tabs unchanged", () => {
     fixture.advanced = true;
     fixture.android = true;
-    expect(tabs(render(makeBot()))).toEqual(["Screen", "Routines", "Android", "Browser", "Data"]);
+    expect(tabs(render(makeBot()))).toEqual(["Screen", "Routines", "Phone", "Browser", "Data"]);
     fixture.config = {};
     fixture.android = false;
     expect(tabs(render(makeBot()))).toEqual(["Screen", "Routines", "Browser", "Data"]);
@@ -363,7 +363,8 @@ describe("Technical controls", () => {
     const simple = render(cloud());
     const row = simple.nodes.find((node) => node.props["data-testid"] === "computer-actions")!;
     expect(nodes(row.props.children).filter((node) => node.type === "button").map((node) => text(node.props.children)))
-      .toEqual(["Take control", "Full screen", "Sleep"]);
+      .toEqual(["Take control", "Sleep"]);
+    expect(simple.html).toContain("Full screen");
 
     fixture.advanced = true;
     fixture.values = [];
@@ -388,7 +389,8 @@ describe("Technical controls", () => {
     expect(simple.html).not.toContain("Delete this bot");
     const row = simple.nodes.find((node) => node.props["data-testid"] === "computer-actions")!;
     expect(nodes(row.props.children).filter((node) => node.type === "button").map((node) => text(node.props.children)))
-      .toEqual(["Take control", "Full screen"]);
+      .toEqual(["Take control"]);
+    expect(simple.html).toContain("Full screen");
 
     fixture.advanced = true;
     fixture.values = [];
@@ -398,14 +400,13 @@ describe("Technical controls", () => {
     expect(advanced.buttons.some((node) => node.props.title === "Delete Scout's VM" || /Delete/.test(text(node.props.children)))).toBe(true);
   });
 
-  it("turns VPS setup into one friendly line and an Advanced switch", () => {
+  it("offers starting a stopped VPS desktop in both modes", () => {
     fixture.seed = { phase: "vps-stopped", resolved: { botId: "scout", threadId: "thread-scout", computer: "cloud", cloudBackend: "vps" } };
     const vps = () => makeBot({ computer: "cloud", cloudBackend: "vps" });
     const simple = render(vps());
     expect(simple.html).toContain("Scout&#x27;s desktop needs a setup step first.");
-    expect(simple.buttons.some((node) => /VPS/.test(text(node.props.children)))).toBe(false);
-    (simple.button("Show advanced controls")!.props.onClick as () => void)();
-    expect(fixture.setAdvancedMode).toHaveBeenCalledWith(true);
+    expect(simple.button("Start the desktop on your VPS")).toBeDefined();
+    expect(simple.button("Show advanced controls")).toBeUndefined();
 
     fixture.advanced = true;
     fixture.values = [];

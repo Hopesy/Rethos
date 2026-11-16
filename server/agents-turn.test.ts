@@ -94,7 +94,7 @@ describe("one conversation's agents tools", () => {
     }
     const names = (wire: string) => (JSON.parse(wire) as { tools: Array<{ name: string }> }).tools.map((tool) => tool.name);
     const kept = names(turns[0]!.wire), everything = names((await everyTurn({ ...off, bot: CHAT.bot }))[0]!.wire);
-    for (const tool of ["join_meeting", "show_html", "publish_page"]) {
+    for (const tool of ["join_meeting", "show_html"]) {
       expect(everything).toContain(tool);
       expect(kept).not.toContain(tool);
     }

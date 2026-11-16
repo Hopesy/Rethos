@@ -24,7 +24,6 @@ export function liveCallKey(cfg: LiveConfig, env: NodeJS.ProcessEnv = process.en
     return gemini ? { key: gemini, source: "gemini" } : null;
   }
   if (cfg.live?.provider === "elevenlabs") {
-    // Only the person's own key: Cloud's included voice token, even handed back as `tts.key`, goes only to its relay.
     const elevenlabs = voiceCredential(cfg.tts?.key?.trim() || undefined, env);
     return elevenlabs && !elevenlabs.included ? { key: elevenlabs.token, source: "elevenlabs" } : null;
   }

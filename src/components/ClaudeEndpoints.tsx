@@ -145,14 +145,14 @@ function EndpointRow({ instance, onEdit }: { instance: InstanceInfo; onEdit: () 
   );
 }
 
-function AgentEndpoints({ engine }: { engine: Engine }) {
+function AgentEndpoints({ engine, savedOnly = false }: { engine: Engine; savedOnly?: boolean }) {
   const { state } = useStore();
   const endpoints = state.instances.filter((instance) => engine === "claude" ? instance.claudeEndpoint : instance.codexEndpoint);
   const [open, setOpen] = useState<string | null>(null);
-  if (!endpoints.length) return null;
+  if (savedOnly && !endpoints.length) return null;
   return (
     <div data-claude-endpoints={engine === "claude" ? "" : undefined} data-codex-endpoints={engine === "codex" ? "" : undefined} className="mt-3 space-y-2">
-      <div className="text-[13px] leading-[18px] text-ink">{t(engine === "claude" ? "claudeEndpoints.title" : "agentEndpoints.codexTitle")}</div>
+      <div className="text-[13px] leading-[18px] text-ink">{t(savedOnly ? "customModels.savedClaude" : engine === "claude" ? "claudeEndpoints.title" : "agentEndpoints.codexTitle")}</div>
       <p className="text-[12px] leading-4 text-ink-secondary">{t(engine === "claude" ? "claudeEndpoints.hint" : "agentEndpoints.codexHint")}</p>
       {endpoints.length === 0
         ? <p className="text-[12px] leading-4 text-ink-secondary">{t("claudeEndpoints.empty")}</p>
@@ -161,15 +161,15 @@ function AgentEndpoints({ engine }: { engine: Engine }) {
             ? <li key={instance.instanceId} className="p-3"><EndpointForm engine={engine} instance={instance} onDone={() => setOpen(null)} /></li>
             : <EndpointRow key={instance.instanceId} instance={instance} onEdit={() => setOpen(instance.instanceId)} />)}
         </ul>}
-      {open === "new"
+      {!savedOnly && (open === "new"
         ? <EndpointForm engine={engine} onDone={() => setOpen(null)} />
         : <button type="button" onClick={() => setOpen("new")} className="flex min-h-8 w-fit items-center gap-1.5 rounded-lg px-2 py-1.5 text-[13px] font-medium text-ink-secondary outline-none hover:bg-control hover:text-ink focus-visible:ring-2 focus-visible:ring-accent">
           <Plus size={14} />{t("claudeEndpoints.add")}
-        </button>}
+        </button>)}
     </div>
   );
 }
 export function ClaudeEndpoints() { return <AgentEndpoints engine="claude" />; }
 export function CodexEndpoints() { return <AgentEndpoints engine="codex" />; }
 
-export function SavedClaudeConnections() { return <AgentEndpoints engine="claude" />; }
+export function SavedClaudeConnections() { return <AgentEndpoints engine="claude" savedOnly />; }

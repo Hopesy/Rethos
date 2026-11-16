@@ -40,16 +40,15 @@ const buttons = (container: HTMLElement) => [...container.querySelectorAll("butt
 afterEach(() => { vi.clearAllMocks(); delete (window as { ogb?: unknown }).ogb; });
 
 describe("a published page's card", () => {
-  it("warns when an upload is uncertain and still lets the person unpublish it", async () => {
+  it("warns when an upload is uncertain and directs the person to its host", async () => {
     const { container, root } = render(page({ ...live.publishedPage!, uncertain: true }));
     try {
-      expect(container.textContent).toContain("This page may be live. Unpublish it to remove it.");
-      buttons(container).find((button) => button.textContent === "Unpublish")!.click();
-      await vi.waitFor(() => expect(api).toHaveBeenCalledWith("/api/published-pages/abcdefghijklmnopqrstuvwxyz/unpublish", { method: "POST", body: "{}" }));
+      expect(container.textContent).toContain("This page may be live. Check its status with the hosting provider.");
+      expect(buttons(container).map(button => button.textContent)).toEqual(["Copy link", "Open"]);
     } finally { root.unmount(); }
   });
 
-  it("shows the title, the link and the usage; on the web Open and the link open a new tab; and it unpublishes the page", async () => {
+  it("shows the title, the link and the usage; on the web Open and the link open a new tab", async () => {
     const { container, root, panel } = render(live);
     try {
       expect(container.textContent).toContain("Bake sale");

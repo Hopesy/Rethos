@@ -7,7 +7,7 @@ const release = (tag: string) =>
   ({ ok: true, status: 200, json: async () => ({ tag_name: tag, html_url: `https://github.com/Hopesy/Rethos/releases/tag/${tag}` }) }) as Response;
 
 const promoted = (version: string) =>
-  ({ ok: true, status: 200, json: async () => ({ channel: "stable", version, image: `ghcr.io/milind-soni/openmausbot@sha256:${"a".repeat(64)}`, releaseUrl: `https://github.com/milind-soni/OpenMausBot/releases/tag/v${version}` }) }) as Response;
+  ({ ok: true, status: 200, json: async () => ({ channel: "stable", version, image: `ghcr.io/hopesy/rethos@sha256:${"a".repeat(64)}`, releaseUrl: `https://github.com/Hopesy/Rethos/releases/tag/v${version}` }) }) as Response;
 const missing = { ok: false, status: 404, json: async () => ({}) } as Response;
 /** GitHub's newest release is `newest`; the stable channel names `stable`, or does not exist yet. */
 const github = (newest: string, stable: string | null) => vi.fn(async (url: string | URL | Request) =>
@@ -60,7 +60,7 @@ describe("server update check", () => {
     });
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(fetch).toHaveBeenCalledWith(STABLE_CHANNEL_URL, expect.anything());
-    expect(await createUpdateChecker({ current: "0.1.92", install: "npm", fetch })()).toMatchObject({ latest: "0.1.93", command: "npm install -g openmausbot@0.1.93", restart: true });
+    expect(await createUpdateChecker({ current: "0.1.92", install: "npm", fetch })()).toMatchObject({ latest: "0.1.93", command: "npm install -g rethos@0.1.93", restart: true });
   });
 
   it("offers nothing to a server that is already on the stable version or past it", async () => {
@@ -71,15 +71,15 @@ describe("server update check", () => {
   it("goes by the newest release until a first version has been promoted, or when the owner asked for every release", async () => {
     const unpromoted = github("v0.1.93", null);
     expect(await createUpdateChecker({ current: "0.1.92", install: "docker", fetch: unpromoted })()).toMatchObject({
-      channel: "newest", latest: "0.1.93", available: true, command: "git pull && ./update.sh --version 0.1.93",
+      channel: "newest", latest: "0.1.93", available: true, command: "docker compose pull && docker compose up -d --no-build --force-recreate",
     });
     expect(unpromoted).toHaveBeenLastCalledWith(LATEST_RELEASE_URL, expect.anything());
     const fetch = github("v0.1.95", "0.1.93");
     expect(await createUpdateChecker({ current: "0.1.92", install: "docker", channel: "newest", fetch })()).toMatchObject({ channel: "newest", latest: "0.1.95" });
     expect(fetch).toHaveBeenCalledTimes(1);
-    expect(updateChannel({})).toBe("stable");
+    expect(updateChannel({})).toBe("newest");
     expect(updateChannel({ OMB_UPDATE_CHANNEL: " Newest " })).toBe("newest");
-    expect(updateChannel({ OMB_UPDATE_CHANNEL: "latest" })).toBe("stable");
+    expect(updateChannel({ OMB_UPDATE_CHANNEL: "latest" })).toBe("newest");
   });
 
   it("does not take a broken channel record for a version, or fall back past it", async () => {
@@ -110,7 +110,7 @@ describe("server update check", () => {
     let now = 0;
     const fetch = github("v0.1.92", "0.1.92");
     const check = createUpdateChecker({ current: "0.1.92", install: "npm", fetch, now: () => now });
-    expect(await check()).toMatchObject({ available: false, latest: "0.1.92", command: "npm install -g openmausbot@0.1.92", restart: true });
+    expect(await check()).toMatchObject({ available: false, latest: "0.1.92", command: "npm install -g rethos@0.1.92", restart: true });
     now = 59 * 60_000;
     await check();
     expect(fetch).toHaveBeenCalledTimes(1);

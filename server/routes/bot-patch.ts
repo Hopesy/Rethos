@@ -74,6 +74,7 @@ export interface BotPatchRouteDeps {
   revokeInternalCapabilitiesForThread(threadId: string): void;
   runningTurnInstance(bot: BotRecord | null | undefined, threadId: string): ReturnType<ProviderRegistry["get"]>;
   closeOpenApprovals(threadId: string): void;
+  computerChangeRefusal(before: BotRecord, after: BotRecord): string | null;
   forgetTemporaryBrowser(botId: string): Promise<void>;
   /** What this session may do with the bot: off a Team Cloud a member chats with every bot they see. */
   levelOf(auth: RequestAuth, botId: string): "none" | "view" | "chat" | "edit";
@@ -692,6 +693,8 @@ export function createBotPatchRoutes(deps: BotPatchRouteDeps): RouteHandler {
           (freshBrowserBot.busy || browserRuntime.heldBy(currentBrowserSession(freshBrowserBot.id, freshBrowserBot.browserProfile)))) {
         return json(res, 409, { error: "Stop the bot and release browser control before changing its profile." });
       }
+      const computerRefusal = freshBrowserBot && deps.computerChangeRefusal(freshBrowserBot, { ...freshBrowserBot, ...patch } as BotRecord);
+      if (computerRefusal) return json(res, 409, { error: computerRefusal });
       if (profile.patch.soul !== undefined) {
       // Runtime fields keep their fail-closed order; only the profile fields commit atomically.
         const runtimePatch = { ...patch };

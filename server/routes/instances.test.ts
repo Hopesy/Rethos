@@ -258,7 +258,7 @@ describe("an added server's model IDs", () => {
     });
     const body = await (await fetch(`${base}/api/instances`)).json() as { instances: Array<Record<string, unknown>> };
     expect(body.instances).toEqual([
-      { instanceId: "openai-compat-1", driverKind: "openai-compat", url: "https://api.example.com/v1", managedModels: ["glm-4.6", "glm-5"] },
+      { instanceId: "openai-compat-1", driverKind: "openai-compat", url: "https://api.example.com/v1", managedModels: ["glm-4.6", "glm-5"], openaiEndpoint: { defaultModel: "glm-4.6", keySaved: true, models: ["glm-4.6", "glm-5"], protocol: "chat" } },
       { instanceId: "a", driverKind: "fake" },
     ]);
   });

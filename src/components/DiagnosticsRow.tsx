@@ -39,11 +39,10 @@ export function DiagnosticsRow(_props: { simple?: boolean }) {
     }
   };
 
-  // My Cloud's page in the app, or a browser: this computer's logs are not reachable from here.
   const here = Boolean(window.ogb?.exportDiagnostics);
   return (
     <SettingRow
-      title={t("settings.app.diagnostics")}
+      title={t("settings.app.diagnostics")} help={t("settings.diagnostics.subtitle")}
       subtitle={<>{t("settings.simple.diagnostics")}
         {here && window.ogb?.openLogsFolder && <>{" "}<LearnMore label={t("settings.diagnostics.openLogs")} onClick={() => void openLogs()} /></>}</>}
       message={folder || result || !here ? <>
@@ -51,7 +50,7 @@ export function DiagnosticsRow(_props: { simple?: boolean }) {
         {result && <p role={result.kind === "error" ? "alert" : "status"} className={cn("break-all", result.kind === "error" ? "text-danger" : "text-success")}>
           {result.message}
         </p>}
-        {!here && <p data-logs-help className="text-ink-secondary">{t("settings.diagnostics.elsewhere")}</p>}
+        {!here && <p data-logs-help className="text-ink-secondary">{t("settings.diagnostics.openOnHost")}</p>}
       </> : undefined}
     >
       {here && (

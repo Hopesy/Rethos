@@ -1,5 +1,7 @@
+// @vitest-environment happy-dom
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+vi.mock("react-dom", async original => ({ ...await original<typeof import("react-dom")>(), createPortal: (children: unknown) => children }));
 import { describe, expect, it, vi } from "vitest";
 
 import {

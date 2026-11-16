@@ -349,14 +349,14 @@ describe("container images", () => {
       const { services, volumes } = parse(readFileSync(new URL(file, import.meta.url), "utf8"));
       expect(services.caddy.network_mode, file).toBeUndefined();
       // `OMB_PHONE_RELAY=1` in .env reaches the server, never Caddy.
-      expect(Object.keys(services.omb.environment), file).toContain("OMB_PHONE_RELAY");
+      expect(Object.keys(services.rethos.environment), file).toContain("OMB_PHONE_RELAY");
       expect(Object.keys(services.caddy.environment ?? {}), file).not.toContain("OMB_PHONE_RELAY");
-      expect(services.omb.ports, file).toBeUndefined();
+      expect(services.rethos.ports, file).toBeUndefined();
       expect(services.caddy.ports.length, file).toBeGreaterThan(0);
-      expect(services.omb.volumes, file).toContain("edge:/run/openmausbot");
+      expect(services.rethos.volumes, file).toContain("edge:/run/openmausbot");
       expect(services.caddy.volumes, file).toContain("edge:/run/openmausbot");
       expect(volumes.edge.driver_opts.type, file).toBe("tmpfs");
-      const { OMB_TUNNEL_SOCKET: api, OMB_WEBHOOK_SOCKET: hooks } = services.omb.environment;
+      const { OMB_TUNNEL_SOCKET: api, OMB_WEBHOOK_SOCKET: hooks } = services.rethos.environment;
       expect([api, hooks], file).toEqual(["/run/openmausbot/http.sock", "/run/openmausbot/hooks.sock"]);
       // The local Caddyfile proxies the API twice: once for the trusted TLS terminator, once for everyone else.
       const proxied = [...new Set([...readFileSync(new URL(caddyfile, import.meta.url), "utf8").matchAll(/reverse_proxy (\S+)/g)].map((m) => m[1]))];

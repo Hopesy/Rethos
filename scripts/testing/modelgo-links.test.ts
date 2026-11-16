@@ -1,4 +1,3 @@
-// The sponsor counts its clicks by one tracked address, so nothing clickable in the app may reach its site any other way.
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
@@ -16,8 +15,8 @@ const files = (...paths: string[]) => execFileSync("git", ["ls-files", "--cached
 const mentions = (file: string) => lines(file).filter((line) => !isComment(line)).flatMap((line) => line.match(MENTION) ?? []);
 
 describe("links to ModelGo's site", () => {
-  it("is the exact address the sponsor asked for", () => {
-    expect(MODELGO_URL).toBe("https://modelgo.ai/?utm_source=openmausbot&utm_medium=sponsorship&utm_content=app&campaign_id=openmausbot&ad_group_id=app");
+  it("uses the ordinary site address without sponsorship parameters", () => {
+    expect(MODELGO_URL).toBe("https://modelgo.ai/");
   });
 
   it("is the only ModelGo address anywhere in src/, shared/ and the phone protocol", () => {

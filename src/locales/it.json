@@ -140,7 +140,7 @@
   "server.connect.secretHandoff": "Fornisci {label} in modo sicuro da Rethos sul telefono o sul computer. Non viene mai aggiunto alla chat.",
   "server.connect.secretFile": "I comandi di {bot} possono leggerlo da un file privato per 24 ore; non viene mai aggiunto alla chat.",
   "server.connect.secretRef": "{bot} riceve un riferimento monouso per gli strumenti di Rethos e non lo vede mai.",
-  "server.connect.secretSavedAsRef": "{label} è già salvato, ma solo per gli strumenti di OpenMausBot. {bot} ne ha bisogno come file per i suoi comandi, quindi inseriscilo di nuovo qui.",
+  "server.connect.secretSavedAsRef": "{label} è già salvato, ma solo per gli strumenti di Rethos. {bot} ne ha bisogno come file per i suoi comandi, quindi inseriscilo di nuovo qui.",
   "server.connect.secretNeverRead": "{bot} può usarlo, ma non può mai rileggerlo.",
   "server.connect.emailOutgoingLabel": "Server in uscita di {address}",
   "server.connect.emailOutgoingNote": "Indica da dove invia la posta. {bot} non vede mai la password.",
@@ -3805,7 +3805,7 @@
   "phone.success.done": "Fatto",
   "phone.code.expired": "Quel codice è scaduto",
   "phone.code.title": "Scansiona o inserisci il codice",
-  "phone.code.installAndScan": "Installa {app} sul telefono dall'App Store o da Google Play, poi scansiona questo codice nell'app.",
+  "phone.code.installAndScan": "Installa {app} sul telefono, poi scansiona questo codice nell’app.",
   "phone.code.notCamera": "Scansionalo dall'app {app}, non con la fotocamera.",
   "phone.code.expiredDetail": "Crea un codice nuovo quando l'altro dispositivo è pronto.",
   "phone.code.qrAria": "Codice QR di abbinamento del dispositivo",
@@ -7157,5 +7157,7 @@
   "settings.universalPins.summary": "Mantieni i bot fissati in cima alla barra laterale.",
   "settings.analytics.summary": "Condividi statistiche di utilizzo anonime.",
   "settings.talk.summary": "Tieni premuto {key} per parlare, poi rilascia per inviare.",
-  "sidebar.menu.weeklyUsage": "Utilizzo settimanale"
+  "sidebar.menu.weeklyUsage": "Utilizzo settimanale",
+  "settings.diagnostics.openOnHost": "Apri le impostazioni nell’app desktop sul computer host per esportare i log.",
+  "chat.page.uncertain": "Questa pagina potrebbe essere online. Controlla lo stato presso il fornitore di hosting."
 }

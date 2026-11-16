@@ -122,9 +122,9 @@ Midnight and Daylight at 1280×860, 1024×760 and 390×844, the bring and engine
 steps in the other seven skins, and
 the setup card in short beside Routines. Steps finished there are written to
 the fixture's onboarding record; the record can be cleared with
-`PUT /api/config` (`{"onboarding":{"hintsSeen":[]}}`). The real move and the
-desktop's preload bridge are not exercised here; they are covered by
-`server/one-home.e2e.test.ts` and
+`PUT /api/config` (`{"onboarding":{"hintsSeen":[]}}`). This renderer fixture
+checks onboarding state. Self-hosted server moves have their own
+[isolated verification recipe](own-home.md).
 
 ## Bring what you already use (Oct 16 2026)
 

@@ -55,7 +55,7 @@ function fixture() {
     wireBot: (record: BotRecord) => record as unknown as WireBot,
     broadcast: () => {},
     audienceChanged: () => {},
-    assertTeamComputerChangeIdle: () => {},
+    computerChangeRefusal: () => null,
     routines: () => null,
     // A member's session may chat with this bot: the level that still can't move it or change what it may do.
     levelOf: () => "chat",

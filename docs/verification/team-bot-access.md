@@ -128,8 +128,8 @@ me, and `/?connect=bots` opens Bot access for an admin and nothing for a User.
 A User makes a bot of their own too. The first test makes one as a User against the real routes: it is private and
 theirs, each setting an admin alone makes is refused by name at creation and on edit, the admin's saved New bot
 defaults stay out of it, another User gets 404, they share it, and they delete it only while nobody else can use it.
-In the app run the maker is a User. Moving a bot in from My Cloud is driven through its routes in the
-first test and through the real move in `server/team-move.e2e.test.ts`.
+In the app run the maker is a User. Importing a bot into the shared workspace is
+driven through its authenticated routes in the first test.
 
 ## Not proven here
 

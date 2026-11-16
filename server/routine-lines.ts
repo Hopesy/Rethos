@@ -35,7 +35,7 @@ export const ROUTINE_LINE = {
   "routines.server.missedOne": "Missed because {why}",
   "routines.server.missedMany": "Missed {count} scheduled runs because {why}",
   "routines.server.missedTooLate": "Missed because {why} until more than {hours} hours after its time",
-  "routines.server.part.computerOff": "this computer was asleep or OpenMausBot was not running",
+  "routines.server.part.computerOff": "this computer was asleep or Rethos was not running",
   "routines.server.part.cloudDown": "this Cloud was asleep or restarting",
   "routines.server.part.heldUp": "the scheduler was held up starting another run",
   "routines.server.restored": "Not run again: this schedule was restored from a backup made before this run had its turn",

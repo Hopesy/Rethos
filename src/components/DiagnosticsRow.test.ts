@@ -46,12 +46,12 @@ it("when the folder cannot be opened, says where it is instead", async () => {
   expect(host.querySelector("[role=alert]")!.textContent).toBe(`Could not open the logs folder. It is ${FOLDER}.`);
 });
 
-it("on My Cloud's page (no desktop bridge) offers no buttons that do nothing, and says where logs are kept", async () => {
+it("on a server page without the desktop bridge offers no buttons that do nothing, and says where logs are kept", async () => {
   (window as { ogb?: unknown }).ogb = { platform: "win32" };
   await render();
   expect(button("Export Diagnostics…")).toBeUndefined();
   expect(button("Open logs folder")).toBeUndefined();
   expect(host.querySelector("[data-logs-help]")!.textContent).toBe("Open settings on the host desktop to export logs.");
-  await act(async () => host.querySelector<HTMLButtonElement>('[aria-label="Help for Diagnostics"]')!.click());
-  expect(document.querySelector("[role=tooltip]")!.textContent).toContain("MausBot Cloud support can read the Cloud's.");
+  await act(async () => host.querySelector<HTMLButtonElement>('[aria-label="Help for Logs and diagnostics"]')!.click());
+  expect(document.querySelector("[role=tooltip]")!.textContent).toContain("Review the file before sharing it.");
 });

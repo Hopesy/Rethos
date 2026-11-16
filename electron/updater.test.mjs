@@ -33,14 +33,14 @@ function mainRule() {
   const start = source.indexOf("const updaterPageAllowed ="), end = source.indexOf("\n\n", start);
   const window = { isDestroyed: () => false, webContents: null };
   const listeners = new Map();
-  const context = vm.createContext({ mainWindow: window, workspaceSenderAllowed: environments.workspaceSenderAllowed,
+  const context = vm.createContext({ mainWindow: window, senderIsLocal: localOriginModule.isLocalSender, activeEnvironment: environments.activeEnvironment, workspaceSenderAllowed: environments.workspaceSenderAllowed,
     environmentsState: { environments: [], activeId: environments.LOCAL_ID }, rendererOrigin: () => LOCAL,
     ipcMain: { on: (channel, handler) => listeners.set(channel, handler) } });
   vm.runInContext(source.slice(start, end), context);
   const show = (shown, activeId = environments.LOCAL_ID) => { window.webContents = shown.webContents;
     context.environmentsState = { environments: [{ id: "cloud", name: "Own server", origin: CLOUD }, { id: "vps", name: "VPS", origin: OTHER }], activeId }; };
   const offered = event => { const request = { ...event }; listeners.get("update:offered")(request); return request.returnValue; };
-  return { context, window, show, offered, pageAllowed: vm.runInContext("updaterPageAllowed", context) };
+  return { context, window, show, offered, serverPage: vm.runInContext("activePageOrigin", context), pageAllowed: vm.runInContext("updaterPageAllowed", context) };
 }
 
 async function load(pageAllowed, serverPage = undefined, confirmRestart = undefined) {
@@ -294,8 +294,7 @@ it("a server's page the window shows may ask for the app's own update: it learns
   vi.advanceTimersByTime(updater.SERVER_PAGE_ASK_COOLDOWN_MS);
   expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
   await settle();
-  // Not the updater's state: the page never hears it, only what its own request did.
-  expect(other.webContents.send).not.toHaveBeenCalled();
+  expect(other.webContents.send).toHaveBeenCalledWith("update:state", expect.objectContaining({ status: "downloaded" }));
   expect(await ask(other.event)).toBe("installing");
   expect(confirmRestart).toHaveBeenLastCalledWith("2.0.0", OTHER);
   expect(autoUpdater.quitAndInstall).toHaveBeenCalledTimes(1);

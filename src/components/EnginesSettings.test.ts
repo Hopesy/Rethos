@@ -490,7 +490,8 @@ describe("Settings → Engines → custom Claude endpoints", () => {
     }];
     fixture.bots = [];
     const html = renderToStaticMarkup(createElement(EnginesSettings));
-    expect(html).toContain("data-claude-endpoints");
+    expect(html).toContain("Custom models");
+      expect(html).not.toContain("data-claude-endpoints");
     expect(html).toContain("data-claude-bedrock-endpoints");
   });
 

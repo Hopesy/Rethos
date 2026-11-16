@@ -343,16 +343,16 @@ describe("Settings → Computers on an OMB Cloud home", () => {
 
   it("disables the isolation choice until the computer's status has loaded", () => {
     const markup = renderToStaticMarkup(createElement(LocalComputerSection));
-    const isolation = markup.match(/<div role="radiogroup" aria-label="Isolation"[^>]*>(.*?)<\/div>/)?.[1] ?? "";
+    const isolation = markup.match(/<div class="settings-segment">(.*?)<\/div>/)?.[1] ?? "";
     expect([...isolation.matchAll(/<button[^>]*>/g)].map(([button]) => button.includes('disabled=""'))).toEqual([true, true]);
   });
 
-  it("shows only the private desktop cards inside the private desktop setup's Details", () => {
+  it("shows local and self-hosted private desktop cards inside the setup's Details", () => {
     const markup = renderToStaticMarkup(createElement(LocalComputerSection, { privateOnly: true }));
-    const titles = [...markup.matchAll(/<div class="text-\[16px\] font-semibold text-ink[^"]*">([^<]+)<\/div>/g)].map((match) => match[1]);
+    const titles = [...markup.matchAll(/<h4[^>]*>([^<]+)<\/h4>/g)].map((match) => match[1]);
     expect(titles).toEqual(expect.arrayContaining(["Private desktops", "Setup"]));
     expect(titles).not.toContain("Cloud desktops");
-    expect(markup).not.toContain("Self-hosted VPS computers");
+    expect(titles).toContain("Self-hosted VPS computers");
   });
 });
 

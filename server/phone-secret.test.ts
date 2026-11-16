@@ -185,7 +185,7 @@ describe("PhoneSecretBridge", () => {
     });
 
     const desktop = new PhoneSecretBridge(() => true, 50);
-    await expect(desktop.provide(context)).rejects.toMatchObject({ message: expect.stringContaining("Reopen OpenMausBot") });
+    await expect(desktop.provide(context)).rejects.toMatchObject({ message: expect.stringContaining("Reopen Rethos") });
     const material = await keyMaterial();
     desktop.receive(material.message);
     await vi.waitFor(() => expect(desktop.ready).toBe(true));

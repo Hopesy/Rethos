@@ -130,7 +130,7 @@
   "server.connect.secretHandoff": "Cung cấp {label} một cách an toàn từ Rethos trên điện thoại hoặc máy tính của bạn. Nó không bao giờ được thêm vào cuộc trò chuyện.",
   "server.connect.secretFile": "Các lệnh của {bot} có thể đọc nó từ một tệp riêng trong 24 giờ; nó không bao giờ được thêm vào cuộc trò chuyện.",
   "server.connect.secretRef": "{bot} nhận một tham chiếu dùng một lần cho các công cụ của Rethos và không bao giờ thấy giá trị.",
-  "server.connect.secretSavedAsRef": "{label} đã được lưu, nhưng chỉ cho các công cụ của OpenMausBot. Các lệnh của {bot} cần nó ở dạng tệp, vì vậy hãy nhập lại ở đây.",
+  "server.connect.secretSavedAsRef": "{label} đã được lưu, nhưng chỉ cho các công cụ của Rethos. Các lệnh của {bot} cần nó ở dạng tệp, vì vậy hãy nhập lại ở đây.",
   "server.connect.secretNeverRead": "{bot} có thể dùng nó nhưng không bao giờ đọc lại được.",
   "server.connect.emailOutgoingLabel": "Máy chủ thư đi của {address}",
   "server.connect.emailOutgoingNote": "Nhập máy chủ dùng để gửi thư. {bot} không bao giờ thấy mật khẩu.",
@@ -3207,7 +3207,7 @@
   "phone.success.done": "Xong",
   "phone.code.expired": "Mã đó đã hết hạn",
   "phone.code.title": "Quét hoặc nhập mã",
-  "phone.code.installAndScan": "Cài {app} trên điện thoại từ App Store hoặc Google Play, rồi quét mã này trong ứng dụng.",
+  "phone.code.installAndScan": "Cài đặt {app} trên điện thoại, rồi quét mã này trong ứng dụng.",
   "phone.code.notCamera": "Hãy quét mã trong ứng dụng {app}, không dùng máy ảnh.",
   "phone.code.expiredDetail": "Tạo mã mới khi thiết bị kia đã sẵn sàng.",
   "phone.code.qrAria": "Mã QR ghép nối thiết bị",
@@ -6033,5 +6033,7 @@
   "settings.universalPins.summary": "Giữ các bot đã ghim ở đầu thanh bên.",
   "settings.analytics.summary": "Chia sẻ số liệu sử dụng ẩn danh.",
   "settings.talk.summary": "Giữ {key} để nói, rồi thả ra để gửi.",
-  "sidebar.menu.weeklyUsage": "Mức sử dụng hằng tuần"
+  "sidebar.menu.weeklyUsage": "Mức sử dụng hằng tuần",
+  "settings.diagnostics.openOnHost": "Mở phần cài đặt trong ứng dụng máy tính trên máy chủ để xuất nhật ký.",
+  "chat.page.uncertain": "Trang này có thể đã được xuất bản. Hãy kiểm tra trạng thái với nhà cung cấp dịch vụ lưu trữ."
 }

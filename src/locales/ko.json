@@ -184,7 +184,7 @@
   "server.connect.secretHandoff": "휴대폰이나 컴퓨터의 Rethos에서 {label}을(를) 안전하게 입력하세요. 채팅에는 절대 추가되지 않아요.",
   "server.connect.secretFile": "{bot}의 명령은 24시간 동안 비공개 파일에서 이 값을 읽을 수 있어요. 채팅에는 절대 추가되지 않아요.",
   "server.connect.secretRef": "{bot}은(는) Rethos 도구에서 한 번만 쓸 수 있는 참조를 받고, 값 자체는 볼 수 없어요.",
-  "server.connect.secretSavedAsRef": "{label}은(는) 이미 저장되어 있지만 OpenMausBot 도구 전용이에요. {bot}의 명령에는 파일로 필요하니 여기에 다시 입력해 주세요.",
+  "server.connect.secretSavedAsRef": "{label}은(는) 이미 저장되어 있지만 Rethos 도구 전용이에요. {bot}의 명령에는 파일로 필요하니 여기에 다시 입력해 주세요.",
   "server.connect.secretNeverRead": "{bot}은(는) 이 값을 쓸 수 있지만 다시 읽을 수는 없어요.",
   "server.connect.emailOutgoingLabel": "{address}의 보내는 메일 서버",
   "server.connect.emailOutgoingNote": "메일을 보내는 서버를 입력하세요. {bot}은(는) 비밀번호를 절대 보지 못합니다.",
@@ -4173,7 +4173,7 @@
   "phone.success.done": "완료",
   "phone.code.expired": "코드가 만료됐어요",
   "phone.code.title": "코드를 스캔하거나 입력하세요",
-  "phone.code.installAndScan": "휴대폰에 App Store 또는 Google Play에서 {app}을 설치한 다음, 앱에서 이 코드를 스캔하세요.",
+  "phone.code.installAndScan": "휴대전화에 {app}을 설치한 다음 앱에서 이 코드를 스캔하세요.",
   "phone.code.notCamera": "카메라가 아니라 {app} 앱 안에서 스캔하세요.",
   "phone.code.expiredDetail": "다른 기기가 준비되면 새 코드를 만드세요.",
   "phone.code.qrAria": "기기 페어링 QR 코드",
@@ -7818,5 +7818,7 @@
   "settings.followUp.summary": "현재 작업에 지시를 추가하거나 다음 메시지를 대기열에 넣으세요.",
   "settings.universalPins.summary": "고정한 봇을 사이드바 상단에 유지합니다.",
   "settings.analytics.summary": "익명 사용 통계를 공유합니다.",
-  "settings.talk.summary": "{key} 키를 누른 채 말하고 놓으면 전송됩니다."
+  "settings.talk.summary": "{key} 키를 누른 채 말하고 놓으면 전송됩니다.",
+  "settings.diagnostics.openOnHost": "로그를 내보내려면 호스트의 데스크톱 앱에서 설정을 여세요.",
+  "chat.page.uncertain": "이 페이지가 게시되었을 수 있습니다. 호스팅 제공업체에서 상태를 확인하세요."
 }

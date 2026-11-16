@@ -141,7 +141,7 @@
   "server.connect.secretHandoff": "Безопасно укажите {label} в Rethos на телефоне или компьютере. Это никогда не попадает в чат.",
   "server.connect.secretFile": "Команды бота {bot} могут читать это из закрытого файла в течение 24 часов; это никогда не попадает в чат.",
   "server.connect.secretRef": "{bot} получает одноразовую ссылку для собственных инструментов Rethos и никогда не видит значение.",
-  "server.connect.secretSavedAsRef": "{label} уже сохранён, но только для собственных инструментов OpenMausBot. Командам бота {bot} он нужен в виде файла, поэтому введите его здесь ещё раз.",
+  "server.connect.secretSavedAsRef": "{label} уже сохранён, но только для собственных инструментов Rethos. Командам бота {bot} он нужен в виде файла, поэтому введите его здесь ещё раз.",
   "server.connect.secretNeverRead": "{bot} может это использовать, но никогда не сможет прочитать.",
   "server.connect.emailOutgoingLabel": "Сервер исходящей почты для {address}",
   "server.connect.emailOutgoingNote": "Укажите, через какой сервер отправляется почта. {bot} никогда не видит пароль.",
@@ -3924,7 +3924,7 @@
   "phone.success.done": "Готово",
   "phone.code.expired": "Срок действия кода истёк",
   "phone.code.title": "Сканируйте или введите код",
-  "phone.code.installAndScan": "Установите {app} на телефон из App Store или Google Play, затем отсканируйте этот код в приложении.",
+  "phone.code.installAndScan": "Установите {app} на телефон и отсканируйте этот код в приложении.",
   "phone.code.notCamera": "Сканируйте его в приложении {app}, а не камерой.",
   "phone.code.expiredDetail": "Создайте новый код, когда другое устройство будет готово.",
   "phone.code.qrAria": "QR-код сопряжения устройства",
@@ -7352,5 +7352,7 @@
   "settings.universalPins.summary": "Держать закреплённых ботов вверху боковой панели.",
   "settings.analytics.summary": "Делиться анонимной статистикой использования.",
   "settings.talk.summary": "Удерживайте {key}, чтобы говорить, и отпустите, чтобы отправить.",
-  "sidebar.menu.weeklyUsage": "Использование за неделю"
+  "sidebar.menu.weeklyUsage": "Использование за неделю",
+  "settings.diagnostics.openOnHost": "Откройте настройки настольного приложения на хосте, чтобы экспортировать журналы.",
+  "chat.page.uncertain": "Возможно, страница опубликована. Проверьте её статус у хостинг-провайдера."
 }

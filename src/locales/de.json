@@ -113,8 +113,8 @@
   "server.connect.secretHandoff": "Gib {label} sicher in Rethos auf deinem Telefon oder Computer ein. Es wird nie in den Chat übernommen.",
   "server.connect.secretFile": "Die Befehle von {bot} können es 24 Stunden lang aus einer privaten Datei lesen; es wird nie in den Chat übernommen.",
   "server.connect.secretRef": "{bot} bekommt für die eigenen Werkzeuge von Rethos einen Verweis, der nur einmal gilt, und sieht es nie.",
-  "server.connect.secretSavedAsRef": "{label} ist schon gespeichert, aber nur für die eigenen Werkzeuge von OpenMausBot. {bot} braucht es als Datei für seine Befehle, also gib es hier noch einmal ein.",
-  "server.connect.secretKept": "OpenMausBot bewahrt es sicher auf, damit {bot} es wieder nutzen kann, ohne dich erneut zu fragen.",
+  "server.connect.secretSavedAsRef": "{label} ist schon gespeichert, aber nur für die eigenen Werkzeuge von Rethos. {bot} braucht es als Datei für seine Befehle, also gib es hier noch einmal ein.",
+  "server.connect.secretKept": "Rethos bewahrt es sicher auf, damit {bot} es wieder nutzen kann, ohne dich erneut zu fragen.",
   "server.connect.secretNeverRead": "{bot} kann es verwenden, aber nie auslesen.",
   "server.connect.emailOutgoingLabel": "Postausgangsserver für {address}",
   "server.connect.emailOutgoingNote": "Gib ein, worüber es Mails versendet. {bot} sieht das Passwort nie.",
@@ -1646,7 +1646,7 @@
   "phone.success.done": "Fertig",
   "phone.code.expired": "Dieser Code ist abgelaufen",
   "phone.code.title": "Code scannen oder eingeben",
-  "phone.code.installAndScan": "Installiere {app} auf deinem Handy aus dem App Store oder von Google Play und scanne diesen Code dann in der App.",
+  "phone.code.installAndScan": "Installiere {app} auf deinem Handy und scanne diesen Code in der App.",
   "phone.code.notCamera": "Scanne ihn in der {app}-App, nicht mit der Kamera.",
   "phone.code.expiredDetail": "Erstell einen neuen Code, wenn das andere Gerät bereit ist.",
   "phone.code.qrAria": "QR-Code zur Gerätekopplung",
@@ -4013,5 +4013,7 @@
   "settings.analytics.summary": "Anonyme Nutzungsstatistiken teilen.",
   "settings.talk.summary": "Halte {key} zum Sprechen gedrückt und lasse zum Senden los.",
   "sidebar.menu.weeklyUsage": "Wöchentliche Nutzung",
-  "sidebar.menu.support": "Hilfe und Support"
+  "sidebar.menu.support": "Hilfe und Support",
+  "settings.diagnostics.openOnHost": "Öffne die Einstellungen in der Desktop-App auf dem Host, um Protokolle zu exportieren.",
+  "chat.page.uncertain": "Diese Seite ist möglicherweise online. Prüfe ihren Status beim Hostinganbieter."
 }

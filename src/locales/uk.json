@@ -99,7 +99,7 @@
   "server.connect.secretHandoff": "Безпечно вкажіть {label} в Rethos на телефоні чи комп'ютері. Це ніколи не потрапляє в чат.",
   "server.connect.secretFile": "Команди бота {bot} можуть читати це з приватного файлу протягом 24 годин; це ніколи не потрапляє в чат.",
   "server.connect.secretRef": "{bot} отримує одноразове посилання для власних інструментів Rethos і ніколи не бачить значення.",
-  "server.connect.secretSavedAsRef": "{label} уже збережено, але лише для власних інструментів OpenMausBot. Командам бота {bot} він потрібен у вигляді файлу, тож введіть його тут ще раз.",
+  "server.connect.secretSavedAsRef": "{label} уже збережено, але лише для власних інструментів Rethos. Командам бота {bot} він потрібен у вигляді файлу, тож введіть його тут ще раз.",
   "server.connect.secretNeverRead": "{bot} може це використовувати, але ніколи не зможе прочитати.",
   "server.connect.emailOutgoingLabel": "Сервер вихідної пошти для {address}",
   "server.connect.emailOutgoingNote": "Вкажіть, через який сервер надсилається пошта. {bot} ніколи не бачить пароль.",
@@ -1871,7 +1871,7 @@
   "phone.success.done": "Готово",
   "phone.code.expired": "Цей код сплив",
   "phone.code.title": "Скануйте або введіть код",
-  "phone.code.installAndScan": "Установіть {app} на телефон з App Store або Google Play, а потім відскануйте цей код у застосунку.",
+  "phone.code.installAndScan": "Установіть {app} на телефон, а потім відскануйте цей код у застосунку.",
   "phone.code.notCamera": "Скануйте його в застосунку {app}, а не камерою.",
   "phone.code.expiredDetail": "Створіть свіжий код, коли інший пристрій буде готовий.",
   "phone.code.qrAria": "QR-код прив'язки пристрою",
@@ -4108,5 +4108,7 @@
   "settings.analytics.summary": "Ділитися анонімною статистикою використання.",
   "settings.talk.summary": "Утримуйте {key}, щоб говорити, і відпустіть, щоб надіслати.",
   "sidebar.menu.weeklyUsage": "Використання за тиждень",
-  "sidebar.menu.support": "Допомога та підтримка"
+  "sidebar.menu.support": "Допомога та підтримка",
+  "settings.diagnostics.openOnHost": "Відкрийте налаштування настільного застосунку на хості, щоб експортувати журнали.",
+  "chat.page.uncertain": "Можливо, сторінку опубліковано. Перевірте її стан у хостинг-провайдера."
 }

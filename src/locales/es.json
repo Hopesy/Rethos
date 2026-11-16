@@ -129,7 +129,7 @@
   "server.connect.secretHandoff": "Proporciona de forma segura {label} desde Rethos en tu teléfono o computadora. Nunca se añade al chat.",
   "server.connect.secretFile": "Los comandos de {bot} pueden leerlo desde un archivo privado durante 24 horas; nunca se añade al chat.",
   "server.connect.secretRef": "{bot} recibe una referencia de un solo uso para las herramientas propias de Rethos y nunca lo ve.",
-  "server.connect.secretSavedAsRef": "{label} ya está guardado, pero solo para las herramientas propias de OpenMausBot. {bot} lo necesita como archivo para sus comandos, así que vuelve a introducirlo aquí.",
+  "server.connect.secretSavedAsRef": "{label} ya está guardado, pero solo para las herramientas propias de Rethos. {bot} lo necesita como archivo para sus comandos, así que vuelve a introducirlo aquí.",
   "server.connect.secretNeverRead": "{bot} puede usarlo, pero nunca leerlo.",
   "server.connect.emailOutgoingLabel": "Servidor de salida de {address}",
   "server.connect.emailOutgoingNote": "Indica desde dónde envía el correo. {bot} nunca ve la contraseña.",
@@ -3551,7 +3551,7 @@
   "phone.success.done": "Listo",
   "phone.code.expired": "Ese código caducó",
   "phone.code.title": "Escanea o escribe el código",
-  "phone.code.installAndScan": "Instala {app} en tu teléfono desde la App Store o Google Play y luego escanea este código en la app.",
+  "phone.code.installAndScan": "Instala {app} en tu teléfono y escanea este código en la aplicación.",
   "phone.code.notCamera": "Escanéalo desde la app {app}, no con la cámara.",
   "phone.code.expiredDetail": "Crea un código nuevo cuando el otro dispositivo esté listo.",
   "phone.code.qrAria": "Código QR de emparejamiento del dispositivo",
@@ -6533,5 +6533,7 @@
   "settings.universalPins.summary": "Mantén los bots fijados arriba en la barra lateral.",
   "settings.analytics.summary": "Comparte estadísticas de uso anónimas.",
   "settings.talk.summary": "Mantén pulsada {key} para hablar y suéltala para enviar.",
-  "sidebar.menu.weeklyUsage": "Uso semanal"
+  "sidebar.menu.weeklyUsage": "Uso semanal",
+  "settings.diagnostics.openOnHost": "Abre los ajustes en la aplicación de escritorio del host para exportar los registros.",
+  "chat.page.uncertain": "Esta página puede estar publicada. Comprueba su estado con el proveedor de alojamiento."
 }

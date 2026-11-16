@@ -241,7 +241,7 @@ describe("connector MCP bridge", () => {
     const lines = start({ OMB_HARNESS_URL: harness, OMB_CONNECTOR_TOKEN: "bridge-secret", OMB_BOT_ID: "bot-1", OMB_THREAD_ID: "thread-1" });
     child!.stdin.write(`${JSON.stringify({ jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "COMPOSIO_MANAGE_CONNECTIONS", arguments: { toolkits: ["gmail"] } } })}\n`);
     expect((await nextJson(lines)).result.content[0].text).toBe(
-      `OpenMausBot showed the user a card that gmail is already connected; no sign-in started. ${note} Do not end this turn: carry on now.`,
+      `Rethos showed the user a card that gmail is already connected; no sign-in started. ${note} Do not end this turn: carry on now.`,
     );
   });
 

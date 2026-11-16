@@ -163,7 +163,7 @@ it("keeps a file secret and a ref secret out of every record, and the bot uses e
   expect(askedFile).toEqual({ isError: false, text: expect.stringMatching(/^A secure card for Stripe secret key is now in this conversation/u) });
   const fileCard = (await cards()).at(-1);
   expect(fileCard.secret).toMatchObject({ target: "customSecret", label: "Stripe secret key", placeholder: "sk_test_…", helpUrl: "", delivery: "file", reason: "To create test charges." });
-  expect(fileCard.secret.description).toBe("To create test charges. Ledger's commands can read it from a private file for 24 hours; it is never added to chat. OpenMausBot keeps it safely, so Ledger can use it again without asking you.");
+  expect(fileCard.secret.description).toBe("To create test charges. Ledger's commands can read it from a private file for 24 hours; it is never added to chat. Rethos keeps it safely, so Ledger can use it again without asking you.");
   expect(await save(fileCard.id, "")).toMatchObject({ status: 400 });
   expect(await save(fileCard.id, FILE_CANARY)).toMatchObject({ status: 200, body: { provided: true } });
   expect(await save(fileCard.id, FILE_CANARY)).toMatchObject({ status: 409, body: { error: "this secret was already saved" } });
@@ -175,7 +175,7 @@ it("keeps a file secret and a ref secret out of every record, and the bot uses e
   expect(secretFile.startsWith(dirname(cardFile)), fileText).toBe(true);
   expect(fileText).toContain("never print, echo, log or copy it anywhere else");
   expect(readFileSync(secretFile, "utf8")).toBe(FILE_CANARY);
-  expect(statSync(secretFile).mode & 0o777).toBe(0o600);
+  if (process.platform !== "win32") expect(statSync(secretFile).mode & 0o777).toBe(0o600);
 
   // A one-use secretRef for mcp_server.
   await tools.call("request_credential", { label: "Notion key", reason: "For Notion's MCP server.", delivery: "ref" });

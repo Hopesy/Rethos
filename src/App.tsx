@@ -109,10 +109,10 @@ function Shell({ viewer }: { viewer: WelcomeViewer | null }) {
     };
     const url = new URL(window.location.href);
     const requestedSettings = url.searchParams.get("desktop-settings");
-    if (requestedSettings) {
+    if (requestedSettings === "workspaces") {
       url.searchParams.delete("desktop-settings");
       window.history.replaceState(null, "", url.pathname + url.search + url.hash);
-      if (requestedSettings === "workspaces") open();
+      open();
     }
     return window.ogb.environments.onOpenSettings?.(open);
   }, [dispatch]);

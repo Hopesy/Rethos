@@ -334,10 +334,9 @@ describe("Live calls through ElevenLabs", () => {
     }
   });
 
-  it("never use Cloud's included voice token, which goes only to its relay", () => {
+  it("ignore retired cloud voice settings and use the configured provider key", () => {
     const env = { OMB_CLOUD_VOICE_URL: "https://cloud.example.test/api/cloud/services/voice/v1", OMB_CLOUD_VOICE_TOKEN: "omb_voice_included" };
     expect(liveCallKey({ live: elevenlabs, tts: {} } as AppConfig, env)).toBeNull();
-    expect(liveCallKey({ live: elevenlabs, tts: { key: "omb_voice_included" } } as AppConfig, env)).toBeNull();
     expect(liveCallKey({ live: elevenlabs, tts: { key: "own-key" } } as AppConfig, env)).toEqual({ key: "own-key", source: "elevenlabs" });
   });
 

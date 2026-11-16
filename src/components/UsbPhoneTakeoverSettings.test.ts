@@ -52,8 +52,8 @@ describe("Watch and take over the USB phone setting", () => {
     expect(toggle()!.getAttribute("aria-checked")).toBe("false");
     expect(host.textContent).toContain("Shows the bots' USB Android phone live");
     expect(host.textContent).not.toContain("Off by default.");
-    flushSync(() => [...host.querySelectorAll("button")].find((button) => !button.hasAttribute("aria-label"))!.click());
-    expect(host.textContent).toContain("Off by default.");
+    flushSync(() => host.querySelector<HTMLButtonElement>('[aria-label="Help for Learn more"]')!.click());
+    expect(document.querySelector('[role="tooltip"]')?.textContent).toContain("Off by default.");
 
     flushSync(() => toggle()!.click());
     await vi.waitFor(() => expect(fixture.dispatch).toHaveBeenCalledWith({ type: "configStatus", config: saved }));

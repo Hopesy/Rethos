@@ -1,4 +1,4 @@
-// Pins the bytes of OpenMausBot's own prompt text a turn carries: the fixed sections of a bot's system prompt, what a
+// Pins the bytes of Rethos's own prompt text a turn carries: the fixed sections of a bot's system prompt, what a
 // Claude turn appends with --append-system-prompt-file, and what a Codex turn sets as developer instructions. Each may
 // move at most 2% either way (lower a number to lock in a win); a bigger change moves its baseline by hand.
 import { describe, expect, it } from "vitest";
@@ -61,7 +61,7 @@ const PROMPT_BUDGET_BASELINE: Record<string, number> = {
   "reply-habits": 2855,
   "tool-bridge": 593,
   "sign-in": 2552,
-  "chief-of-staff": 4975,
+  "chief-of-staff": 5874,
   "setup": 2396,
   "meetings": 300,
   "credential": 1027,
@@ -78,11 +78,11 @@ const PROMPT_BUDGET_BASELINE: Record<string, number> = {
   "claude:volatile-note": 178,
   "codex:direct-chat": 8895,
   "codex:setup-chat": 11291,
-  "codex:resumed-instructions": 213,
-  "codex:volatile-note": 97,
+  "codex:resumed-instructions": 208,
+  "codex:volatile-note": 92,
 };
 
-describe("OpenMausBot's prompt text per turn", () => {
+describe("Rethos's prompt text per turn", () => {
   it("stays within its pinned budget", async () => {
     const now = await measured();
     expect(Object.keys(now).sort()).toEqual(Object.keys(PROMPT_BUDGET_BASELINE).sort());

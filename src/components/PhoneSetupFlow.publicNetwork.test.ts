@@ -88,12 +88,15 @@ describe("the pairing code", () => {
     for (const over of [{}, { state: e2e }]) {
       const html = render(over);
       expect(qrCodes(html)).toBe(1);
-      expect(html).toContain("Install MausBot on your phone from the App Store or Google Play, then scan this code in the app.");
-      expect(html).toContain("Scan it from inside the MausBot app, not the camera.");
+      if ("state" in over) expect(html).toContain("Open the Rethos app on your phone and scan.");
+      else {
+        expect(html).toContain("Install Rethos on your phone, then scan this code in the app.");
+        expect(html).toContain("Scan it from inside the Rethos app, not the camera.");
+      }
     }
   });
 
-  it("names the stores without linking to them", () => {
+  it("keeps downloads out of the pairing code", () => {
     for (const over of [{}, { state: e2e }]) {
       const html = render(over);
       expect(html).not.toMatch(/apps\.apple\.com|play\.google\.com|\.apk|<a /);

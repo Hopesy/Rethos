@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 // A restartable fixture home lets tests seed bots.json between boots: the sourceless pin shapes only exist on disk.
 import { spawn, type ChildProcess } from "node:child_process";
-import { createServer, type Server } from "node:http";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -26,11 +25,7 @@ describe("surface pin provenance against the real server", () => {
   let output = "";
   let child: ChildProcess | null = null;
   let base = "";
-  let boatServer: Server;
-  let boatApi = "";
-  let boatDown = false;
-
-  const vmState = (state: Record<string, unknown> = {}) => writeFileAtomic(stateFile, JSON.stringify(state));
+const vmState = (state: Record<string, unknown> = {}) => writeFileAtomic(stateFile, JSON.stringify(state));
   const resetTurn = () => { vmState(); rmSync(dumpFile, { force: true }); rmSync(finishFile, { force: true }); };
   const api = async (method: string, path: string, body?: unknown) => {
     const response = await fetch(base + path, {
@@ -91,7 +86,7 @@ describe("surface pin provenance against the real server", () => {
         APPDATA: join(home, "appdata"), LOCALAPPDATA: join(home, "localappdata"),
         TEMP: home, TMP: home, TMPDIR: home,
         OMB_PORT: String(port), OMB_WEBHOOK_PORT: String(port + 1), OMB_STATIC_DIR: ui, OMB_TEST_VM_STATE: stateFile,
-        OMB_BOAT_API: boatApi, OMB_USER_DATA: join(home, "user-data"), OMB_TEST_DESKTOP_CUA_CONNECTION: cuaDescriptor,
+        OMB_USER_DATA: join(home, "user-data"), OMB_TEST_DESKTOP_CUA_CONNECTION: cuaDescriptor,
         ...(withBrowser ? { OMB_AGENT_BROWSER_PATH: inertBrowser, AGENT_BROWSER_EXECUTABLE_PATH: inertBrowser } : {}),
       }, stdio: ["ignore", "pipe", "pipe"],
     });
@@ -131,15 +126,6 @@ describe("surface pin provenance against the real server", () => {
     mkdirSync(join(ui, "assets"), { recursive: true });
     writeFileSync(join(ui, "index.html"), "<title>Surface pins</title>");
     writeFileSync(join(ui, "assets", "test.css"), "body{}");
-    boatServer = createServer(async (req, res) => {
-      res.setHeader("content-type", "application/json");
-      const path = new URL(req.url ?? "/", "http://box.fixture").pathname;
-      if (boatDown && path.startsWith("/sandboxes")) { res.statusCode = 503; return res.end(JSON.stringify({ error: "Fixture Boat unavailable" })); }
-      if (path === "/sandboxes") return res.end(JSON.stringify({ sandboxes: [] }));
-      return res.end("{}");
-    });
-    await new Promise<void>(resolve => boatServer.listen(0, "127.0.0.1", resolve));
-    boatApi = `http://127.0.0.1:${(boatServer.address() as { port: number }).port}`;
     writeFileSync(join(data, "config.json"), JSON.stringify({ instances: { claude: {
       driver: "claudeAgent", config: { cli: join(ROOT, "server/testing/fake-claude-cli.ts") },
       // The first computer call is what reaches the Boat, as with a real model.
@@ -151,10 +137,9 @@ describe("surface pin provenance against the real server", () => {
   });
   afterAll(async () => {
     await stop();
-    if (boatServer) await new Promise<void>(resolve => boatServer.close(() => resolve()));
     if (home) await removeTempDir(home);
   });
-  afterEach(async () => { await stop(); resetTurn(); boatDown = false; });
+  afterEach(async () => { await stop(); resetTurn(); });
 
   it("marks a person's thread pin as theirs and clears provenance with the pin", async () => {
     await start();
@@ -394,31 +379,25 @@ describe("surface pin provenance against the real server", () => {
     await stop();
   });
   it("never takes a relayed line's conversation for where the person writes, when select_computer continues its turn", async () => {
-    await start();
+    await start(true);
     const { bot } = await apiOk("POST", "/api/bots", { name: "Relayed place bot" });
+    await apiOk("PATCH", `/api/bots/${bot.id}`, { browserProfile: "guest" });
     // An Ask thread, as a Slack relay's guarded send expects.
     const { task } = await apiOk("POST", `/api/bots/${bot.id}/tasks`, { approvalMode: "ask" });
-    await apiOk("PUT", "/api/config", { box: { token: "box_fixture" } });
-    const lastRow = async () => {
-      const { messages } = await apiOk("GET", `/api/threads/${task.threadId}/messages?limit=30`);
-      return String(messages.filter((message: any) => message.kind !== "digest").at(-1)?.tool?.name ?? "");
-    };
     resetTurn();
     await apiOk("POST", `/api/bots/${bot.id}/messages/guarded`, {
-      threadId: task.threadId, sendId: randomUUID(), text: "Check the dashboard on the cloud computer.", expectedActiveLeafId: null,
+      threadId: task.threadId, sendId: randomUUID(), text: "Check the dashboard in the browser.", expectedActiveLeafId: null,
     });
     const sent = await dump();
     const token = sent.mcpConfig.mcpServers.agents.env.OMB_COMMS_TOKEN;
     const selected = await fetch(base + "/api/internal/computer/select", { method: "POST",
-      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ surface: "cloud" }) });
-    expect(await selected.json()).toMatchObject({ status: "pending", surface: "cloud" });
-    boatDown = true;
+      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ surface: "browser" }) });
+    expect(await selected.json()).toMatchObject({ status: "pending", surface: "browser" });
     writeFileSync(finishFile, "finish");
-    await until(() => lastRow(), row => row.startsWith("error:"));
+    await until(() => savedTask(bot.id, task.threadId)?.surface, surface => surface === "browser");
     await idle(bot.id, task.threadId);
     expect(savedTask(bot.id, task.threadId)).not.toHaveProperty("askedAt");
-    boatDown = false;
-    await apiOk("DELETE", `/api/bots/${bot.id}`);
+    vmState();
     await stop();
   });
 

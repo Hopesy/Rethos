@@ -1371,6 +1371,7 @@ describe("structured tool execution boundaries", () => {
   });
 
   it.each([1, 25])("preserves the active task and delivered steering in a cap handoff (%i calls per reply)", async callsPerReply => {
+    Object.assign(CHAT_TURN_LIMITS, { steps: 64, toolCalls: 200 });
     const first = deferred<ServerResponse>();
     const f = await fixture((_body, response, round) => {
       if (round === 1) first.resolve(response);

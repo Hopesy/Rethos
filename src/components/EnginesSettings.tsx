@@ -534,7 +534,7 @@ export function EnginesSettings({ simple = false, more }: { simple?: boolean; mo
   if (simple && more) return <>
     <CustomModelSettings />
     <SimpleEngines rows={rows} isReady={isReady} renderEngine={renderEngine} more={more} />
-    {orphanEndpoints && <div className="px-4"><ClaudeEndpoints /><ClaudeBedrockEndpoints /></div>}
+    {orphanEndpoints && <div className="px-4"><ClaudeBedrockEndpoints /></div>}
     {orphanCodexEndpoints && <div className="px-4"><CodexEndpoints /></div>}
   </>;
 
@@ -549,7 +549,7 @@ export function EnginesSettings({ simple = false, more }: { simple?: boolean; mo
         <RefreshEngines />
       </div>
       <EngineSections instances={rows} isReady={isReady} renderEngine={renderEngine} />
-      {orphanEndpoints && <div className="px-4"><ClaudeEndpoints /><ClaudeBedrockEndpoints /></div>}
+      {orphanEndpoints && <div className="px-4"><ClaudeBedrockEndpoints /></div>}
       {orphanCodexEndpoints && <div className="px-4"><CodexEndpoints /></div>}
       <HiddenEngines />
       <CacheKeepWarmSettings />

@@ -114,3 +114,24 @@ repaired and rerun in the affected modules. Three upstream cases require file
 symlink creation that this Windows process lacks: `cloud-sync-scan`,
 `elevated-install`, and `lent-staged`. Their original run stopped with `EPERM`
 at fixture setup. The complete repository suite was not run.
+
+## Release 0.1.163 follow-up
+
+The full CI run on `2858a5d55` exposed integration failures beyond the initial
+focused checks. Release preparation repaired the shared transfer fixtures,
+renderer preview imports, bot and department pause guards, desktop-control
+transition guards, settings focus and phone deep links, and completed the
+Simplified Chinese catalog. Official paid-cloud migration fixtures were removed;
+self-hosted transfer, sharing, permissions and private-desktop coverage remain.
+
+Local evidence is under `.Rethos-temp/release-0.1.163/`. The broad affected-module
+run passed 1,394 tests; its three remaining assertions were repaired and checked
+in their individual modules. The 66 shared-VM control cases, secret-card flow,
+tool-group isolation and relayed conversation continuation were exercised against
+disposable servers. Source guards, type checks, lint and locale validation were
+also run. Ego verified the real preview entry, chat, Settings, custom model
+connections and private-desktop hover help in Daylight and Midnight.
+
+Public release acceptance requires CI, Docker and both client packages to pass
+on the final source commit, followed by public asset and deployment verification.
+The release history records that final outcome.

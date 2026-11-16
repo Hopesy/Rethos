@@ -191,7 +191,7 @@
   "server.connect.secretHandoff": "スマートフォンかパソコンの Rethos から {label} を安全に入力してください。チャットに追加されることはありません。",
   "server.connect.secretFile": "{bot} のコマンドは 24 時間、非公開のファイルからこれを読み取れます。チャットに追加されることはありません。",
   "server.connect.secretRef": "{bot} は Rethos のツール用に 1 回だけ使える参照を受け取り、値そのものを見ることはありません。",
-  "server.connect.secretSavedAsRef": "{label} は保存済みですが、OpenMausBot のツール専用です。{bot} のコマンドではファイルとして必要なので、ここでもう一度入力してください。",
+  "server.connect.secretSavedAsRef": "{label} は保存済みですが、Rethos のツール専用です。{bot} のコマンドではファイルとして必要なので、ここでもう一度入力してください。",
   "server.connect.secretNeverRead": "{bot} はこれを使えますが、読み返すことはできません。",
   "server.connect.emailOutgoingLabel": "{address} の送信サーバー",
   "server.connect.emailOutgoingNote": "メールの送信元となるサーバーを入力してください。{bot} がパスワードを見ることはありません。",
@@ -4368,7 +4368,7 @@
   "phone.success.done": "完了",
   "phone.code.expired": "そのコードは期限切れです",
   "phone.code.title": "コードを読み取るか入力",
-  "phone.code.installAndScan": "スマートフォンに App Store または Google Play から {app} をインストールし、アプリでこのコードをスキャンしてください。",
+  "phone.code.installAndScan": "スマートフォンに {app} をインストールし、アプリ内でこのコードを読み取ってください。",
   "phone.code.notCamera": "カメラではなく、{app} アプリの中からスキャンしてください。",
   "phone.code.expiredDetail": "もう一方のデバイスの準備ができたら、新しいコードを作ってください。",
   "phone.code.qrAria": "デバイスペアリングの QR コード",
@@ -8128,5 +8128,7 @@
   "settings.followUp.summary": "現在の作業に指示を追加するか、次のメッセージを待機列に入れます。",
   "settings.universalPins.summary": "固定した Bot をサイドバーの上部に表示します。",
   "settings.analytics.summary": "匿名の利用統計を共有します。",
-  "settings.talk.summary": "{key} を押しながら話し、離すと送信します。"
+  "settings.talk.summary": "{key} を押しながら話し、離すと送信します。",
+  "settings.diagnostics.openOnHost": "ログをエクスポートするには、ホストのデスクトップアプリで設定を開いてください。",
+  "chat.page.uncertain": "このページは公開されている可能性があります。ホスティングサービスで状態を確認してください。"
 }

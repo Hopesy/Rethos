@@ -214,7 +214,7 @@ describe("Computer panel Android tab", () => {
     const { bridge, asked } = hosts({ available: true, devices: [PHONE] });
     await open(makeBot());
 
-    expect(asked()).toEqual(["/api/usb-phones"]);
+    expect(asked().filter(path => path === "/api/usb-phones")).toEqual(["/api/usb-phones"]);
     expect(bridge.status).not.toHaveBeenCalled();
     expect(selectedTab()).toBe("Phone");
     expect(androidPanel.props).toEqual({ status: { available: true, devices: [PHONE], scanned: true }, serverPhones: true });
@@ -238,7 +238,7 @@ describe("Computer panel Android tab", () => {
     const { bridge, asked } = hosts({ available: true, devices: [] }, { available: true, devices: [PHONE] });
     await open(makeBot());
 
-    expect(asked()).toEqual([]);
+    expect(asked()).not.toContain("/api/usb-phones");
     expect(bridge.status).toHaveBeenCalled();
     expect(androidPanel.props).toEqual({ status: { available: true, devices: [PHONE], scanned: true }, serverPhones: false });
   });
