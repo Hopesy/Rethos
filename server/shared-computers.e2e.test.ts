@@ -211,7 +211,7 @@ it("another person's conversation can neither see nor use the lent desktop", asy
   evidence.push("owner partition: another paired person's bot sees no computers and cannot read the owner's file by id");
 }, 45_000);
 
-it("a routine acts for nobody, even one the lender created: it sees and uses no computer", async () => {
+it("a routine created by a limited client has no computer authority", async () => {
   const routineBot = (await api("POST", "/api/bots", { name: "Routine bot" })).body.bot;
   const owner = { authorization: `Bearer ${pairing.token}` };
   const routine = await proxyForTurn(async () => {
@@ -231,8 +231,72 @@ it("a routine acts for nobody, even one the lender created: it sees and uses no 
     expect(refused.isError).toBe(true);
     expect(refused.content[0].text).toContain("only a conversation started by the person who shared it");
   } finally { routine.kill(); }
-  evidence.push("fail-closed principal: a routine turn (created by the lender) sees no computers");
+  evidence.push("a limited client's routine sees no computers");
 }, 45_000);
+
+it("an owner's scheduled monitor and delegated project bot share the token's computer until paused or revoked", async () => {
+  const opened = await api("POST", "/api/auth/pairing", { label: "Monitor owner", scopes: ["admin", "client"], tokenTtlMs: 3_600_000 });
+  const owner = (await api("POST", "/api/auth/pair", { code: opened.body.code })).body;
+  const auth = { authorization: `Bearer ${owner.token}` };
+  const signedIn = await fetch(fixture.info.url + "/api/auth/token-login", { method: "POST", headers: { origin: fixture.info.url, "content-type": "application/json" }, body: JSON.stringify({ token: owner.token }) });
+  expect(signedIn.status).toBe(200);
+  const browser = { cookie: signedIn.headers.get("set-cookie")!.split(";")[0]! };
+  const ownerConnector = createComputerSharing({ file: join(fixture.info.dataDir, "monitor-desktop-profile", "computer.json"), environments: () => [env], cuaConnection: async () => null, enabled: async () => true,
+    fetch: (url: string, init: RequestInit) => fetch(url, { ...init, headers: { ...init.headers, ...auth } }) });
+  const proxies: ChildProcess[] = [];
+  let routineId: string | undefined;
+  try {
+    writeFileSync(join(folder.path, "monitor-session.jsonl"), "Monitor fixture complete");
+    await ownerConnector.save(env, { folders: [folder], terminal: false, computer: false }, await ownerConnector.identity(env));
+    await expect.poll(() => ownerConnector.state(env.id).connected, { timeout: 8000 }).toBe(true);
+    const available = (await api("GET", "/api/shared-computers", undefined, browser)).body.computers;
+    expect(available).toHaveLength(1);
+    const computerId = available[0].id;
+    const main = (await api("POST", "/api/bots", { name: "Monitor coordinator", approvalMode: "auto" }, browser)).body.bot;
+    const project = (await api("POST", "/api/bots", { name: "Monitor project", approvalMode: "auto" }, browser)).body.bot;
+    for (const target of [main, project]) expect((await api("PATCH", `/api/bots/${target.id}/work-target`, { target: { kind: "connected", computerId } }, browser)).status).toBe(200);
+    const routineProxy = await proxyForTurn(async () => {
+      const made = await api("POST", "/api/routines", { name: "Scheduled project read", prompt: "Read brief.txt and coordinate the project.", botId: main.id, enabled: true,
+        schedule: { type: "interval", everyMinutes: 5, anchorAt: Date.now() + 1000 } }, browser);
+      expect(made.status, JSON.stringify(made.body)).toBe(201); routineId = made.body.routine.id;
+    });
+    proxies.push(routineProxy);
+    const mainClient = mcpClient(routineProxy); await mainClient.initialize();
+    const computersFor = async (client: ReturnType<typeof mcpClient>) => JSON.parse((await client.call("list_shared_computers")).content[0].text).computers;
+    const read = (client: ReturnType<typeof mcpClient>) => client.call("shared_computer", { computer_id: computerId, folder_id: folder.id, action: "read_file", path: "monitor-session.jsonl" });
+    expect(await computersFor(mainClient)).toHaveLength(1);
+    const readByMain = await read(mainClient); expect(readByMain.isError, JSON.stringify(readByMain)).toBeFalsy();
+    expect(data(readByMain).content).toBe("Monitor fixture complete");
+    const runs = (await api("GET", "/api/routines")).body.runs;
+    const run = runs.find((candidate: any) => candidate.routineId === routineId);
+    expect(run).toMatchObject({ manual: false, triggerSource: "schedule", status: "running" });
+    const lines = (await api("GET", `/api/threads/${run.threadId}/messages`)).body.messages;
+    expect(lines.find((line: any) => line.role === "user").sender).toBeUndefined();
+    const projectProxy = await proxyForTurn(async () => {
+      const sent = await mainClient.call("coordinate_bots", { bot_ids: [project.id], message: "Read brief.txt from the connected fixture computer and report the result.", done_when: "Return the actual fixture text." });
+      expect(sent.isError, JSON.stringify(sent)).toBeFalsy();
+    });
+    proxies.push(projectProxy);
+    const projectClient = mcpClient(projectProxy); await projectClient.initialize();
+    expect(await computersFor(projectClient)).toHaveLength(1);
+    const readByProject = await read(projectClient); expect(readByProject.isError, JSON.stringify(readByProject)).toBeFalsy();
+    expect(data(readByProject).content).toBe("Monitor fixture complete");
+    expect((await api("PATCH", `/api/routines/${routineId}`, { enabled: false }, browser)).status).toBe(200);
+    expect(await computersFor(projectClient)).toEqual([]);
+    expect(await computersFor(mainClient)).toEqual([]);
+    expect((await read(projectClient)).isError).toBe(true);
+    expect((await api("PATCH", `/api/routines/${routineId}`, { enabled: true }, browser)).status).toBe(200);
+    expect(await computersFor(mainClient)).toHaveLength(1);
+    await api("DELETE", `/api/auth/sessions/${owner.session.id}`);
+    expect(await computersFor(mainClient)).toEqual([]);
+    expect(await computersFor(projectClient)).toEqual([]);
+    evidence.push("real schedule → coordinator MCP → native file read → delegated project MCP; browser/token ownership, pause and token revocation");
+  } finally {
+    if (routineId) await api("PATCH", `/api/routines/${routineId}`, { enabled: false });
+    for (const child of proxies) child.kill();
+    ownerConnector.close();
+  }
+}, 60_000);
 
 it("a bot whose computer is off cannot drive the lent screen, even when screen control is lent", async () => {
   await connector.save(env, { folders: [{ ...folder, write: true }], terminal: true, computer: true }, await connector.identity(env));

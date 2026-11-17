@@ -59,7 +59,7 @@ export function createSharedComputerTurn<T extends Turn>(deps: {
       const active = () => {
         const current = deps.target?.(turn);
         const liveBot = deps.bot(turn.botId);
-        return deps.enabled() && deps.active(turn) && liveBot?.computer !== "off" && selected === (current && workTargetKey(current))
+        return deps.enabled() && deps.active(turn) && deps.principal(turn) === principal && liveBot?.computer !== "off" && selected === (current && workTargetKey(current))
           && deps.computers.accessMode(principal, parsed.data.computer_id) === "enabled"
           && allowsTool(liveBot?.toolScope, { kind: "mcp", server: "agents", name: "shared_computer" }, parsed.data);
       };

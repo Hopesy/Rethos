@@ -15,7 +15,7 @@ export function relayedPersonKey(person: { email?: string; name?: string }): str
   return person.email ? personKey({ id: "", email: person.email }) : hashed(`name:${(person.name ?? "").trim()}`);
 }
 
-type DeviceSession = Pick<SessionRecord, "id" | "email" | "scopes" | "owner" | "teamRole" | "token">;
+type DeviceSession = Pick<SessionRecord, "id" | "email" | "scopes" | "owner" | "teamRole" | "token" | "loginTokenId">;
 
 /** A server of one person's own (own-home.ts oneOwner), with that person's address when its sign-in list names one admin.
  * Null on any other server. */
@@ -27,7 +27,7 @@ export const OWN_SERVER_LENDER = hashed("lender:own-server-devices");
 /** A device of the server's one person, with full access: paired without email, or signed in with the one admin's address.
  * Never a guest, a limited pairing, a team member, a script token or anyone else's email. */
 function ownersDevice(session: DeviceSession, own: NonNullable<OwnServer>): boolean {
-  if (session.owner || session.teamRole || session.token || !session.scopes.includes("admin")) return false;
+  if (session.owner || session.teamRole || session.token || session.loginTokenId || !session.scopes.includes("admin")) return false;
   return !session.email || session.email.trim().toLowerCase() === own.admin;
 }
 

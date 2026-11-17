@@ -111,7 +111,51 @@ Regression results: 66 file/permission/session/environment tests, 103 catalog
 and native-connection tests, and 46 desktop tests passed, with 2 platform skips.
 Type checks, server/UI builds, scoped lint and locale validation passed.
 
-## Work targets and server access
+## Self-hosted scheduled computer access
+
+On a personal self-hosted server, saving a routine from an authenticated owner
+session records its author, instructions, target, attachments, schedule and
+enabled decision in `computer-routines.json`. An authorized bot creating or
+editing a routine records that same requester. Existing routines acquire this
+record when their owner opens the editor and saves the instructions.
+
+Each computer call checks the current run and turn generation, the live owner
+session and the unchanged authorization record. A project bot obtains the
+routine's authority through the coordinator's live parent chain. Pause, Stop,
+changed instructions, token revocation, a foreign message or a completed
+delegation invalidates it. Pending desktop operations also recheck the
+principal before continuing. The scheduler remains unchanged.
+
+An access token and the browser sessions derived from it retain the same
+lending identity. Separate tokens stay separate; unrelated paired devices
+continue to use the existing personal-server ownership rules.
+
+Verification on 2026-11-17:
+
+- `server/shared-computers.e2e.test.ts` launches the existing isolated server,
+  logs a browser in with a synthetic owner token, connects a native sharing
+  client, and waits for a real interval occurrence. The coordinator and a
+  delegated project bot both read a planted session file through their injected
+  agents MCP. Pausing the routine and revoking the token deny both callers.
+- `server/host/computer-routine-access.test.ts` covers persisted author records,
+  changed run snapshots, stale generations, one-time schedule consumption,
+  explicit pause, manual initiators, Webhook/API exclusion and foreign messages.
+- The related seven-file run passed 82 tests. One existing cloud-lending test
+  requires Windows file-symlink privileges unavailable on this host; it was
+  explicitly excluded after its `EPERM` result. The subsequent operation-lease
+  test, type checks, scoped lint, OSS check and server build passed.
+
+Run the new path with:
+
+```powershell
+pnpm exec vitest run server/shared-computers.e2e.test.ts server/person-key.test.ts server/host/computer-routine-access.test.ts server/host/shared-computer-turn.test.ts
+```
+
+Evidence is under `.Rethos-temp/computer-routine-access/runtime/`.
+The complete native run's retained receipt is
+`openmausbot-verification-evidence/server-1794894419725-45200.log.computer-sharing.json`.
+
+## Work target selection
 
 Bot defaults and conversation pins use the owner-scoped work-target API. A connected target carries a stable computer ID and optional working folder; Windows folders are validated with Windows path rules. Clearing a conversation pin follows the bot again. Off applies to files, terminal and desktop operations.
 

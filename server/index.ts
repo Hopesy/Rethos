@@ -21,6 +21,7 @@ import { RoomContextTracker, roomResetNote } from "./room-context.ts";
 import { createRoomTranscript, GROUP_CONTEXT_MESSAGES } from "./host/room-transcript.ts";
 import { createRoomSessions } from "./host/room-sessions.ts";
 import { LentComputers, provenRequestPerson, SharedComputers } from "./shared-computers.ts"; import { DeviceLinks } from "./device-links.ts"; import { createLentMcp, isLentMcpPath } from "./lent-mcp.ts";
+import { createComputerRoutineAccess } from "./host/computer-routine-access.ts";
 import { cloudHomeLendingRefusal, cloudHomeOwnTurnRefusal, createCloudRoutineAuthors, ownerOnlyConversation } from "./cloud-lending.ts"; import { createOwnHome, selfHostedPersonName } from "./own-home.ts"; import { createPlacesElsewhere } from "./places-elsewhere.ts"; import { createPlacesElsewhereRoutes } from "./routes/places-elsewhere.ts"; import { assertRoomFolder } from "./room-folder.ts"; import { cloudConnectedAppsBrokerUrl, startCloudHomeConnectedApps, stopCloudHomeConnectedApps } from "./cloud-connected-apps.ts"; import { createTeamConnectionsHost } from "./host/team-connections-host.ts"; import { createCloudLendingTurns } from "./host/cloud-lending-turns.ts"; import { createTeamConnectionRoutes } from "./routes/team-connections.ts";
 import { botMemoryFiles, createLendingMemory } from "./lending-memory.ts";
 import { SharedComputerControl } from "./shared-computer-control.ts";
@@ -711,7 +712,7 @@ const lendingEnabled = () => sharedComputersEnabled(cfg) || CLOUD_HOME !== null 
 const CLOUD_HOME_LENDER = "cloud-home";
 /** Owner-written routines and owner-started runs: the only routine turns that may use a lent Mac. */
 const cloudRoutineAuthors = CLOUD_HOME ? createCloudRoutineAuthors(join(DATA_DIR, "lending-routines.json")) : null;
-const ownerStartedRoutineRuns = new Set<string>();
+const ownerStartedRoutineRuns = new Map<string, string>();
 const foreignTurns = new Map<string, { botId: string; threadId: string }>();
 const lendingMemory = CLOUD_PERSONAL ? createLendingMemory({
   file: join(DATA_DIR, "lending-memory.json"),
@@ -901,11 +902,13 @@ function turnOrigin(capability: Pick<InternalCapability, "threadId" | "generatio
   return owner.origin;
 }
 
-/** Fail closed: only the person whose own message provably started this exact turn generation. Deliberately not the usage ledger's trigger, which defaults to the owner. */
+/** Security: computer authority comes from the active request or verified routine lineage, never the usage ledger's default owner. */
 function sharedComputerPrincipal(capability: Pick<InternalCapability, "botId" | "threadId" | "generation">): string | null {
   if (CLOUD_HOME) return cloudLendingRefusal(capability) === null ? CLOUD_HOME_LENDER : null;
-  return lendingPerson(provenRequestPerson(directRequestOwners.get(capability.threadId), capability.generation,
-    (messageId) => linePersonKey(store.messagesFor(capability.threadId).find((message) => message.id === messageId))), ownHome.ownServer(), () => sessions.list());
+  const person = provenRequestPerson(directRequestOwners.get(capability.threadId), capability.generation,
+    (messageId) => linePersonKey(store.messagesFor(capability.threadId).find((message) => message.id === messageId)))
+    ?? (ownHome.ownServer() ? actingPeople.requester(capability.threadId, capability.generation) ?? computerRoutineAccess?.person(capability) : null);
+  return lendingPerson(person ?? null, ownHome.ownServer(), () => sessions.list());
 }
 
 /** The only conversations that may feed a bot's memory, daily log, recall or brief; dropped whenever a session is revoked. */
@@ -1008,6 +1011,7 @@ function cloudOwnerApplied(action: string, routineId: string | undefined, wasOwn
 
 function routineOpener(routineId: string): string {
   if (routineWriterInFlight) return routineWriterInFlight;
+  if (!CLOUD_HOME) return computerRoutineAccess?.authors.writer(routineId) ?? CLOUD_NOBODY_KEY;
   const routine = routines?.listRoutines().find((candidate) => candidate.id === routineId);
   const team = routine ? teamRoutines.opener(routine) : null; if (team) return team;
   if (routine && CLOUD_OWNER_KEY && cloudRoutineAuthors?.authored(routineId, routine)) return CLOUD_OWNER_KEY;
@@ -2776,6 +2780,15 @@ const { cloudLendingTurn, cloudLendingRefusalNotice, cloudLendingRefusalForBot, 
 const teamAway = createTeamAwayHost({ cloudHome: CLOUD_HOME, dataDir: DATA_DIR, here: (person) => [...sseClients].some((client) => client.ask.person === person), people: () => teamOwners.people?.everyone() ?? [], language: personLanguages.forLine, audienceOf: teamHost.audienceOf, store, unseen: (person) => teamMessages.inbox.unseen(person), readUpTo: (key, person) => personRooms.reads?.readUpTo(key, person), session: (auth) => (auth.kind === "session" ? auth.session : null) }); const actingPeople = createActingPeople({ store, direct: (threadId) => directRequestOwners.get(threadId), roomRun, handed: new HandedPeople(join(DATA_DIR, HANDED_PEOPLE_FILE)) }); const lendingLifts = lendingMemory ? createLendingLifts({ store, stopped: (threadId) => directRequestOwners.get(threadId)?.stopped === true, threadBusy, queued: hasQueuedSteeredMessages, continueRequest: startTurn, notify, language: (threadId) => threadLanguage(threadId), device: () => deviceWord(sharedComputers.known(CLOUD_HOME_LENDER)[0]?.platform), decide: (row) => appendDecision(DATA_DIR, row), words: changedWords, ownersAnswer: (card) => cloudProvenOwnerPerson(cloudCardAnswerer(card)), memory: { info: (botId) => lendingMemory.reviewInfo(botId), accept: (botId, token) => lendingMemory.review(botId, foreignTurnRunning(botId), token).ok } }) : null;
 const computerAsks = CLOUD_PERSONAL ? createComputerAsksHost({ store, notify, lending: sharedComputers, principal: CLOUD_HOME_LENDER, threadBusy, queued: hasQueuedSteeredMessages, continueRequest: startTurn,
   refusal: (turn) => sharedComputerPrincipal(turn) ? null : cloudLendingRefusalForBot(turn) ?? "This conversation can't use your computer.", request: (threadId) => directRequestOwners.get(threadId), active: (turn) => internalCapabilityIsActive(turn as InternalCapability) }) : null;
+const computerRoutineAccess = CLOUD_HOME ? null : createComputerRoutineAccess({
+  file: join(DATA_DIR, "computer-routines.json"), ownServer: ownHome.ownServer, sessions: () => sessions.list(),
+  request: (threadId) => directRequestOwners.get(threadId), messages: (threadId) => store.messagesFor(threadId), starter: (threadId) => threadStarters.get(threadId),
+  routine: (id) => routines?.listRoutines().find(routine => routine.id === id), run: activeRoutineRunForThread,
+  taskRun: (botId, threadId) => store.taskByThread(botId, threadId)?.routineRunId,
+  manualPerson: (runId) => ownerStartedRoutineRuns.get(runId),
+  assignment: (turn) => { const id = directCoordinationSettlers.get(turn.generation)?.nodeId; return id ? coordinator.node(id) : undefined; },
+  node: (id) => coordinator.node(id),
+});
 const { stopThreadForPerson, stopOnTypedCommand, restartForPerson } = createPersonStop({
   store, routines: () => routines, handoffs: () => handoffs, interruptDirectThread, stopping: (botId, threadId) => idleThreads.stopping(botId, threadId), clearUnattended,
   stopGoal: (threadId) => oneOnOneGoals.stop(threadId), markStopped: (threadId, by) => personStops.stop(threadId, liveTurns.running(threadId), directTurnDispatchClaims.has(threadId), by), working: (botId, threadId) => threadBusy(botId, threadId) || coordinator.activeDirect(threadId), asking: (threadId) => coordinator.awaitingAnswer(threadId) || Boolean(openPersonCard(threadId)), language: threadLanguage, stopRefusal: (threadId, by) => runOwners.stopRefusal(threadId, by),
@@ -8492,7 +8505,7 @@ routines = new RoutineManager({
   createTask: (botId, title, run) => {
     // On a Cloud home the routine's writer opens a run's conversation; a webhook run is the owner's, but its payload never reaches the lent Mac.
     const task = store.createTask(botId, title, false, undefined, undefined, undefined, routineThreadModel(run && routines?.listRoutines().find((routine) => routine.id === run.routineId), routineModelChecks), undefined,
-      CLOUD_HOME && run ? (created) => threadStarters.set(created.threadId, run.triggerSource === "webhook" ? CLOUD_OWNER_KEY! : routineOpener(run.routineId)) : undefined);
+      run && (CLOUD_HOME || computerRoutineAccess) ? (created) => threadStarters.set(created.threadId, CLOUD_HOME && run.triggerSource === "webhook" ? CLOUD_OWNER_KEY! : routineOpener(run.routineId)) : undefined);
     if (task && run?.triggerSource === "webhook") outsideLineage.mark(task.threadId);
     return task;
   },
@@ -12885,6 +12898,10 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
         const ownersTurn = !outside && (cloudOwnerOnlyThread(fromThreadId) || cloudRoutineRunIsOwners(run, from.id, fromThreadId));
         const ownersLevel = !outside && CLOUD_HOME && !cloudGuestDriven(fromThreadId) && (proposedInput.action === "create" ||
           cloudRoutineAuthors?.writer(String(proposedInput.routineId)) === CLOUD_OWNER_KEY) && (run?.threadId === fromThreadId || ownerSpokeOnly(store.messagesFor(fromThreadId), cloudThreadStarters(fromThreadId), cloudProvenOwnerPerson, cloudCardAnswerer));
+        const computerPerson = computerRoutineAccess && (actingPeople.requester(fromThreadId, internalCapability.generation) ?? computerRoutineAccess.person(internalCapability));
+        const computerBefore = proposedInput.action === "create" ? undefined : routines!.listRoutines().find(routine => routine.id === proposedInput.routineId);
+        const computerAuthored = computerBefore && computerRoutineAccess?.authors.writer(computerBefore.id) === computerPerson
+          && computerRoutineAccess.authors.authored(computerBefore.id, computerBefore);
         const proposed = await routineRequests.submit({
           botId: from.id,
           threadId: fromThreadId,
@@ -12893,6 +12910,17 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
           canCommit: () => internalCapabilityIsActive(internalCapability),
         });
         const proposedCard = store.messagesFor(fromThreadId).find((message) => message.id === proposed.messageId)?.card;
+        if (computerRoutineAccess && proposed.state === "applied" && proposed.result) {
+          const result = proposed.result;
+          if (result.action === "delete") computerRoutineAccess.authors.remove(result.resultId);
+          else if (result.action === "run_now") {
+            const started = routines!.listRuns().find(run => run.id === result.resultId);
+            if (started && computerPerson) ownerStartedRoutineRuns.set(started.id, computerPerson);
+          } else {
+            const changed = routines!.listRoutines().find(routine => routine.id === result.resultId);
+            if (changed) computerRoutineAccess.record(changed, result.action === "create" || computerAuthored ? computerPerson : null);
+          }
+        }
           // Applied at once: in the owner's proven conversation the routine is theirs; elsewhere it runs at that conversation's level (ownersLevel: only the owner spoke, whatever bots posted).
         const applied = CLOUD_HOME && proposed.state === "applied" && "result" in proposed ? proposed.result : undefined;
         if (applied?.resultId && ownersTurn) cloudOwnerApplied(applied.action, applied.resultId, wasOwners);
@@ -14102,6 +14130,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
       const routine = withRoutineWriter(writer, () => routines!.create(teamRoutines.justMe(auth, body)));
       if (cloudRoutineAuthors && cloudOwnerSession(auth)) cloudRoutineAuthors.record(routine.id, routine);
       cloudRoutineAuthors?.wrote(routine.id, writer);
+      computerRoutineAccess?.record(routine, ownHome.owner(auth) ? actorKey(auth) : null);
       if (ownerOrAdmin(auth)) phones.routineAuthors?.record(routine.id, routine);
       return json(res, 201, { routine });
     }
@@ -14111,7 +14140,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     let routineMatch = path.match(/^\/api\/routines\/([\w-]+)\/run$/);
     if (routineMatch && method === "POST") {
       const run = routines!.runNow(routineMatch[1]);
-      if (run && (CLOUD_HOME ? cloudOwnerSession(auth) : ownerOrAdmin(auth))) ownerStartedRoutineRuns.add(run.id);
+      if (run && (CLOUD_HOME ? cloudOwnerSession(auth) : ownerOrAdmin(auth))) ownerStartedRoutineRuns.set(run.id, auth.kind === "session" ? actorKey(auth) : CLOUD_NOBODY_KEY);
       return run ? json(res, 201, { run }) : json(res, 404, { error: "no such routine" });
     }
     routineMatch = path.match(/^\/api\/routines\/([\w-]+)$/);
@@ -14120,6 +14149,10 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
       const refused = routineBodyRefusal(body, routines!.listRoutines().find((candidate) => candidate.id === routineMatch![1])); if (refused) return json(res, refused.status, { error: refused.error });
       const authors = cloudRoutineAuthors ?? phones.routineAuthors;
       const before = authors ? routines!.listRoutines().find((candidate) => candidate.id === routineMatch![1]) : undefined;
+      const computerBefore = routines!.listRoutines().find(candidate => candidate.id === routineMatch![1]);
+      const computerWriter = ownHome.owner(auth) ? actorKey(auth) : null;
+      const computerAuthored = computerBefore && computerRoutineAccess?.authors.writer(computerBefore.id) === computerWriter
+        && computerRoutineAccess.authors.authored(computerBefore.id, computerBefore);
       const wasOwners = Boolean(before && authors?.authored(before.id, before));
       const previous = cloudRoutineAuthors?.writer(routineMatch[1]);
       // A fingerprint that no longer matches means someone else changed what the routine runs; only the owner rewriting its instructions renews it.
@@ -14138,11 +14171,13 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
         else if (ownerAuthors) cloudRoutineAuthors.record(routine.id, routine);
         cloudRoutineAuthors.wrote(routine.id, writer);
       }
+      if (routine) computerRoutineAccess?.record(routine, computerAuthored || typeof body?.prompt === "string" ? computerWriter : null);
       return routine ? json(res, 200, { routine }) : json(res, 404, { error: "no such routine" });
     }
     if (routineMatch && method === "DELETE") {
       const removed = routines!.remove(routineMatch[1]);
       if (removed) (cloudRoutineAuthors ?? phones.routineAuthors)?.remove(routineMatch[1]);
+      if (removed) computerRoutineAccess?.authors.remove(routineMatch[1]);
       return removed ? json(res, 200, { ok: true }) : json(res, 404, { error: "no such routine" });
     }
     if (path === "/api/routine-runs/seen-all" && method === "POST") {

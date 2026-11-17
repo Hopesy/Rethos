@@ -151,7 +151,7 @@ export function answeredByPerson(card: Card | undefined): boolean {
 
 type RoutineShape = {
   prompt?: string; target?: unknown; botId?: string; groupId?: string; attachments?: { id: string; path: string }[];
-  schedule?: unknown; runOn?: string;
+  schedule?: unknown; runOn?: string; enabled?: boolean;
 };
 
 /** The scheduler never rewrites these fields, so any edit by someone else changes the fingerprint. */
@@ -170,7 +170,7 @@ const authorsFile = z.object({
 }).strict();
 
 /** A missing or damaged file means none: it never grants anything by being absent. */
-export function createCloudRoutineAuthors(file: string) {
+export function createCloudRoutineAuthors(file: string, fingerprint = routineFingerprint) {
   let routines: Record<string, string> = {};
   let writers: Record<string, string> = {};
   try {
@@ -185,7 +185,11 @@ export function createCloudRoutineAuthors(file: string) {
   } catch { routines = {}; writers = {}; }
   const save = () => writeFileAtomic(file, JSON.stringify({ version: 1, routines, writers }), { mode: 0o600 });
   return {
-    record(id: string, routine: RoutineShape) { routines = { ...routines, [id]: routineFingerprint(routine) }; save(); },
+    record(id: string, routine: RoutineShape, person?: string) {
+      routines = { ...routines, [id]: fingerprint(routine) };
+      if (person !== undefined) writers = { ...writers, [id]: person };
+      save();
+    },
     forget(id: string) { if (Object.hasOwn(routines, id)) { const next = { ...routines }; delete next[id]; routines = next; save(); } },
     /** Security invariant: what outside work wrote stays outside until a person saves it; a bot's change never makes it nobody's. */
     wrote(id: string, person: string) { if (writers[id] !== person && !(writers[id] === CLOUD_OUTSIDE_KEY && person === CLOUD_NOBODY_KEY)) { writers = { ...writers, [id]: person }; save(); } },
@@ -196,7 +200,7 @@ export function createCloudRoutineAuthors(file: string) {
       const nextWriters = { ...writers }; delete nextWriters[id]; writers = nextWriters;
       save();
     },
-    authored(id: string, routine: RoutineShape) { return Object.hasOwn(routines, id) && routines[id] === routineFingerprint(routine); },
+    authored(id: string, routine: RoutineShape) { return Object.hasOwn(routines, id) && routines[id] === fingerprint(routine); },
     recorded(id: string): boolean { return Object.hasOwn(routines, id); },
     /** Writes the file even when nothing changed: its presence says records are being kept. */
     persist() { save(); },

@@ -11,6 +11,20 @@ const SIGNED_IN = { admin: ME };
 const device = (fields: Partial<Device> = {}): Device => ({ id: randomUUID(), scopes: ["admin", "client"], ...fields });
 
 describe("shared computers on a self-hosted server without email sign-in", () => {
+  it("a token, its browser login and browser-started turns keep the same lender", () => {
+    const token = device({ token: true });
+    const browser = device({ loginTokenId: token.id });
+    const other = device({ token: true });
+    const broker = new SharedComputers(() => true);
+    const computer = { id: randomUUID(), name: "Token PC", environmentId: randomUUID(), folders: [], terminal: true, computer: false };
+    broker.register(computer, { session: token.id, person: lendingPersonKey(token, OWN) }, "a".repeat(64));
+    expect(lendingPersonKey(browser, OWN)).toBe(lendingPersonKey(token, OWN));
+    expect(broker.list(lendingPersonKey(browser, OWN)).map(item => item.id)).toEqual([computer.id]);
+    expect(broker.list(lendingPerson(personKey(browser), OWN, () => [token, browser])).map(item => item.id)).toEqual([computer.id]);
+    expect(broker.list(lendingPersonKey(other, OWN))).toEqual([]);
+    broker.close();
+  });
+
   it("a paired phone with full access sees the PC its desktop lends", () => {
     const desktop = device(), phone = device();
     expect(personKey(desktop)).not.toBe(personKey(phone));
