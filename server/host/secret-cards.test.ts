@@ -39,7 +39,8 @@ function fixture(language?: string, linked?: (vaultStore: VaultStore) => SecretC
     onChange: () => () => {},
   };
   const bot = { id: "ledger", name: "Ledger" } as BotRecord;
-  const vaultStore = new VaultStore({ dataDir });
+  let savedAt = Date.now();
+  const vaultStore = new VaultStore({ dataDir, now: () => savedAt++ });
   const resumed: string[] = [];
   const cards = createSecretCards({
     store: store as never, cfg: {} as never, vaultStore, vaultReader: (threadId) => ({ person: privateTo[threadId] ?? null, team: true }),

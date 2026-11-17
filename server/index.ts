@@ -1011,7 +1011,6 @@ function cloudOwnerApplied(action: string, routineId: string | undefined, wasOwn
 
 function routineOpener(routineId: string): string {
   if (routineWriterInFlight) return routineWriterInFlight;
-  if (!CLOUD_HOME) return computerRoutineAccess?.authors.writer(routineId) ?? CLOUD_NOBODY_KEY;
   const routine = routines?.listRoutines().find((candidate) => candidate.id === routineId);
   const team = routine ? teamRoutines.opener(routine) : null; if (team) return team;
   if (routine && CLOUD_OWNER_KEY && cloudRoutineAuthors?.authored(routineId, routine)) return CLOUD_OWNER_KEY;
@@ -8503,9 +8502,11 @@ routines = new RoutineManager({
     return groupIsWorking(group) || coordinator.busy ? "busy" : "ready";
   },
   createTask: (botId, title, run) => {
+    const computerAuthor = run && !CLOUD_HOME ? computerRoutineAccess?.authors.writer(run.routineId) : undefined;
     // On a Cloud home the routine's writer opens a run's conversation; a webhook run is the owner's, but its payload never reaches the lent Mac.
     const task = store.createTask(botId, title, false, undefined, undefined, undefined, routineThreadModel(run && routines?.listRoutines().find((routine) => routine.id === run.routineId), routineModelChecks), undefined,
-      run && (CLOUD_HOME || computerRoutineAccess) ? (created) => threadStarters.set(created.threadId, CLOUD_HOME && run.triggerSource === "webhook" ? CLOUD_OWNER_KEY! : routineOpener(run.routineId)) : undefined);
+      CLOUD_HOME && run ? (created) => threadStarters.set(created.threadId, run.triggerSource === "webhook" ? CLOUD_OWNER_KEY! : routineOpener(run.routineId))
+        : computerAuthor ? (created) => threadStarters.set(created.threadId, computerAuthor) : undefined);
     if (task && run?.triggerSource === "webhook") outsideLineage.mark(task.threadId);
     return task;
   },
