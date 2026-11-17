@@ -1,5 +1,16 @@
 # 客户端发布记录
 
+### Windows 与 Android 0.1.166
+
+2026-11-17 北京时间 17:40 已发布 [Rethos 0.1.166](https://github.com/Hopesy/Rethos/releases/tag/v0.1.166)，Windows、Android 和 VPS 均来自提交 `47a7a9a23f8ea5877a97c0eef1133e5b5a48fb88`。选择已连接电脑后恢复完整电脑面板，移除工作位置与访问设置中的重复设备列表，并修复简易模式“打开计划”的跳转。
+
+- [正式联合发布](https://github.com/Hopesy/Rethos/actions/runs/44055991424)使用 `publish=true`，5 个作业全部通过，构建、验收和附件上传均在 GitHub Runner 完成。Windows 通过实际安装启动验收，Android 通过模拟器和签名验收。[源码 CI](https://github.com/Hopesy/Rethos/actions/runs/44055990697) 29 项检查全部通过，[Docker 双架构构建与验收](https://github.com/Hopesy/Rethos/actions/runs/44055990926) 4 个作业通过。
+- 五个公开文件摘要与 `SHA256SUMS.txt` 交叉核对通过，两个 Latest 下载入口指向本版。Windows 安装程序为 268810184 字节、SHA256 `8fd8a7404938273fe997cee896d692dcc357ac36bb13723b176496e12bd2777a`；APK 为 2006671 字节、SHA256 `ee0845aad664d9e753b99562ef01a13ceaca48719bc254e4345907b9cfbb2629`。公开 APK 下载后验证为 0.1.166 / 1166，应用 ID `cc.hopesy.rethos` 与原签名证书保留。本次本机 Windows 客户端保持原安装状态。
+- VPS 经 Docker Compose 更新并固定镜像 `ghcr.io/hopesy/rethos@sha256:e2f5d2ddc9c216d6303f1b2ee911a30403946ea87fd55416611e446fc5056fc8`，容器健康，公网版本和新前端资源核对通过。升级前完整配置与停止状态的数据卷备份位于 `/home/zhouhl/rethos-backups/rethos-before-clients-0.1.166-20261117-095501`。Token、6 个 Bot 的模型与权限、工作位置、会话目录、设备身份与接入权限、模型连接、2 个定时任务及 7 份记忆/角色文件摘要核对一致。
+- 升级期间暂停五项目监控，待当前 Bot 轮次结束并确认全部空闲后备份、切换容器；升级后恢复每 5 分钟运行，旧只读监控保持暂停。线上确认 `zhouh` 在线，6 个 Bot 均提供该设备；电脑面板实际显示屏幕、浏览器、数据、文件，设备卡片为一张，简易模式“打开计划”进入任务列表。
+- 本地 14 个文件的 123 项回归检查通过，类型、代码规范和文件长度检查通过。版本兼容检查 15 项通过、1 项平台跳过。隔离服务与原生连接客户端覆盖工作位置、访问设置、面板标签、两种模式、目录保存和刷新恢复、键盘导航、暂停/继续、双主题及 390px 布局；用户已查看本地预览后要求发布。
+- 发布与部署证据位于 `.Rethos-temp/release-0.1.166/`，包括 `workflow-public-verification.json`、`public-android-verification.json`、`deployment.log`、`web-production.json`、`ui-production.json`、配置及记忆保留检查和监控状态记录。隔离界面证据位于 `.Rethos-temp/computer-panel-repair/`。
+
 ### Windows 与 Android 0.1.165
 
 2026-11-17 北京时间 15:55 已发布 [Rethos 0.1.165](https://github.com/Hopesy/Rethos/releases/tag/v0.1.165)，Windows、Android 和 VPS 均来自提交 `8cb795644b053d32b2c030d4439df126d8cb8d26`。本版修复自托管定时任务访问已授权电脑的身份传递，并沿主 Bot 的可信委派链向项目 Bot 传递授权；任务暂停、配置变更和凭据撤销会使对应授权失效。保留上游调度器，`server/routines.ts` 无修改。
