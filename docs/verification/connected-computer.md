@@ -169,3 +169,28 @@ pause status, inherited automatic selection and saved folders. A disposable
 server and native sharing client exercised those operations through the real
 renderer, including reload, both interface modes, Daylight/Midnight and a 390px
 viewport. Evidence is under `.Rethos-temp/work-target-picker/`.
+
+## Connected computer panel regression, 2026-11-17
+
+Selecting a connected computer retains the shared computer-panel shell: Screen,
+Browser, Data and Files in Simple mode, with the existing Routines and connected
+phone tabs in Advanced mode. The device changes the Screen contents; the other
+views, close button, resizing and keyboard navigation keep their normal behavior.
+Managed desktop discovery, provisioning and preview polling stay inactive for a
+connected target, including conversation pins over a private-desktop default.
+
+Named devices appear once in the work-location card grid. Bot access settings,
+the Where page and the Screen panel omit the duplicate connected-device list.
+Global computer settings retain pause, resume and revoke controls. The Simple
+mode Screen shortcut opens the bot's schedule through the normal routines page.
+
+The 14-file regression run passed 123 tests; the final tab cases cover both bot
+defaults and conversation pins, all retained tabs, a single named-device card,
+the schedule shortcut and absence of managed-desktop requests. Type checks,
+scoped lint and the source-size ratchet passed. An isolated server with a native
+sharing client exercised the real renderer through ego-browser: browser settings,
+all panel tabs, both modes, directory persistence through reload, keyboard
+navigation, close/reopen, pause/resume, Daylight/Midnight and a 390px viewport.
+Evidence and screenshots are in `.Rethos-temp/computer-panel-repair/`, including
+`browser-verification.json`. The fixture uses synthetic data and has no live
+browser engine installed; it verifies the browser settings and installation entry.

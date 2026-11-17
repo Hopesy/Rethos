@@ -101,7 +101,7 @@ vi.mock("@/state/store", async (importOriginal) => ({
   }),
 }));
 
-const { ManagedComputerPanel: ComputerPanel } = await import("./ComputerPanel");
+const { ComputerPanel } = await import("./ComputerPanel");
 const { ComputerFilesPane } = await import("./ComputerFilesPane");
 
 afterAll(() => vi.unstubAllGlobals());

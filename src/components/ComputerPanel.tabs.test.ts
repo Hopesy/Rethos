@@ -5,8 +5,21 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AppState, Bot, InstanceInfo } from "@/state/store";
 import { setLocale, t } from "@/lib/i18n";
+import type { WorkTarget } from "../../shared/work-target";
 
-const fixture = vi.hoisted(() => ({ advanced: true, android: false, browser: false, page: undefined as unknown }));
+const fixture = vi.hoisted(() => ({ advanced: true, android: false, browser: false, page: undefined as unknown,
+  requests: [] as string[], dispatch: vi.fn(), target: { kind: "auto" } as WorkTarget }));
+
+vi.mock("@/state/api", async original => ({
+  ...await original<typeof import("@/state/api")>(),
+  api: async (path: string) => {
+    if (path.includes("/work-target")) return { defaultTarget: fixture.target, selected: fixture.target, options: [
+      { target: fixture.target, label: "Office PC", available: true, ready: true, state: "online" },
+    ] };
+    if (path === "/api/shared-computers") return { computers: [{ id: "11111111-1111-4111-8111-111111111111", name: "Office PC", online: true, botPermissions: true, scopes: { folders: [], terminal: true, screen: true } }] };
+    return {};
+  },
+}));
 
 vi.mock("./DesktopCapabilities", async (importOriginal) => ({
   ...await importOriginal<typeof import("./DesktopCapabilities")>(),
@@ -33,6 +46,7 @@ vi.mock("./data/DataPanel", () => ({ DataPanel: () => createElement("div", { "da
 vi.mock("@/state/store", async (importOriginal) => ({
   ...await importOriginal<typeof import("@/state/store")>(),
   api: async (path: string) => {
+    fixture.requests.push(path);
     if (path.startsWith("/api/bots/scout/computer/control")) return { held: false, helpReason: null };
     if (path.startsWith("/api/bots/scout/computer?")) return { surface: "cloud", backend: "box", configured: true, box: { boxId: "bx_23456789", state: "ready" } };
     return {};
@@ -61,7 +75,7 @@ let root: Root | null = null;
 const value = (): Parameters<typeof BotEditorStore>[0]["value"] => ({
   state: { ...initialState, instances: [engine("claude"), engine("codex")], config: { box: { configured: true },
     ...(fixture.browser ? { features: { browser: true }, browserEngine: { kind: "engine" } } : {}) } as AppState["config"] } as AppState,
-  dispatch: vi.fn(),
+  dispatch: fixture.dispatch,
   flushBotPatches: async () => null,
   refreshInstances: async () => {},
   refreshModels: async () => {},
@@ -105,6 +119,9 @@ beforeEach(() => {
   fixture.android = false;
   fixture.browser = false;
   fixture.page = undefined;
+  fixture.requests = [];
+  fixture.dispatch.mockClear();
+  fixture.target = { kind: "auto" };
 });
 afterEach(() => {
   root?.unmount();
@@ -114,6 +131,36 @@ afterEach(() => {
 });
 
 describe("Computer panel tab", () => {
+  it.each([false, true])("keeps the complete panel for a connected computer (conversation pin: %s)", async pinned => {
+    fixture.advanced = false;
+    fixture.browser = true;
+    fixture.target = { kind: "connected", computerId: "11111111-1111-4111-8111-111111111111" };
+    const bot = makeBot({ computer: pinned ? "cloud" : undefined, cloudBackend: pinned ? "vps" : undefined, ...(pinned
+      ? { tasks: [{ threadId: "thread", title: "Thread", createdAt: 1, workTarget: fixture.target }] }
+      : { workTarget: fixture.target }) } as Partial<Bot>);
+    await open(bot);
+    expect(tabLabels()).toEqual(["Screen", "Browser", "Data", "Files"]);
+    expect(document.querySelector('[data-testid="connected-computer-screen"]')).not.toBeNull();
+    expect(document.querySelectorAll('[data-work-target^="connected:"]')).toHaveLength(1);
+    expect(document.querySelector('[data-testid="connected-computers"]')).toBeNull();
+    expect(document.querySelector('[data-computer-panel-close]')).not.toBeNull();
+    for (const label of ["Browser", "Data", "Files", "Screen"]) {
+      flushSync(() => tab(label).click());
+      await settle();
+      expect(selected()).toBe(label);
+      expect(document.getElementById(tab(label).getAttribute("aria-controls")!)?.getAttribute("role")).toBe("tabpanel");
+    }
+    flushSync(() => [...document.querySelectorAll<HTMLButtonElement>('button')].find(button => button.textContent?.includes(t("computer.routines.openTitle")))!.click());
+    expect(fixture.dispatch).toHaveBeenCalledWith({ type: "showRoutines", section: "schedule", view: "list", botId: bot.id });
+    fixture.advanced = true;
+    await open(bot);
+    expect(tabLabels()).toEqual(["Screen", "Routines", "Browser", "Data"]);
+    flushSync(() => tab("Routines").click());
+    await settle();
+    expect(selected()).toBe("Routines");
+    expect(fixture.requests.filter(path => /\/(?:computer(?:\?|\/(?:provision|screenshot|viewer))|local-computer)/.test(path))).toEqual([]);
+  });
+
   it("names the tablist from the active catalog", async () => {
     setLocale("de");
     await open(makeBot());

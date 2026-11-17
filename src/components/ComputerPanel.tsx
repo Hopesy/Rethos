@@ -46,7 +46,6 @@ import {
 } from "@/lib/computer-panel-view";
 import { WorkTargetPicker } from "./WorkTargetPicker";
 import { resolveWorkTarget } from "../../shared/work-target";
-import { ConnectedComputers } from "./ConnectedComputers";
 import { openPlaceAction, panelCloudRefusal, placeBlocked, placeFacts, placeViewFor, usePlaceSeat } from "@/lib/place-view";
 import { type PlaceActionId, type PlaceFacts, type PlaceView } from "../../shared/place-view";
 
@@ -116,14 +115,7 @@ const computerControlSnapshotSchema = z.object({
   owned: z.boolean().optional(),
 }).passthrough();
 
-export function ComputerPanel(props: { bot: Bot; onOpenVmWorkspace?: (botId: string) => void }) {
-  const task = props.bot.tasks?.find(task => task.threadId === props.bot.threadId);
-  const target = resolveWorkTarget(props.bot, task);
-  if (target.kind === "connected") return <div className="flex h-full flex-col gap-4 overflow-y-auto p-4" data-testid="connected-computer-panel"><WorkTargetPicker bot={props.bot} thread /><ConnectedComputers bot={props.bot} /><p className="text-[13px] text-ink-secondary">{t("workTarget.screenHint")}</p></div>;
-  return <ManagedComputerPanel {...props} />;
-}
-
-export function ManagedComputerPanel({
+export function ComputerPanel({
   bot: profileBot,
   onOpenVmWorkspace,
 }: {
@@ -134,15 +126,18 @@ export function ManagedComputerPanel({
   const { panelWidth, separatorRef, separatorWidth, onSeparatorKeyDown, onResizeStart, onResizeMove, onResizeEnd } = useComputerPanelResize();
   const { state, dispatch, flushBotPatches } = useStore();
   const liveTask = profileBot.tasks?.find((task) => task.threadId === profileBot.threadId);
+  const workTarget = resolveWorkTarget(profileBot, liveTask);
+  const connected = workTarget.kind === "connected";
   const livePlace = effectivePlace(profileBot, liveTask);
+  const targetKey = connected ? `connected:${workTarget.computerId}` : livePlace;
   const threadBot = currentTaskBot(profileBot);
-  const connectionKey = `${profileBot.id}:${profileBot.threadId}:${livePlace}:${profileBot.cloudBackend ?? "box"}:${threadBot.modelSelection.instanceId}`;
+  const connectionKey = `${profileBot.id}:${profileBot.threadId}:${targetKey}:${profileBot.cloudBackend ?? "box"}:${threadBot.modelSelection.instanceId}`;
   const [autoSurface, setAutoSurface] = useState<{ key: string; surface: Bot["computer"] } | null>(null);
   const autoSurfaceCurrent = autoSurface?.key === connectionKey;
   const surfaceReady = livePlace !== "auto" || autoSurfaceCurrent;
   const bot = { ...threadBot, computer: livePlace === "auto"
     ? autoSurfaceCurrent ? autoSurface.surface : undefined : livePlace };
-  const viewerConnectionKey = `${bot.id}:${bot.threadId}:${bot.computer}:${bot.cloudBackend ?? "box"}`;
+  const viewerConnectionKey = `${bot.id}:${bot.threadId}:${targetKey}:${bot.computer}:${bot.cloudBackend ?? "box"}`;
   const viewerConnection = useRef(viewerConnectionKey);
   viewerConnection.current = viewerConnectionKey;
   const desktopJoin = useRef<AbortController | null>(null);
@@ -185,7 +180,7 @@ export function ManagedComputerPanel({
       && persistedComputerSelection.section === (bot.section?.trim() ?? ""),
   );
   const computerStatusCurrent = Boolean(
-    resolvedComputerSelection
+    !connected && resolvedComputerSelection
       && resolvedComputerSelection.botId === bot.id
       && resolvedComputerSelection.threadId === bot.threadId
       && resolvedComputerSelection.computer === bot.computer
@@ -267,7 +262,7 @@ export function ManagedComputerPanel({
     && (browserAvailableHere || state.config?.browserEngine?.installable === true);
   const [retry, setRetry] = useState(0);
   useEffect(() => {
-    if (livePlace !== "auto" || !computerSelectionPersisted) return;
+    if (connected || livePlace !== "auto" || !computerSelectionPersisted) return;
     const controller = new AbortController();
     setAutoSurface(null);
     void api(threadPath("computer"), { signal: controller.signal }).then((status) => {
@@ -282,7 +277,7 @@ export function ManagedComputerPanel({
       setPhase("error");
     });
     return () => controller.abort();
-  }, [connectionKey, livePlace, computerSelectionPersisted, threadPath, retry]);
+  }, [connected, connectionKey, livePlace, computerSelectionPersisted, threadPath, retry]);
   const vmResumable = phase === "vm-unavailable" && vmStatus?.resumable === true;
   const vmReadinessAttempts = useRef(0);
   const vmActionController = useRef<AbortController | null>(null);
@@ -292,7 +287,7 @@ export function ManagedComputerPanel({
       setPending(null);
     }
     return () => { vmActionController.current?.abort(); };
-  }, [bot.id, bot.threadId, bot.computer, panelView]);
+  }, [bot.id, bot.threadId, targetKey, bot.computer, panelView]);
   const selectedInstance = state.instances.find(
     (instance) => instance.instanceId === bot.modelSelection.instanceId,
   );
@@ -304,15 +299,15 @@ export function ManagedComputerPanel({
   };
 
   const previousPanelTarget = useRef<string | null>(null);
-  const panelTargetKey = `${profileBot.id}:${profileBot.threadId}:${livePlace}:${profileBot.cloudBackend ?? "box"}`;
+  const panelTargetKey = `${profileBot.id}:${profileBot.threadId}:${targetKey}:${profileBot.cloudBackend ?? "box"}`;
   useEffect(() => {
     const previous = previousPanelTarget.current;
-    if (previous === panelTargetKey && (explicitPanelView.current || !(bot.computer === "browser" && browserEnabled))) return;
+    if (previous === panelTargetKey && (explicitPanelView.current || connected || !(bot.computer === "browser" && browserEnabled))) return;
     if (previous !== panelTargetKey) explicitPanelView.current = false;
     previousPanelTarget.current = panelTargetKey;
-    setPanelView(bot.computer === "browser" && browserEnabled ? "browser"
+    setPanelView(!connected && bot.computer === "browser" && browserEnabled ? "browser"
       : previous === null ? readComputerPanelView(bot.id) : "computer");
-  }, [panelTargetKey, bot.id, bot.computer, browserEnabled]);
+  }, [panelTargetKey, connected, bot.id, bot.computer, browserEnabled]);
 
   useEffect(() => {
     if (!requestedDataResult || requestedDataResult.consumed) return;
@@ -386,6 +381,7 @@ export function ManagedComputerPanel({
     setVpsStatus(null);
     setLocalFrame(null);
     setError(null);
+    if (connected) return;
     // The selection may be optimistic: never let it choose a provider until the PATCH confirms server state.
     if (!computerSelectionPersisted || !surfaceReady) return;
     if (bot.computer === undefined || (bot.computer === "cloud" && cloudBackend !== "vps")) {
@@ -537,6 +533,7 @@ export function ManagedComputerPanel({
     bot.computer,
     bot.section,
     bot.autoStartVps, bot.vpsAlias,
+    connected,
     cloudBackend,
     retry,
     capabilitiesReady,
@@ -1132,7 +1129,7 @@ export function ManagedComputerPanel({
             {panelTabs.map((view) => {
               const { Icon, label, tour } = PANEL_TABS[view];
               const live = !placeLive ? undefined
-                : view === "computer" && isComputerPlace(livePlace) ? "computer-tab-live"
+                : view === "computer" && (connected || isComputerPlace(livePlace)) ? "computer-tab-live"
                 : view === "browser" && livePlace === "browser" ? "browser-tab-live" : undefined;
               return (
                 <button key={view} type="button" data-tour={tour} {...panelTabProps(view, view === panelView)} title={t(label)} onClick={() => chooseTab(view)} className={tabClass(view === panelView)}>
@@ -1204,6 +1201,7 @@ export function ManagedComputerPanel({
         </div>
       ) : (
       <div {...tabPanelProps("computer")} className={cn("flex-1 overflow-y-auto px-5 pb-5", TAB_PANEL_FOCUS)}>
+        {connected ? <p className="mb-4 text-[13px] text-ink-secondary" data-testid="connected-computer-screen">{t("workTarget.screenHint")}</p> : <>
           <div className="mb-1.5 mt-2 flex items-center justify-between text-[13px] text-ink-secondary">
             <span>{t("computer.screenOf", { name: bot.name })}</span>
             {currentTeamComputer && <span className="text-[11px]">{autoView.short}</span>}
@@ -1562,10 +1560,10 @@ export function ManagedComputerPanel({
           <LinuxLocalControl />
           <MacLocalControl /><WindowsLocalControl />
         </>}
+        </>}
 
         <WorkTargetPicker bot={profileBot} thread />
-        <ConnectedComputers bot={bot} />
-        <button type="button" onClick={() => selectPanelView("routines")} className="mt-4 flex w-full items-start gap-3 rounded-xl bg-card p-4 text-left hover:bg-raised">
+        <button type="button" onClick={() => advanced ? selectPanelView("routines") : dispatch({ type: "showRoutines", section: "schedule", view: "list", botId: bot.id })} className="mt-4 flex w-full items-start gap-3 rounded-xl bg-card p-4 text-left hover:bg-raised">
           <CalendarClock size={17} className="mt-0.5 shrink-0 text-accent" />
           <span className="min-w-0 flex-1">
             <span className="block text-[14px] font-medium text-ink">{t("computer.tab.routines")} <span className="ml-1 text-[11px] text-ink-secondary">{botRoutines.length}</span></span>

@@ -16,7 +16,6 @@ import { shortPath } from "@/lib/short-path";
 import { isOwnThreadFolder } from "../../../shared/thread-folder";
 import { useDesktopCapabilities } from "../DesktopCapabilities";
 import { CloudBackendPicker } from "../CloudBackendPicker";
-import { ConnectedComputers } from "../ConnectedComputers";
 import { WorkTargetPicker } from "../WorkTargetPicker";
 import { targetLabel, useWorkTarget } from "@/lib/work-target";
 import { placeManagedBy, worksOnChoices, WorksOnGrid, worksOnSelected, type WorksOnMode } from "../WorksOnGrid";
@@ -747,7 +746,6 @@ export function AccessSection({
 </>}
       </div>}
 
-      {shows("worksOn") && <ConnectedComputers bot={bot} />}
       {shows("folder") && <WorkingFolder bot={bot} />}
 
       {shows("apps") && <div className="rounded-xl bg-card p-4">

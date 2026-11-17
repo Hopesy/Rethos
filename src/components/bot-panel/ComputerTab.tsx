@@ -10,7 +10,6 @@ import { api, useStore, type Bot } from "@/state/store";
 import { BotAvatar } from "../Avatar";
 import { WorkTargetPicker } from "../WorkTargetPicker";
 import { targetLabel, useWorkTarget } from "@/lib/work-target";
-import { ConnectedComputers } from "../ConnectedComputers";
 import { useDesktopCapabilities } from "../DesktopCapabilities";
 import { usePlaceViews } from "../PlaceChip";
 import { screenFramePreview } from "../ScreenFrame";
@@ -83,7 +82,7 @@ function usePlaceChoices(bot: Bot) {
 }
 
 export function WherePage({ bot }: { bot: Bot; derived: Derived }) {
-  return <><WorkTargetPicker bot={bot} /><ConnectedComputers bot={bot} /></>;
+  return <WorkTargetPicker bot={bot} />;
 }
 
 export function ComputerTab({ bot, derived, onOpen }: { bot: Bot; derived: Derived; onOpen: (page: SimplePageId) => void }) {
@@ -147,7 +146,6 @@ export function ComputerTab({ bot, derived, onOpen }: { bot: Bot; derived: Deriv
           onClick={() => onOpen("browser")}
         />
       </Card>
-      <ConnectedComputers bot={bot} />
     </div>
   );
 }
