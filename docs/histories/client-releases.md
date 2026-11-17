@@ -1,5 +1,17 @@
 # 客户端发布记录
 
+### Windows 与 Android 0.1.165
+
+2026-11-17 北京时间 15:55 已发布 [Rethos 0.1.165](https://github.com/Hopesy/Rethos/releases/tag/v0.1.165)，Windows、Android 和 VPS 均来自提交 `8cb795644b053d32b2c030d4439df126d8cb8d26`。本版修复自托管定时任务访问已授权电脑的身份传递，并沿主 Bot 的可信委派链向项目 Bot 传递授权；任务暂停、配置变更和凭据撤销会使对应授权失效。保留上游调度器，`server/routines.ts` 无修改。
+
+- [正式联合发布](https://github.com/Hopesy/Rethos/actions/runs/44040941883)使用 `publish=true`，5 个作业全部通过，由 GitHub Actions 完成构建、安装验收、附件上传及公开。Windows 已在隔离 Runner 实际安装启动；Android 完成模拟器和正式签名验收。[源码 CI](https://github.com/Hopesy/Rethos/actions/runs/44032609682) 29 项检查通过，[Docker 双架构构建与验收](https://github.com/Hopesy/Rethos/actions/runs/44032609660)通过。
+- 五个公开文件的 GitHub 摘要与 `SHA256SUMS.txt` 交叉核对通过，两个 Latest 下载入口指向本版。Windows 安装程序为 268810748 字节、SHA256 `e450f40fc17566ab6d7e87c5bcb447ed11debf721a47713edee90abc4d709d2b`；APK 为 2006675 字节、SHA256 `91d769d4ff9c2471630d10f85766917b233f3c358e071c3c1e29f7b13c45afe0`。公开 APK 下载后核验为 0.1.165 / 1165，应用 ID `cc.hopesy.rethos` 与原签名证书保留。本次用户本机 Windows 客户端保持原安装状态。
+- VPS 经 Docker Compose 更新并固定镜像 `ghcr.io/hopesy/rethos@sha256:a9c70a1b3efe2c418d33a57e1b2b3f01ead31187c4c215c3a791c196bd9ad5c1`，容器健康，公网版本与前端资源核对通过。升级前配置及停止状态的完整数据卷备份位于 `/home/zhouhl/rethos-backups/rethos-before-clients-0.1.165-20261117-071117`。原 Token、6 个 Bot 的模型与权限、主 Bot 能力、会话电脑和工作目录、设备身份与接入权限、模型连接、2 个定时任务及 7 份记忆/角色文件摘要核对一致。
+- 升级后通过网页配置 6 个 Bot 的默认工作位置为已连接电脑 `zhouh`，保存监控授权并恢复“五项目监控与自动推进”，每 5 分钟执行；旧只读监控继续暂停。本机沿用原连接组件和设备 ID。首轮实际列出电脑、读取本机 Codex session，并委派五个项目 Bot 读取上下文；Rethos 结果对话已收到核验报告。16:04 的 XDTag 报告识别到最新人工答复及随后人工中断，保留中断状态。
+- 首轮并行读取出现电脑占用，主 Bot 随后串行补查。已保存共享电脑串行访问规则，项目 Bot 需要读取同一台电脑时逐个委派，已有材料的分析可并行。最终状态核对确认 6 个工作位置、串行规则、监控启用状态、旧监控暂停及实际通知；该证据覆盖监控访问与回报链路，后续项目推进由运行中的监控继续处理。
+- 初次源码 CI 暴露旧 phone/card 路径的任务发起人归属回归及测试时间戳碰撞，已收窄为仅记录已授权电脑作者并使用确定递增的夹具时钟，相关隔离复验 63 项通过、8 项平台跳过。最终源码 CI 的既有重复启动测试曾超时，单独复验及失败分片重跑通过。发布预检 33 项通过、1 项平台跳过。
+- 最终公开附件由正式联合 workflow 生成；前期候选包手动中转流程已停止，VPS 临时中转文件已清理。证据位于 `.Rethos-temp/release-0.1.165/`，包括 `workflow-public-verification.json`、`public-android-verification.json`、`deployment.log`、`web-production.json`、配置及记忆保留记录和 `final-monitor-state.json`。
+
 ### Windows 与 Android 0.1.164
 
 2026-11-16 已发布 [Rethos 0.1.164](https://github.com/Hopesy/Rethos/releases/tag/v0.1.164)，Windows、Android 和 VPS 均来自提交 `d484393aac616772236eb9725d651f0ba1a21061`。工作位置保留原有卡片网格，连接电脑直接显示设备名称与状态；简易会话面板收起默认自动时的重复选项，使用“跟随 Bot”和“Bot 所在电脑”区分含义。可见面板自动刷新设备状态，保留电脑与工作目录选择。

@@ -19,7 +19,7 @@ Get-FileHash .\Rethos-Android.apk -Algorithm SHA256
 
 ## 联合发布
 
-运行 **Rethos client release**（`release-clients.yml`），选择 ref，并按需要勾选 `publish`。入口先把 ref 解析为固定提交，再分别构建两端；全部验收通过后合并资产、核对版本和来源，并公开同一个 Release。
+运行 **Rethos client release**（`release-clients.yml`），选择 ref；正式发布使用 `publish=true`，候选验收使用 `publish=false`。入口先把 ref 解析为固定提交，再分别构建两端；全部验收通过后合并资产、核对版本和来源，并公开同一个 Release。构建、验收和 Release 附件上传均由 GitHub Runner 完成，本机核对发布结果；VPS 通过 Docker Compose 部署 `docker.yml` 生成的镜像。
 
 ```sh
 gh workflow run release-clients.yml --repo Hopesy/Rethos --ref main -f publish=true
