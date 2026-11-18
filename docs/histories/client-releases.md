@@ -1,5 +1,13 @@
 # 客户端发布记录
 
+### Windows 与 Android 0.1.167
+
+2026-11-18 北京时间 11:27 发布 [Rethos 0.1.167](https://github.com/Hopesy/Rethos/releases/tag/v0.1.167)，11:47 完成 VPS 升级。Windows、Android 和服务端镜像来自 `e05d7d9022d235109925cae0c87f14eb5f1878ab`。本版修复共享电脑刷新登记导致定时任务及对话中的在途请求误失效，并在实际授权变化后丢弃旧请求和目录审批。
+
+- [客户端联合发布](https://github.com/Hopesy/Rethos/actions/runs/44227326996)、[源码 CI](https://github.com/Hopesy/Rethos/actions/runs/44227324405) 和 [Docker 双架构构建](https://github.com/Hopesy/Rethos/actions/runs/44227324289) 均通过。Android WebView 和 Linux 项目协作用例首轮失败，在相同提交复跑通过。公开标签指向该提交，5 个发布文件的 SHA256 与校验清单交叉核对，Windows 更新索引版本为 `0.1.167`。
+- VPS 通过 Docker Compose 固定到 `ghcr.io/hopesy/rethos@sha256:46761f275ac645c1509bf8956c1102fd7d8bbd93371486e6d504dc956a645dd5`。切换前确认 Bot 空闲，停止服务后备份并校验数据卷；配置及备份归档保存在 `/home/zhouhl/rethos-backups/rethos-before-clients-0.1.167-20261118-034723`。
+- 升级后容器健康，公网健康端点和环境版本通过核对。6 个 Bot 的抽查配置、2 个定时任务的调度与启停状态、7 份记忆和角色文件的升级前后摘要一致。两个任务均保持暂停。发布与核验记录在 `.Rethos-temp/release-0.1.167/`。
+
 ### Windows 与 Android 0.1.166
 
 2026-11-17 北京时间 17:40 已发布 [Rethos 0.1.166](https://github.com/Hopesy/Rethos/releases/tag/v0.1.166)，Windows、Android 和 VPS 均来自提交 `47a7a9a23f8ea5877a97c0eef1133e5b5a48fb88`。选择已连接电脑后恢复完整电脑面板，移除工作位置与访问设置中的重复设备列表，并修复简易模式“打开计划”的跳转。
