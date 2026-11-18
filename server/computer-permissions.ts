@@ -11,11 +11,11 @@ type Context = Turn & { bot: BotRecord; mode(): ApprovalMode; active(): boolean;
 const denied = () => new Error("The request ended or its computer permissions changed.");
 
 export function createComputerPermissions(bus: YourComputerBus) {
-  const grants = new Map<string, Array<ComputerFileScope & { computer: string }>>();
+  const grants = new Map<string, Array<ComputerFileScope & { grant: symbol }>>();
   const ownerKey = (turn: Context) => `${turn.threadId}\n${turn.bot.id}\n${turn.generation}`;
   return {
     clear(threadId: string) { for (const key of grants.keys()) if (key.startsWith(`${threadId}\n`)) grants.delete(key); },
-    async authorize(registration: Registration, operation: Operation, context: Context): Promise<ComputerAuthorization> {
+    async authorize(registration: Registration, operation: Operation, grant: symbol, context: Context): Promise<ComputerAuthorization> {
       if (!context.active()) throw denied();
       const files = FILE_ACTIONS.has(operation.action);
       const full = context.mode() === "full";
@@ -47,7 +47,7 @@ export function createComputerPermissions(bus: YourComputerBus) {
       const preset = registration.folders.find(candidate => candidate.path && within(candidate.path) && (!write || candidate.write));
       let scope: ComputerFileScope | undefined = full ? { root: paths.parse(resolved).root, write: true }
         : preset?.path ? { root: preset.path, write: preset.write }
-          : grants.get(key)?.find(candidate => candidate.computer === registration.id && within(candidate.root) && (!write || candidate.write));
+          : grants.get(key)?.find(candidate => candidate.grant === grant && within(candidate.root) && (!write || candidate.write));
       if (!scope) {
         const root = operation.action === "list_files" ? resolved : paths.dirname(resolved);
         const chinese = context.language?.startsWith("zh");
@@ -58,7 +58,7 @@ export function createComputerPermissions(bus: YourComputerBus) {
         });
         if (!context.active()) throw denied();
         scope = { root, write };
-        grants.set(key, [...grants.get(key) ?? [], { ...scope, computer: registration.id }]);
+        grants.set(key, [...grants.get(key) ?? [], { ...scope, grant }]);
       }
       if (!live()) throw denied();
       return { operation: { ...operation, path: resolved, file_scope: { root: scope.root, write: scope.write } }, active: live };

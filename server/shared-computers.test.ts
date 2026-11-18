@@ -21,10 +21,15 @@ const nothingQueued = async (broker: SharedComputers, id: string) => {
   return poll;
 };
 describe("shared computer authority and lifecycle", () => {
-  it("a computer whose person changed is found under its new key after it connects again", () => {
+  it("a computer whose person changed drops previous jobs and is found under its new key", async () => {
     const broker = new SharedComputers(id => id === "owner");
-    const computer = registration(); broker.register(computer, alice, secret);
+    const computer = registration({ computer: true }); broker.register(computer, alice, secret);
+    const result = broker.request({ computer_id: computer.id, action: "computer_tools" }, alice.person, () => true);
+    const job = await broker.poll(computer.id, alice.session, secret);
+    const stopped = expect(result).rejects.toThrow("access changed");
     broker.register(computer, { session: alice.session, person: "p_lender" }, secret);
+    await stopped;
+    expect(broker.liveJob(computer.id, alice.session, secret, job!.id)).toBe(false);
     expect(broker.list(alice.person)).toEqual([]);
     expect(broker.list("p_lender").map(entry => entry.id)).toEqual([computer.id]);
     broker.close();

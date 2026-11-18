@@ -241,17 +241,29 @@ it("an owner's scheduled monitor and delegated project bot share the token's com
   const signedIn = await fetch(fixture.info.url + "/api/auth/token-login", { method: "POST", headers: { origin: fixture.info.url, "content-type": "application/json" }, body: JSON.stringify({ token: owner.token }) });
   expect(signedIn.status).toBe(200);
   const browser = { cookie: signedIn.headers.get("set-cookie")!.split(";")[0]! };
+  let refreshRegistration: (() => Promise<Response>) | undefined;
+  let refreshedWhileLeasing = false;
   const ownerConnector = createComputerSharing({ file: join(fixture.info.dataDir, "monitor-desktop-profile", "computer.json"), environments: () => [env], cuaConnection: async () => null, enabled: async () => true,
-    fetch: (url: string, init: RequestInit) => fetch(url, { ...init, headers: { ...init.headers, ...auth } }) });
+    fetch: async (url: string, init: RequestInit) => {
+      const headers = { ...init.headers, ...auth };
+      if (url.endsWith("/connect")) refreshRegistration = () => fetch(url, { method: init.method, headers, body: init.body });
+      if (url.endsWith("/lease") && refreshRegistration && !refreshedWhileLeasing) {
+        const refresh = await refreshRegistration();
+        expect(refresh.status).toBe(200);
+        refreshedWhileLeasing = true;
+      }
+      return fetch(url, { ...init, headers });
+    } });
   const proxies: ChildProcess[] = [];
   let routineId: string | undefined;
   try {
     writeFileSync(join(folder.path, "monitor-session.jsonl"), "Monitor fixture complete");
-    await ownerConnector.save(env, { folders: [folder], terminal: false, computer: false }, await ownerConnector.identity(env));
+    await ownerConnector.lendOwn(env, { folders: [folder], terminal: false, computer: false, botPermissions: true });
     await expect.poll(() => ownerConnector.state(env.id).connected, { timeout: 8000 }).toBe(true);
     const available = (await api("GET", "/api/shared-computers", undefined, browser)).body.computers;
     expect(available).toHaveLength(1);
     const computerId = available[0].id;
+    expect(available[0].botPermissions).toBe(true);
     const main = (await api("POST", "/api/bots", { name: "Monitor coordinator", approvalMode: "auto" }, browser)).body.bot;
     const project = (await api("POST", "/api/bots", { name: "Monitor project", approvalMode: "auto" }, browser)).body.bot;
     for (const target of [main, project]) expect((await api("PATCH", `/api/bots/${target.id}/work-target`, { target: { kind: "connected", computerId } }, browser)).status).toBe(200);
@@ -267,6 +279,7 @@ it("an owner's scheduled monitor and delegated project bot share the token's com
     expect(await computersFor(mainClient)).toHaveLength(1);
     const readByMain = await read(mainClient); expect(readByMain.isError, JSON.stringify(readByMain)).toBeFalsy();
     expect(data(readByMain).content).toBe("Monitor fixture complete");
+    expect(refreshedWhileLeasing).toBe(true);
     const runs = (await api("GET", "/api/routines")).body.runs;
     const run = runs.find((candidate: any) => candidate.routineId === routineId);
     expect(run).toMatchObject({ manual: false, triggerSource: "schedule", status: "running" });

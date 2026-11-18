@@ -1,4 +1,5 @@
 import { randomUUID, timingSafeEqual } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";
 import type { DeviceLinks, LinkedComputer } from "./device-links.ts";
 import { awayNotice, deviceWord, lendScreenSteps, LENT_PLATFORMS, type LentComputers, type LentPlatform } from "./lent-computers.ts";
@@ -80,10 +81,14 @@ import type { SharedComputerStatus, KnownLentComputer } from "../shared/connecte
 /** The bot an action is for, so the lent computer's menu can name it with its colour. */
 export type ActingBot = { name: string; color: string };
 type Job = {
-  id: string; operation: AuthorizedComputerOperation; by?: ActingBot; active: () => boolean; sent: boolean; leased: boolean; resolve: (result: unknown) => void; reject: (error: Error) => void;
+  id: string; operation: AuthorizedComputerOperation; by?: ActingBot; invalid: () => Error | null; sent: boolean; leased: boolean; resolve: (result: unknown) => void; reject: (error: Error) => void;
   timer: NodeJS.Timeout; delivery?: NodeJS.Timeout;
 };
-type Computer = { registration: Registration; owner: SharedComputerOwner; secret: string; seen: number; jobs: Map<string, Job>; wake?: () => void; polls: number };
+type Computer = { registration: Registration; grant: symbol; owner: SharedComputerOwner; secret: string; seen: number; jobs: Map<string, Job>; wake?: () => void; polls: number };
+const grantSettings = ({ name: _name, folders, internet = false, chrome = false, ...settings }: Registration) => ({
+  ...settings, internet, chrome,
+  folders: folders.map(({ name: _label, ...scope }) => scope).sort((left, right) => left.id.localeCompare(right.id)),
+});
 const failure = (message: string, status = 409) => Object.assign(new Error(message), { status });
 const TOTAL = 100;
 const RETAIN_MS = 14 * 24 * 60 * 60_000;
@@ -191,8 +196,8 @@ export class SharedComputers {
     // it is replaced below, so it is found under the key its session has now.
     if (old && old.owner.person === owner.person) {
       this.authorize(registration.id, owner.session, secret);
-      if (old.registration.grantRevision !== registration.grantRevision) {
-        for (const job of old.jobs.values()) this.finish(old, job, failure("This computer's permissions changed. Inspect any in-flight action before retrying."));
+      if (!isDeepStrictEqual(grantSettings(old.registration), grantSettings(registration))) {
+        this.invalidateGrant(old, "This computer's permissions changed. Inspect any in-flight action before retrying.");
       }
       // Its link was let in for the internet connection and Chrome as lent then: lent or taken back since, the link starts over.
       if ((old.registration.internet === true) !== (registration.internet === true) || (old.registration.chrome === true) !== (registration.chrome === true)) this.links?.drop(key);
@@ -206,13 +211,13 @@ export class SharedComputers {
     if (old) this.lent?.stopped(old.owner.person, registration.id);
     this.reap();
     for (const [stale, entry] of this.computers) {
-      if (entry.registration.id !== registration.id || entry.owner.person !== owner.person) continue;
-      if (!timingSafeEqual(Buffer.from(entry.secret), Buffer.from(secret))) throw failure("The computer credential changed; reconnect with its saved identity", 403);
+      if (entry.registration.id !== registration.id || (entry !== old && entry.owner.person !== owner.person)) continue;
+      if (entry !== old && !timingSafeEqual(Buffer.from(entry.secret), Buffer.from(secret))) throw failure("The computer credential changed; reconnect with its saved identity", 403);
       this.computers.delete(stale); entry.wake?.(); this.links?.drop(stale);
       for (const job of entry.jobs.values()) this.finish(entry, job, failure("This computer's access changed. An in-flight action may have completed; inspect before retrying."));
     }
     if (this.computers.size >= TOTAL) throw failure("Too many shared computers");
-    this.computers.set(key, { registration, owner: { ...owner }, secret, seen: Date.now(), jobs: new Map(), polls: 0 });
+    this.computers.set(key, { registration, grant: Symbol(), owner: { ...owner }, secret, seen: Date.now(), jobs: new Map(), polls: 0 });
     this.access.registered(owner.person, registration.id, registration.grantRevision);
     this.remember(registration, owner.person);
     this.changed();
@@ -271,7 +276,7 @@ export class SharedComputers {
     this.access.set(person, id, mode, entries[0]?.registration.grantRevision);
     for (const entry of entries) {
       if (mode !== "enabled") {
-        for (const job of entry.jobs.values()) this.finish(entry, job, failure("Computer access was paused or revoked"));
+        this.invalidateGrant(entry, "Computer access was paused or revoked");
         this.links?.drop(SharedComputers.key(entry.owner.session, id));
       }
       entry.wake?.();
@@ -392,7 +397,8 @@ export class SharedComputers {
       if (entry.polls !== mine || gone?.aborted) return null;
       if (this.access.mode(entry.owner.person, id) !== "enabled") return null;
       for (const job of entry.jobs.values()) {
-        if (!job.active()) { this.finish(entry, job, failure("The requesting turn ended")); continue; }
+        const error = job.invalid();
+        if (error) { this.finish(entry, job, error); continue; }
         if (!job.sent) { this.send(entry, job); return { id: job.id, operation: job.operation, ...(job.by ? { by: job.by } : {}) }; }
       }
       return null;
@@ -429,14 +435,14 @@ export class SharedComputers {
     const job = entry.jobs.get(jobId);
     if (job?.sent !== true) return false;
     job.leased = true; clearTimeout(job.delivery);
-    return job.active();
+    return job.invalid() === null;
   }
   complete(id: string, session: string, secret: string, jobId: string, result: unknown) {
     const entry = this.authorize(id, session, secret);
     const job = entry.jobs.get(jobId);
     if (!job || !job.sent) throw failure("This computer operation expired; it will not be replayed");
     this.lent?.used(entry.owner.person, id);
-    this.finish(entry, job, job.active() ? null : failure("The requesting turn ended"), result);
+    this.finish(entry, job, job.invalid(), result);
   }
   /** `paused`: the desktop still lends and comes back by itself (waiting for its Cloud sign-in), so it reads as offline,
    * not as no longer lent. Older desktops never send it. */
@@ -449,20 +455,21 @@ export class SharedComputers {
   }
   /** Another person's computer answers exactly like one that does not exist. */
   async request(operation: AuthorizedComputerOperation, principal: string | null, active: () => boolean,
-    authorize?: (registration: Registration, operation: Operation) => Promise<ComputerAuthorization>, by?: ActingBot | null): Promise<unknown> {
+    authorize?: (registration: Registration, operation: Operation, grant: symbol) => Promise<ComputerAuthorization>, by?: ActingBot | null): Promise<unknown> {
     if (!principal) throw failure("This conversation cannot use a shared computer: only a conversation started by the person who shared it can.", 403);
-    if (this.access.mode(principal, operation.computer_id) !== "enabled") throw failure("Computer access is paused or revoked", 403);
-    const turnActive = active;
-    active = () => turnActive() && this.access.mode(principal, operation.computer_id) === "enabled";
+    const accessError = () => this.access.mode(principal, operation.computer_id) === "enabled" ? null : failure("Computer access is paused or revoked", 403);
     const lent = () => this.chosen(principal, operation.computer_id);
     for (const deadline = Date.now() + RECONNECT_WAIT_MS; ;) {
+      const error = accessError();
+      if (error) throw error;
       const known = lent();
       if (known && this.online(known)) break;
       const reconnecting = known !== undefined && Date.now() - known.seen <= RECONNECTING_MS && Date.now() < deadline;
       const waking = this.wakeLeft() > 0 && (known ? this.sessionLive(known.owner.session) : this.lentAndExpected(principal, operation.computer_id));
-      if ((!reconnecting && !waking) || !active()) {
+      const canWait = active();
+      if ((!reconnecting && !waking) || !canWait) {
         // Away: its lent folders answer from their copy here, a write to one lent with editing waits for it.
-        const copy = active() ? this.copies?.answer(operation, principal, this.list(principal)) : null;
+        const copy = canWait ? this.copies?.answer(operation, principal, this.list(principal)) : null;
         if (copy) return copy;
         const why = known && this.sessionLive(known.owner.session)
           ? lentButOffline(known.registration.name, known.seen, deviceWord(known.registration.platform))
@@ -471,16 +478,27 @@ export class SharedComputers {
       }
       await new Promise(resolve => setTimeout(resolve, 250));
     }
-    let entry = lent()!;
+    const entry = lent()!, grant = entry.grant;
+    let approved: ComputerAuthorization | undefined;
+    const invalid = () => {
+      const error = accessError();
+      if (error) return error;
+      if (lent() !== entry) return failure("The shared computer disconnected or its connection changed.");
+      if (entry.grant !== grant) return failure("This computer's permissions changed.");
+      if (!active()) return failure("The requesting turn ended or lost access to this computer", 401);
+      return approved && !approved.active() ? failure("The bot's computer permission changed.", 403) : null;
+    };
+    const checkReady = () => {
+      const error = invalid();
+      if (error) throw error;
+      if (!this.online(entry)) throw failure(this.offline(principal, operation.computer_id));
+    };
+    checkReady();
     if (entry.registration.botPermissions && !isMcp(operation)) {
       if (!authorize) throw failure("This computer requires the current bot's permission check.", 403);
-      const original = entry;
-      const registration = entry.registration;
-      const approved = await authorize(entry.registration, operation);
-      if (lent() !== original || original.registration !== registration || !this.online(original) || !active()) throw failure("This computer or requesting turn changed while waiting for permission.", 409);
+      approved = await authorize(entry.registration, operation, grant);
+      checkReady();
       operation = approved.operation;
-      const wasActive = active;
-      active = () => wasActive() && approved.active() && lent()?.registration === registration;
     }
     const refusal = sharedComputerScopeRefusal(entry.registration, operation, this.askTool);
     if (refusal) throw failure(refusal, 403);
@@ -488,13 +506,10 @@ export class SharedComputers {
       throw failure(`${entry.registration.name} runs an older Rethos that stops a command after at most ${OLD_MAX_COMMAND_SECONDS} seconds. Give timeout_seconds of ${OLD_MAX_COMMAND_SECONDS} or less, or run longer jobs in the background with output to a file.`, 400);
     }
     for (const until = Date.now() + (isMcp(operation) ? MCP_QUEUE_MS : 0); entry.jobs.size >= 1;) {
-      if (Date.now() >= until || !active()) throw failure("This shared computer is busy. Wait for its current action to finish.");
+      if (Date.now() >= until) throw failure("This shared computer is busy. Wait for its current action to finish.");
       await new Promise(resolve => setTimeout(resolve, 250));
-      const again = lent();
-      if (!again || !this.online(again)) throw failure(this.offline(principal, operation.computer_id));
-      entry = again;
+      checkReady();
     }
-    if (!active()) throw failure("The requesting turn ended", 401);
     const { timeout_seconds: _timeout, ...withoutTimeout } = operation;
     const timed = entry.registration.commandTimeouts ? operation : withoutTimeout;
     const { old_text: _old, new_text: _new, ...withoutEdits } = timed;
@@ -503,7 +518,7 @@ export class SharedComputers {
     const forDesktop = entry.registration.mcpCaller && operation.action === "mcp_call" ? edited : withoutCaller;
     return new Promise((resolve, reject) => {
       const id = randomUUID();
-      const job: Job = { id, operation: forDesktop, ...(by ? { by: { name: by.name, color: by.color } } : {}), active, sent: false, leased: false, resolve, reject, timer: setTimeout(() => this.finish(entry, job, failure("Computer action timed out. Its outcome is unknown; inspect before retrying.")), jobDeadlineMs(entry.registration, operation)) };
+      const job: Job = { id, operation: forDesktop, ...(by ? { by: { name: by.name, color: by.color } } : {}), invalid, sent: false, leased: false, resolve, reject, timer: setTimeout(() => this.finish(entry, job, failure("Computer action timed out. Its outcome is unknown; inspect before retrying.")), jobDeadlineMs(entry.registration, operation)) };
       entry.jobs.set(id, job); entry.wake?.();
     });
   }
@@ -531,6 +546,10 @@ export class SharedComputers {
       for (const job of entry.jobs.values()) this.finish(entry, job, failure("Workspace stopped. Inspect any in-flight action before retrying."));
     }
     this.computers.clear();
+  }
+  private invalidateGrant(entry: Computer, message: string) {
+    entry.grant = Symbol();
+    for (const job of entry.jobs.values()) this.finish(entry, job, failure(message));
   }
   private finish(entry: Computer, job: Job, error: Error | null, result?: unknown) {
     clearTimeout(job.timer); clearTimeout(job.delivery); entry.jobs.delete(job.id);

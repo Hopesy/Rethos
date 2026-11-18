@@ -56,6 +56,11 @@ bot/request grant separation, Full-to-Ask dispatch invalidation, a desktop
 grant changed during approval, and shared ownership between a token and its
 browser login.
 
+The scheduled-monitor regression in `server/shared-computers.e2e.test.ts`
+re-registers the same owner's desktop as it leases a file read. The scheduled
+bot must receive the actual file contents; its delegated bot must lose access
+when the monitor is paused or the owner's token is revoked.
+
 The fixtures prove the server/desktop permission and card-answer workflow.
 Their deterministic providers and synthetic desktop use no production chat or
 live screen mutations. Live deployment checks inspect computer registration

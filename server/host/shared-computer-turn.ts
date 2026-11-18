@@ -81,7 +81,7 @@ export function createSharedComputerTurn<T extends Turn>(deps: {
         } finally { resources.stopWaiting(resource, turn); }
       }
       const result = await deps.computers.request(parsed.data, principal, active,
-        (registration, operation) => permissions.authorize(registration, operation, {
+        (registration, operation, grant) => permissions.authorize(registration, operation, grant, {
           ...turn, bot, active, language: deps.language(turn.threadId), mode: () => deps.mode(bot, turn),
         }));
       return { status: 200, body: { result: lentScreenResult(parsed.data, result) } };
