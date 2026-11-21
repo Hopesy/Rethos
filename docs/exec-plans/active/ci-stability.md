@@ -7,9 +7,9 @@ Worktree: `rethos-ci-stability`, branch `codex/ci-stability`. Preserve the exist
 
 ## Work
 
-- [ ] Verify macOS cleanup order fix on the native runner: `use-my-mac` removed its directory before closing background sharing; ENOTEMPTY skipped close and left its process alive.
+- [x] Verify macOS cleanup order fix on the native runner: `use-my-mac` removed its directory before closing background sharing; ENOTEMPTY skipped close and left its process alive. The complete Electron suite and five extra runs of the affected file passed.
 - [x] Make Windows CUA extraction reliable: tar.exe extracts the verified archive; clean runner startup, version check and embedded host smoke passed.
-- [ ] Fix the Linux X11 smoke environment startup.
+- [x] Isolate Openbox configuration and preserve startup diagnostics. Five X11 smoke runs passed on the updated native runner; the original early exit was not reproduced in the focused runs.
 - [x] Fix extra CLI probes: background manifest updates refresh catalogs without invalidating CLI status; verification homes use the bundled manifest.
 - [x] Synchronize browser window measurement with layout frames and cache successful viewport changes. Real Chrome suites passed locally and on Linux.
 - [x] Replace file-event-only phone fixture waits with bounded real-time polling. Route and viewer tests passed (92 tests).
@@ -23,4 +23,6 @@ Native diagnostic runs: 44883267186, 44884120402, 44884522268, 44885043434. Deta
 
 Local: typecheck and lint passed; engine/registry/control fixture tests passed (43); browser/phone tests passed (92); real Chrome page and viewer suites passed. Source guards found core.ts crossed the 1000-line limit by one; removed an obsolete descriptive comment, then recheck.
 
-Next: verify the macOS cleanup fix, run the complete existing CI on the repair branch, remove the temporary investigation workflow, and record final evidence.
+Focused native verification: https://github.com/Hopesy/Rethos/actions/runs/44885535955 passed all macOS, Windows and Linux jobs. The temporary investigation workflow and script have been removed.
+
+Complete CI: https://github.com/Hopesy/Rethos/actions/runs/44885537143 is running against 036ecbf58. The remaining changes only remove diagnostic files and update this record. Next: inspect all results, resolve any regressions, and record final evidence.
