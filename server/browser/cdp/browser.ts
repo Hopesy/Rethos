@@ -60,6 +60,7 @@ export class CdpBrowser implements PageHost {
   readonly #viewerAttaches = new Map<string, number>();
   #active: CdpPage | null = null;
   #viewport: { width: number; height: number } | null;
+  #fitting: Promise<void> = Promise.resolve();
 
   private constructor(connection: CdpConnection, options: BrowserOptions) {
     this.connection = connection;
@@ -164,11 +165,26 @@ export class CdpBrowser implements PageHost {
    * is the viewport, a few rounds at most. Answers the page's size as it ends
    * up, which a window held to its screen can leave smaller.
    */
-  async #fitWindow(page: CdpPage): Promise<{ width: number; height: number } | null> {
+  #fitWindow(page: CdpPage): Promise<{ width: number; height: number } | null> {
+    const fit = () => this.#resizeWindow(page);
+    const fitted = this.#fitting.then(fit, fit);
+    this.#fitting = fitted.then(() => undefined, () => undefined);
+    return fitted;
+  }
+
+  async #resizeWindow(page: CdpPage): Promise<{ width: number; height: number } | null> {
     const viewport = this.#viewport;
     if (!viewport || page.closed || page.emulated) return null;
     const root = this.connection.root;
-    const measure = () => valueInWorld<[number, number]>(page.frames, page.frames.mainFrameId, "[innerWidth, innerHeight]");
+    const measure = async (): Promise<[number, number]> => {
+      const deadline = Date.now() + 2_000;
+      for (;;) {
+        const [width, height] = await valueInWorld<[number, number]>(page.frames, page.frames.mainFrameId, "[innerWidth, innerHeight]");
+        if (width > 0 && height > 0) return [width, height];
+        if (Date.now() >= deadline) throw new DriverError("timeout", "The page did not settle to its window size.");
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      }
+    };
     try {
       const { windowId } = await root.send<{ windowId: number }>("Browser.getWindowForTarget", { targetId: page.targetId });
       let size = await measure();
@@ -311,6 +327,7 @@ export class CdpBrowser implements PageHost {
     const page = await this.waitForPage((candidate) => candidate.targetId === targetId, timeoutMs);
     this.#active = page;
     if (url !== "about:blank") await page.navigate(url, { timeoutMs });
+    await this.#fitWindow(page);
     return page;
   }
 

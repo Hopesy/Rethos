@@ -10,6 +10,7 @@ import { standalonePlatformKey } from "../engine-standalone.ts";
 import { findCliCandidates, registerFallbackPathDir, registerPathDir, resetPathCache, resetPathCacheForTests } from "../env-path.ts";
 import { removeTempDir } from "../testing/cleanup.ts";
 import { makeFakeDriver } from "../testing/fake-driver.ts";
+import { modelManifest } from "../model-manifest/manifest.ts";
 import { ENGINE_LIST_REUSE_MS, ProviderRegistry, SNAPSHOT_DEADLINE_MS, SNAPSHOT_REUSE_MS } from "./registry.ts";
 
 describe("ProviderRegistry", () => {
@@ -378,6 +379,29 @@ describe("ProviderRegistry", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("updates manifest models while retaining pending and completed CLI status reads", async () => {
+    let release!: () => void;
+    let changed!: () => void;
+    const subscribe = vi.spyOn(modelManifest(), "onChange").mockImplementation((listener) => { changed = listener; return () => {}; });
+    const fake = makeFakeDriver({ kind: "claudeAgent", holdSnapshot: new Promise<void>((resolve) => { release = resolve; }) });
+    const registry = new ProviderRegistry([fake.driver]);
+    await registry.load({ a: { driver: "claudeAgent" } });
+    subscribe.mockRestore();
+    const refresh = vi.fn(async () => {});
+    Object.assign(registry.get("a")!, { refreshModels: refresh });
+    const reuse = { ms: ENGINE_LIST_REUSE_MS, changed: vi.fn() };
+    const first = registry.describe({ reuse });
+    changed();
+    const second = registry.describe({ reuse });
+    expect(fake.probes).toEqual(["a"]);
+    release();
+    await Promise.all([first, second]);
+    changed();
+    await registry.describe({ reuse });
+    expect(fake.probes).toEqual(["a"]);
+    expect(refresh).toHaveBeenCalledTimes(2);
   });
 
   it("reads a model list that arrived while the status read is reused", async () => {
