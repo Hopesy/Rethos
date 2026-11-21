@@ -60,6 +60,7 @@ export class CdpBrowser implements PageHost {
   readonly #viewerAttaches = new Map<string, number>();
   #active: CdpPage | null = null;
   #viewport: { width: number; height: number } | null;
+  #fitting: Promise<void> = Promise.resolve();
 
   private constructor(connection: CdpConnection, options: BrowserOptions) {
     this.connection = connection;
@@ -164,7 +165,14 @@ export class CdpBrowser implements PageHost {
    * is the viewport, a few rounds at most. Answers the page's size as it ends
    * up, which a window held to its screen can leave smaller.
    */
-  async #fitWindow(page: CdpPage): Promise<{ width: number; height: number } | null> {
+  #fitWindow(page: CdpPage): Promise<{ width: number; height: number } | null> {
+    const fit = () => this.#resizeWindow(page);
+    const fitted = this.#fitting.then(fit, fit);
+    this.#fitting = fitted.then(() => undefined, () => undefined);
+    return fitted;
+  }
+
+  async #resizeWindow(page: CdpPage): Promise<{ width: number; height: number } | null> {
     const viewport = this.#viewport;
     if (!viewport || page.closed || page.emulated) return null;
     const root = this.connection.root;

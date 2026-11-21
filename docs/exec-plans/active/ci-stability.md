@@ -27,4 +27,6 @@ Focused native verification: https://github.com/Hopesy/Rethos/actions/runs/44885
 
 Complete CI: https://github.com/Hopesy/Rethos/actions/runs/44885537143 passed on 036ecbf58 (all required jobs, all three platforms).
 
-PR https://github.com/Hopesy/Rethos/pull/1: the first PR run 44885955175 exposed a Google Android archive connection timeout, a zero-size new Chrome tab/container viewer frame failure, and a Windows VM fixture restart timeout. The refined browser fit waits for positive measurements within physical window bounds and fits new tabs after navigation. Local 65-test browser suite passed. Next: verify the refined browser change in PR CI and inspect any recurring infrastructure failures.
+PR https://github.com/Hopesy/Rethos/pull/1: the first PR run 44885955175 exposed a Google Android archive connection timeout, a zero-size new Chrome tab/container viewer frame failure, and a Windows VM fixture restart timeout. Those download and VM failures passed on the next run (44888052872), whose only failure was a Windows viewport size race.
+
+The browser now waits for positive measurements within physical window bounds, fits new tabs after navigation and serializes native window fitting. A deterministic regression delayed the earlier CDP request: before serialization the final size was the old 1500x1000; after serialization it is the requested 1280x800. Local browser suite: 65 passed, one intermittent scroll-frame size failure; that scroll test passed on focused recheck. Typecheck/lint passed. Next: verify this final concurrency correction in PR CI.
