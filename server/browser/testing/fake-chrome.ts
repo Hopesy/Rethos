@@ -241,7 +241,7 @@ export class FakeChrome implements CdpTransport {
 
   #evaluate(page: FakePage, expression: string): unknown {
     const viewport = page.emulated ?? { width: this.viewport.width, height: this.viewport.height - (page.bar ?? 0) };
-    if (expression === "[innerWidth, innerHeight]") return [viewport.width, viewport.height];
+    if (expression.includes("[innerWidth, innerHeight]")) return [viewport.width, viewport.height];
     if (expression === "devicePixelRatio") return this.dpr;
     if (expression === "document.readyState") return "complete";
     if (expression === "document.title") return page.title;

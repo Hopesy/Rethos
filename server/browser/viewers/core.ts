@@ -481,13 +481,13 @@ export class ViewerHub {
     const key = appliedKey(size, zoom);
     const active = this.host.active();
     if (this.#applied === key && browser.viewport?.width === Math.max(size.width, MIN_WINDOW_WIDTH)) return;
-    this.#applied = key;
+    this.#applied = null;
     // The window is fitted by measuring the page, which an emulated size would misreport.
     if (this.#emulated) {
       for (const tab of this.host.tabs()) await tab.page.emulateSize(null).catch(() => {});
       this.#emulated = false;
     }
-    const fitted = await browser.setViewport({ width: Math.max(size.width, MIN_WINDOW_WIDTH), height: size.height }).catch(() => null);
+    const fitted = await browser.setViewport({ width: Math.max(size.width, MIN_WINDOW_WIDTH), height: size.height });
     const layout = zoomedLayout(size, zoom);
     if (emulated) {
       for (const tab of this.host.tabs()) await tab.page.emulateSize(layout, zoom).catch(() => {});
@@ -495,6 +495,7 @@ export class ViewerHub {
     }
     // Chrome's first tab carries a bar the others lack, so a window held to its screen can give it a shorter page.
     this.#shown = { ...(emulated || !fitted ? layout : fitted), zoom };
+    this.#applied = key;
     if (active) this.broadcast({ type: "viewport", ...this.#shown, setting: this.setting });
     this.broadcastStatus();
     for (const viewer of this.viewers) viewer.refreshSoon();

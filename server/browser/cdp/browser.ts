@@ -168,7 +168,9 @@ export class CdpBrowser implements PageHost {
     const viewport = this.#viewport;
     if (!viewport || page.closed || page.emulated) return null;
     const root = this.connection.root;
-    const measure = () => valueInWorld<[number, number]>(page.frames, page.frames.mainFrameId, "[innerWidth, innerHeight]");
+    const measure = () => valueInWorld<[number, number]>(page.frames, page.frames.mainFrameId,
+      "document.visibilityState === 'hidden' ? [innerWidth, innerHeight] : new Promise(resolve => requestAnimationFrame(() => resolve([innerWidth, innerHeight])))",
+      { awaitPromise: true });
     try {
       const { windowId } = await root.send<{ windowId: number }>("Browser.getWindowForTarget", { targetId: page.targetId });
       let size = await measure();

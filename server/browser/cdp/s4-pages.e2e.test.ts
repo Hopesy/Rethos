@@ -315,6 +315,13 @@ suite("S4 pages, tabs and page state on real Chrome", () => {
     const first = await fitted.browser.waitForPage();
     await first.navigate(serve("<p>fitted</p>"));
     expect(await first.evaluate("[innerWidth, innerHeight]")).toEqual([1366, 768]);
+    for (let cycle = 0; cycle < 3; cycle++) {
+      await first.emulateSize({ width: 1280, height: 2400 });
+      await first.screenshot();
+      await first.emulateSize(null);
+      expect(await fitted.browser.setViewport({ width: 1366, height: 768 })).toEqual({ width: 1366, height: 768 });
+      expect(await first.evaluate("[innerWidth, innerHeight]")).toEqual([1366, 768]);
+    }
     const second = await fitted.browser.newPage(serve("<p>second tab</p>"));
     expect(await second.evaluate("[innerWidth, innerHeight]")).toEqual([1366, 768]);
     await first.bringToFront();

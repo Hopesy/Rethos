@@ -18,7 +18,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: node --input-type=commonjs -e "require('electron')"
-      - run: pnpm broker:test && node --test --test-reporter=spec --test-timeout=45000 "electron/*.node-test.mjs"
+      - run: pnpm broker:test
+      - run: node .Rethos-temp/ci-stability/diagnose-electron.mjs
   windows-cua:
     runs-on: windows-latest
     timeout-minutes: 10
