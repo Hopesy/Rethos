@@ -521,7 +521,6 @@ export class ViewerHub {
     return Promise.resolve().then(() => tab.control.system(() => this.applyViewport())).catch(() => this.applyViewport());
   }
 
-  /** A tab came to the front or opened: its window takes the current size. */
   async fit(): Promise<void> {
     this.#applied = null;
     await this.applyViewport();

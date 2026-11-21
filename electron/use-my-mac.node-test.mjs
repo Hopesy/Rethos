@@ -71,7 +71,6 @@ const SIGNED_IN = Object.freeze({ status: "connected", accountId: "acct_1", orig
  * it starts with. */
 async function fixture(t, { link = true, chrome = false, adminWord = null, myCloud = false, signIn = SIGNED_IN } = {}) {
   const dir = await realpath(await mkdtemp(path.join(tmpdir(), "omb-use-my-mac-")));
-  t.after(() => rm(dir, { recursive: true, force: true }));
   const home = cloudHome({ link, chrome });
   const sockets = fakeSockets((url) => home.registered.has(new URL(url).pathname.split("/")[3]));
   let word = adminWord;
@@ -91,7 +90,11 @@ async function fixture(t, { link = true, chrome = false, adminWord = null, myClo
     },
   });
   let sharing = make();
-  t.after(() => sharing.close());
+  t.after(async () => {
+    sharing.close();
+    await sharing.goodbyesDone();
+    await rm(dir, { recursive: true, force: true });
+  });
   return { dir, file, home, sockets, power, summaries, connects, get sharing() { return sharing; }, setWord: (next) => { word = next; power.changed(); },
     signIn: (next) => { account = next; sharing.cloudChanged(); },
     restart: () => { sharing.close(); sharing = make(); return sharing; } };
@@ -475,7 +478,6 @@ test("a person whose only Cloud is a Team Cloud lends nothing: lending is person
 
 test("another Cloud of the person's own going to sleep holds only its own link: My Cloud's keeps lending, and the sleeping one isn't dialled again at once", async (t) => {
   const dir = await realpath(await mkdtemp(path.join(tmpdir(), "omb-use-my-mac-")));
-  t.after(() => rm(dir, { recursive: true, force: true }));
   const OTHER = "https://omb-c-a.fly.dev";
   const mine = env, other = { id: "client-a", name: "Client A", origin: OTHER, cloud: { id: "c-a", role: "owner" } };
   const homes = { [ORIGIN]: cloudHome(), [OTHER]: cloudHome() };
@@ -486,7 +488,11 @@ test("another Cloud of the person's own going to sleep holds only its own link: 
     enabled: async () => false, myCloud: () => mine, cloud: (place) => ({ status: "connected", accountId: "acct_1", origin: place?.cloud ? place.origin : ORIGIN }),
     home: path.join(dir, "home"), cuaConnection: async () => null, power, WebSocket: sockets.FakeSocket, linkHeaders: () => ({}),
   });
-  t.after(() => sharing.close());
+  t.after(async () => {
+    sharing.close();
+    await sharing.goodbyesDone();
+    await rm(dir, { recursive: true, force: true });
+  });
   await sharing.saveCloud(mine, { folders: [], screen: false, internet: true });
   await sharing.saveCloud(other, { folders: [], screen: false, internet: true });
   const to = (origin) => sockets.made.filter((socket) => socket.url.startsWith(origin.replace("https:", "wss:")));
@@ -500,7 +506,6 @@ test("another Cloud of the person's own going to sleep holds only its own link: 
 
 test("another Cloud of the person's own that the Admin says is asleep is never dialled, even after its own hold ends, and lends once the Admin says it is awake", async (t) => {
   const dir = await realpath(await mkdtemp(path.join(tmpdir(), "omb-use-my-mac-")));
-  t.after(() => rm(dir, { recursive: true, force: true }));
   const OTHER = "https://omb-c-b.fly.dev";
   const mine = env, other = { id: "client-b", name: "Client B", origin: OTHER, cloud: { id: "c-b", role: "owner" } };
   const homes = { [ORIGIN]: cloudHome(), [OTHER]: cloudHome() };
@@ -514,7 +519,11 @@ test("another Cloud of the person's own that the Admin says is asleep is never d
     home: path.join(dir, "home"), cuaConnection: async () => null, power, WebSocket: sockets.FakeSocket, linkHeaders: () => ({}),
     cloudPower: (origin) => words[origin] ?? null,
   });
-  t.after(() => sharing.close());
+  t.after(async () => {
+    sharing.close();
+    await sharing.goodbyesDone();
+    await rm(dir, { recursive: true, force: true });
+  });
   sharing.start();
   await until(() => sharing.cloudState(other).problem === "asleep" && sharing.cloudState(mine).link === "on", "My Cloud to lend and Client B to wait");
   await delay(300);

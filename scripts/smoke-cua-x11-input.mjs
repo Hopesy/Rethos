@@ -29,7 +29,10 @@ chmodSync(home, 0o700);
 
 // A real Xorg desktop always runs a window manager, and Cua Driver 0.41 sends foreground input only to the window the
 // manager reports active (_NET_ACTIVE_WINDOW). A bare Xvfb has none, so start a small EWMH one first.
-const windowManager = spawn("openbox", ["--sm-disable"], { env: process.env, stdio: ["ignore", "pipe", "pipe"] });
+const windowManager = spawn("openbox", ["--sm-disable"], {
+  env: { ...process.env, HOME: home, XDG_CONFIG_HOME: path.join(home, ".config") },
+  stdio: ["ignore", "pipe", "pipe"],
+});
 let windowManagerOutput = "";
 for (const stream of [windowManager.stdout, windowManager.stderr]) {
   stream.setEncoding("utf8");

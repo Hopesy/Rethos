@@ -390,7 +390,7 @@ describe("ProviderRegistry", () => {
     await registry.load({ a: { driver: "claudeAgent" } });
     subscribe.mockRestore();
     const refresh = vi.fn(async () => {});
-    registry.get("a")!.refreshModels = refresh;
+    Object.assign(registry.get("a")!, { refreshModels: refresh });
     const reuse = { ms: ENGINE_LIST_REUSE_MS, changed: vi.fn() };
     const first = registry.describe({ reuse });
     changed();
