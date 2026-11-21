@@ -1,6 +1,8 @@
 name: CI failure investigation
 on:
   workflow_dispatch:
+  push:
+    branches: [codex/ci-stability]
 permissions:
   contents: read
 jobs:
