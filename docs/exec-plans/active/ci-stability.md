@@ -11,7 +11,7 @@ Worktree: `rethos-ci-stability`, branch `codex/ci-stability`. Preserve the exist
 - [x] Make Windows CUA extraction reliable: tar.exe extracts the verified archive; clean runner startup, version check and embedded host smoke passed.
 - [x] Isolate Openbox configuration and preserve startup diagnostics. Five X11 smoke runs passed on the updated native runner; the original early exit was not reproduced in the focused runs.
 - [x] Fix extra CLI probes: background manifest updates refresh catalogs without invalidating CLI status; verification homes use the bundled manifest.
-- [x] Synchronize browser window measurement with layout frames and cache successful viewport changes. Real Chrome suites passed locally and on Linux.
+- [ ] Wait for positive native window measurements after clearing emulation and after new-tab navigation; cache successful viewport changes. The first frame-based approach passed one full CI but a later PR container run exposed a zero-size new tab. The refined implementation passed all 65 local real/fake Chrome tests; awaiting PR CI.
 - [x] Replace file-event-only phone fixture waits with bounded real-time polling. Route and viewer tests passed (92 tests).
 - [ ] Run affected regression tests and platform CI against the resulting commit.
 
@@ -25,4 +25,6 @@ Local: typecheck and lint passed; engine/registry/control fixture tests passed (
 
 Focused native verification: https://github.com/Hopesy/Rethos/actions/runs/44885535955 passed all macOS, Windows and Linux jobs. The temporary investigation workflow and script have been removed.
 
-Complete CI: https://github.com/Hopesy/Rethos/actions/runs/44885537143 is running against 036ecbf58. The remaining changes only remove diagnostic files and update this record. Next: inspect all results, resolve any regressions, and record final evidence.
+Complete CI: https://github.com/Hopesy/Rethos/actions/runs/44885537143 passed on 036ecbf58 (all required jobs, all three platforms).
+
+PR https://github.com/Hopesy/Rethos/pull/1: the first PR run 44885955175 exposed a Google Android archive connection timeout, a zero-size new Chrome tab/container viewer frame failure, and a Windows VM fixture restart timeout. The refined browser fit waits for positive measurements within physical window bounds and fits new tabs after navigation. Local 65-test browser suite passed. Next: verify the refined browser change in PR CI and inspect any recurring infrastructure failures.

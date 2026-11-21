@@ -168,9 +168,15 @@ export class CdpBrowser implements PageHost {
     const viewport = this.#viewport;
     if (!viewport || page.closed || page.emulated) return null;
     const root = this.connection.root;
-    const measure = () => valueInWorld<[number, number]>(page.frames, page.frames.mainFrameId,
-      "document.visibilityState === 'hidden' ? [innerWidth, innerHeight] : new Promise(resolve => requestAnimationFrame(() => resolve([innerWidth, innerHeight])))",
-      { awaitPromise: true });
+    const measure = async (): Promise<[number, number]> => {
+      const deadline = Date.now() + 2_000;
+      for (;;) {
+        const [width, height, outerWidth, outerHeight] = await valueInWorld<[number, number, number, number]>(page.frames, page.frames.mainFrameId, "[innerWidth, innerHeight, outerWidth, outerHeight]");
+        if (width > 0 && height > 0 && width <= outerWidth && height <= outerHeight) return [width, height];
+        if (Date.now() >= deadline) throw new DriverError("timeout", "The page did not settle to its window size.");
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      }
+    };
     try {
       const { windowId } = await root.send<{ windowId: number }>("Browser.getWindowForTarget", { targetId: page.targetId });
       let size = await measure();
@@ -313,6 +319,7 @@ export class CdpBrowser implements PageHost {
     const page = await this.waitForPage((candidate) => candidate.targetId === targetId, timeoutMs);
     this.#active = page;
     if (url !== "about:blank") await page.navigate(url, { timeoutMs });
+    await this.#fitWindow(page);
     return page;
   }
 
