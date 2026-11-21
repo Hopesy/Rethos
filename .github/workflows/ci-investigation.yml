@@ -18,4 +18,33 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: node --input-type=commonjs -e "require('electron')"
-      - run: node --test --test-reporter=spec --test-timeout=45000 "electron/*.node-test.mjs"
+      - run: pnpm broker:test && node --test --test-reporter=spec --test-timeout=45000 "electron/*.node-test.mjs"
+  windows-cua:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: pnpm/action-setup@ff378ebe6b225b0680b81c1ad4498ae0d1d3a5e3
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build:cua:win && pnpm smoke:cua-win
+  linux-cua:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: pnpm/action-setup@ff378ebe6b225b0680b81c1ad4498ae0d1d3a5e3
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: sudo apt-get update && sudo apt-get install -y at-spi2-core dbus-x11 libxi6 libxkbcommon0 openbox x11-utils xdotool xvfb
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build:cua:linux
+      - run: for attempt in $(seq 1 5); do dbus-run-session -- xvfb-run -a pnpm smoke:cua-x11-input || exit 1; done
+      - run: xvfb-run -a pnpm exec vitest run server/browser/viewers/viewers.e2e.test.ts --reporter=verbose
+        env:
+          OMB_CDP_E2E: "1"
