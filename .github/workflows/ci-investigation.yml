@@ -31,6 +31,11 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build:cua:win && pnpm smoke:cua-win
+      - if: failure()
+        shell: pwsh
+        run: |
+          Get-ChildItem node_modules/.cache/openmausbot/cua-driver-0.45.4-win -Recurse | Select-Object FullName, Length
+          Get-MpThreatDetection | Select-Object ThreatID, ActionSuccess, Resources, InitialDetectionTime | ConvertTo-Json -Depth 4
   linux-cua:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
