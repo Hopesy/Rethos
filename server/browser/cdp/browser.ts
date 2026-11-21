@@ -179,8 +179,8 @@ export class CdpBrowser implements PageHost {
     const measure = async (): Promise<[number, number]> => {
       const deadline = Date.now() + 2_000;
       for (;;) {
-        const [width, height, outerWidth, outerHeight] = await valueInWorld<[number, number, number, number]>(page.frames, page.frames.mainFrameId, "[innerWidth, innerHeight, outerWidth, outerHeight]");
-        if (width > 0 && height > 0 && width <= outerWidth && height <= outerHeight) return [width, height];
+        const [width, height] = await valueInWorld<[number, number]>(page.frames, page.frames.mainFrameId, "[innerWidth, innerHeight]");
+        if (width > 0 && height > 0) return [width, height];
         if (Date.now() >= deadline) throw new DriverError("timeout", "The page did not settle to its window size.");
         await new Promise((resolve) => setTimeout(resolve, 25));
       }
