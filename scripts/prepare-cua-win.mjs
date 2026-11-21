@@ -65,7 +65,7 @@ async function officialBinary() {
   }
   const archive = join(cache, release.file);
   await writeFile(archive, bytes);
-  await run("tar.exe", ["-xf", archive, "-C", cache], {
+  await run(join(process.env.SystemRoot ?? "C:\\Windows", "System32", "tar.exe"), ["-xf", archive, "-C", cache], {
     timeout: 60_000,
     windowsHide: true,
   });
